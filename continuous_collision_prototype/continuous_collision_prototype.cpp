@@ -3,6 +3,7 @@
 
 #include "framework.h"
 #include "continuous_collision_prototype.h"
+#include "unit_test_manager.h"
 
 #define MAX_LOADSTRING 100
 
@@ -26,6 +27,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: Place code here.
+    ArrayUtilities::unit_test_manager::run_wide_node_linked_list_test();
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);

@@ -2,15 +2,19 @@
 #include "base_types_definition.h"
 #include "small_list.h"
 #include "free_list.h"
-//#include "wide_node_linked_list.h"
+#include "wide_node_linked_list.h"
 
+#include <limits>
 #include <cstdlib>
 #include <ctime>
+#include <assert.h>
 
 namespace ArrayUtilities
 {
 	class unit_test_manager
 	{
+	public:
+		
 		static void run_test()
 		{
 			//test small list 
@@ -36,7 +40,13 @@ namespace ArrayUtilities
 
 		static void run_wide_node_linked_list_test()
 		{
-			//wide_node_linked_list<std::numeric_limits<uint8>::max,
+			//create wide node linked list
+			auto widenode_list = wide_node_linked_list<std::numeric_limits<uint8>::max(), uint16, 255 * 255, 8, uint8>();
+
+			widenode_list.add(0, static_cast<uint8>(69));
+
+			//widenode_list.remove(0, static_cast<uint8>(69));
+
 		}
 	};
 }

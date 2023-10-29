@@ -63,6 +63,8 @@ namespace SectorGrid
 		//get a ref to the data at a sector tile index
 		TDataType& get_ref_to_data(const sector_tile_index<TSectorGridDimensions>& index);
 
+		constexpr template_sector_grid() {};
+
 	};
 
 	template<typename TDataType, sector_grid_dimension_concept TSectorGridDimensions>

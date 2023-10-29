@@ -48,15 +48,28 @@ namespace math_2d_util
 		static constexpr  byte_vector_2d center();
 		
 		template<typename T>
-		static constexpr T max_as();
+		inline static constexpr T max_as();
 		
 		template<typename T>
-		static constexpr T min_as();
+		inline static constexpr T min_as();
 		
 		template<typename T>
-		static constexpr T center_as();
-		
+		inline static constexpr T center_as();
+
+		constexpr bool operator == (const byte_vector_2d&& other) const;
+			
+		constexpr bool operator == (const byte_vector_2d& other) const;
 	};
+
+	constexpr bool math_2d_util::byte_vector_2d::operator == (const math_2d_util::byte_vector_2d&& other) const 
+	{
+		return offset == other.offset;
+	}
+
+	constexpr bool math_2d_util::byte_vector_2d::operator == (const math_2d_util::byte_vector_2d& other) const 
+	{
+		return offset == other.offset;
+	}
 
 	math_2d_util::byte_vector_2d math_2d_util::byte_vector_2d::from_vector(const auto& target)
 	{
@@ -69,17 +82,17 @@ namespace math_2d_util
 		return out;
 	}
 	
-	inline constexpr math_2d_util::byte_vector_2d math_2d_util::byte_vector_2d::max()
+	inline constexpr byte_vector_2d byte_vector_2d::max()
 	{
 		return byte_vector_2d(max_extent,max_extent);
 	}
 	
-	inline constexpr math_2d_util::byte_vector_2d math_2d_util::byte_vector_2d::min()
+	inline constexpr byte_vector_2d byte_vector_2d::min()
 	{
 		return byte_vector_2d(min_extent,min_extent);
 	}
 	
-	inline constexpr math_2d_util::byte_vector_2d math_2d_util::byte_vector_2d::center()
+	inline constexpr byte_vector_2d byte_vector_2d::center()
 	{
 		return byte_vector_2d(center_extent, center_extent);
 	}
@@ -101,5 +114,5 @@ namespace math_2d_util
 	{
 		return  T(center_extent, center_extent);
 	}
-};
 
+};

@@ -90,7 +90,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)\vector_2d_math_utils;$(SolutionDir)\sector_grid_data_structure;$(SolutionDir)\misc_utilities;$(SolutionDir)\array_utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)vector_2d_math_utils;$(SolutionDir)sector_grid_data_structure;$(SolutionDir)misc_utilities;$(SolutionDir)array_utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -109,7 +109,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)\vector_2d_math_utils;$(SolutionDir)\sector_grid_data_structure;$(SolutionDir)\misc_utilities;$(SolutionDir)\array_utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)vector_2d_math_utils;$(SolutionDir)sector_grid_data_structure;$(SolutionDir)misc_utilities;$(SolutionDir)array_utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -129,7 +129,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\vector_2d_math_utils;$(SolutionDir)\sector_grid_data_structure;$(SolutionDir)\misc_utilities;$(SolutionDir)\array_utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)vector_2d_math_utils;$(SolutionDir)sector_grid_data_structure;$(SolutionDir)misc_utilities;$(SolutionDir)array_utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -148,7 +148,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\vector_2d_math_utils;$(SolutionDir)\sector_grid_data_structure;$(SolutionDir)\misc_utilities;$(SolutionDir)\array_utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)vector_2d_math_utils;$(SolutionDir)sector_grid_data_structure;$(SolutionDir)misc_utilities;$(SolutionDir)array_utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -168,6 +168,7 @@
     <ClInclude Include="loose_tight_grid.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="loose_grid_node.h" />
+    <ClInclude Include="unit_test_manager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="continuous_collision_library.cpp" />
@@ -181,10 +182,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="loose_grid_node.cpp" />
+    <ClCompile Include="unit_test_manager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\array_utilities\array_utilities.vcxproj">
       <Project>{4e672028-ab46-44db-9736-fd74a30782ed}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\misc_utilities\misc_utilities.vcxproj">
+      <Project>{dd72c98c-5ed1-479b-bef5-30d433746c86}</Project>
     </ProjectReference>
     <ProjectReference Include="..\sector_grid_data_structure\sector_grid_data_structure.vcxproj">
       <Project>{3878ed8e-e5d4-4e7d-9024-9e7ee5a7716c}</Project>

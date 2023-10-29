@@ -42,6 +42,9 @@
     <ClInclude Include="spiral_indexing_lookup_table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="unit_test_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="continuous_collision_library.cpp">
@@ -60,6 +63,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="overlap_tracking_grid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="unit_test_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

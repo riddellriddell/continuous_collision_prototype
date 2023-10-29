@@ -5,6 +5,8 @@
 #include "overlap_tracking_grid.h"
 
 
+
+
 ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tracking_grid::calculate_flag_for_tile(
 	const math_2d_util::uivec2d & tile_to_create_flag_for, 
 	const math_2d_util::uivec2d & target_tile) const
@@ -19,7 +21,7 @@ ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tr
 	return calculate_flag_for_offset(offset);
 }
 
-constexpr ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tracking_grid::calculate_flag_for_offset(const math_2d_util::uivec2d& offset) const
+ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tracking_grid::calculate_flag_for_offset(const math_2d_util::uivec2d& offset) const
 {
 	//all offsets are from the top left corner of the target tile and are all in positive directions
 
@@ -115,12 +117,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 					auto bounds_of_overlapped_tile = bounds.get_ref_to_data(overlap_index);
 
 					//convert bounds from local space to world space using the top left corner offset
-					auto world_bounds_of_overlapped_tile = math_2d_util::rect_2d_math::get_offset_rect_as<
-						math_2d_util::uirect,
-						decltype(bounds_of_overlapped_tile),
-						decltype(overlap_tile_overlap_region_top_left)>(
-							bounds_of_overlapped_tile, 
-							overlap_tile_overlap_region_top_left);
+					auto world_bounds_of_overlapped_tile = math_2d_util::rect_2d_math::get_offset_rect_as<math_2d_util::uirect>(bounds_of_overlapped_tile, overlap_tile_overlap_region_top_left);
 
 					//check if these tiles were already overlapping
 					bool was_overlapping = math_2d_util::rect_2d_math::is_overlapping(world_bounds_of_overlapped_tile, old_bounds);
@@ -136,7 +133,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 					{
 						//add it to list of all overlap pairs for this tile
 						new_overlaps[num_of_new_overlaps++] = overlap_index;
-						//get the top left corner for all posible overlaps 
+						
 					}
 				});
 
@@ -193,10 +190,13 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 		auto dif_target_byte_vec = math_2d_util::byte_vector_2d::from_vector(dif_from_target_window);
 
 		//add this tile to the target tile 
-		
 		target_sector_overlap_list.add(target_overlap_sub_tile, dif_target_byte_vec);
 		source_overlap_sector.add(target_overlap_sub_tile, dif_source_byte_vec);
 	}
+}
+
+void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(math_2d_util::uivec2d& source_tile_cord, const math_2d_util::uirect& remove_area, const math_2d_util::uirect& old_bounds, const math_2d_util::uirect& new_bounds)
+{
 }
 
 bool ContinuousCollisionLibrary::overlap_tracking_grid::is_point_in_grid(const math_2d_util::uivec2d& point)
