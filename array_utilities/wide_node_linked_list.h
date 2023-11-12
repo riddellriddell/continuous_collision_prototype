@@ -376,6 +376,8 @@ namespace ArrayUtilities
 		//get the current free node head and point it to this new node
 		nodes[free_list_start].free_node_data.node_links.parent_node = node_index;
 	
+		nodes[node_index].mark_as_free();
+
 		nodes[node_index].free_node_data.node_links.child_node = free_list_start;
 
 		//link the new node to the other end of the free node loop  

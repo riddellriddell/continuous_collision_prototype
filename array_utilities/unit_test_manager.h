@@ -182,6 +182,78 @@ namespace ArrayUtilities
 
 					assert(!found_added_item, "the value of x should have been removed");
 				});
+
+			//add items to several different nodes
+			//add 9 items forcing the creation of 2 nodex 
+			constexpr uint32 index_to_add_count_04 = 255;
+			std::array<uint32, index_to_add_count_04> index_to_add_04;
+
+			constexpr uint32 item_to_add_count_04 = 255;
+			std::array<uint32, item_to_add_count_04> items_to_add_04;
+
+			//crate array of all the items to add
+			std::iota(index_to_add_04.begin(), index_to_add_04.end(), 0);
+			std::iota(items_to_add_04.begin(), items_to_add_04.end(), 0);
+
+			//add all the items 
+			std::for_each(index_to_add_04.begin(), index_to_add_04.end(), [&](auto& index)
+				{
+
+					//add all the items to the array 
+					std::for_each(items_to_add_04.begin(), items_to_add_04.end(), [&](auto& item)
+						{
+							widenode_list.add(index, item);
+						});
+				});
+
+			//check all the items exist 
+			std::for_each(index_to_add_04.begin(), index_to_add_04.end(), [&](auto& index)
+				{
+
+					//add all the items to the array 
+					std::for_each(items_to_add_04.begin(), items_to_add_04.end(), [&](auto& item)
+						{
+							bool found_added_item = false;
+
+							auto begin = widenode_list.get_root_node_start(index);
+							auto end = widenode_list.end();
+
+							std::for_each(begin, end, [&](auto& x) {found_added_item |= (x == item); });
+
+							assert(found_added_item, "the value of x should exist");
+						});
+				});
+
+			//add all the items 
+			std::for_each(index_to_add_04.begin(), index_to_add_04.end(), [&](auto& index)
+				{
+
+					//add all the items to the array 
+					std::for_each(items_to_add_04.begin(), items_to_add_04.end(), [&](auto& item)
+						{
+							widenode_list.remove(index, item);
+						});
+				});
+
+			//check all the items were removed
+			std::for_each(index_to_add_04.begin(), index_to_add_04.end(), [&](auto& index)
+				{
+
+					//add all the items to the array 
+					std::for_each(items_to_add_04.begin(), items_to_add_04.end(), [&](auto& item)
+						{
+							bool found_added_item = false;
+
+							auto begin = widenode_list.get_root_node_start(index);
+							auto end = widenode_list.end();
+
+							std::for_each(begin, end, [&](auto& x) {found_added_item |= (x == item); });
+
+							assert(!found_added_item, "the value of x should exist");
+						});
+				});
+
+
 		}
 	};
 }
