@@ -1,6 +1,6 @@
 #pragma once
 #include "base_types_definition.h"
-#include "vector_types.h"
+#include "vector_2d_math_utils/vector_types.h"
 
 namespace ContinuousCollisionLibrary
 {

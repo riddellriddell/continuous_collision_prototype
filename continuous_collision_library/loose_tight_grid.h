@@ -1,11 +1,11 @@
 #pragma once
-#include "sector_grid_dimensions.h"
-#include "sector_grid.h"
+#include "sector_grid_data_structure/sector_grid_dimensions.h"
+#include "sector_grid_data_structure/sector_grid.h"
 #include "base_types_definition.h"
 #include "loose_grid_node.h"
 #include "tight_grid_node.h"
 #include "tight_grid_element.h"
-#include "free_list.h"
+#include "array_utilities/free_list.h"
 
 
 namespace ContinuousCollisionLibrary

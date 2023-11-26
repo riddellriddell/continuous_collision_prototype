@@ -14,15 +14,15 @@ void SectorGrid::unit_test_manager::run_basic_test()
 	std::srand(std::time(nullptr)); // use current time as seed for random generator
 
 
-	for (uint32 i = 0; i < grid_instance->data.tile_data.size(); i++)
-	{
-		int random_variable = std::rand();
-
-		grid_instance->data.tile_data[i] = static_cast<uint32>(random_variable);
-	}
-
-	for (uint32 i = 0; i < grid_instance->data.tile_data.size(); i++)
-	{
-		std::cout << "tile value" << grid_instance->data.tile_data[i];
-	}
+	//for (uint32 i = 0; i < grid_instance->data.tile_data.size(); i++)
+	//{
+	//	int random_variable = std::rand();
+	//
+	//	grid_instance->data.tile_data[i] = static_cast<uint32>(random_variable);
+	//}
+	//
+	//for (uint32 i = 0; i < grid_instance->data.tile_data.size(); i++)
+	//{
+	//	std::cout << "tile value" << grid_instance->data.tile_data[i];
+	//}
 }

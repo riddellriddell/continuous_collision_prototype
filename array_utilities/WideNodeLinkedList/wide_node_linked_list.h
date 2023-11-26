@@ -2,9 +2,9 @@
 #include <assert.h>
 #include <array>
 #include <limits>
-#include "int_type_selection.h"
-#include "base_types_definition.h"
-#include "byte_vector_2d.h"
+#include "misc_utilities/int_type_selection.h"
+#include "../base_types_definition.h"
+#include "vector_2d_math_utils/byte_vector_2d.h"
 
 
 

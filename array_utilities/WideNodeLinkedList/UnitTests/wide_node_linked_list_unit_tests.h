@@ -1,47 +1,20 @@
 #pragma once
-#include "base_types_definition.h"
-#include "small_list.h"
-#include "free_list.h"
-#include "wide_node_linked_list.h"
-
-#include <iostream>
 #include <limits>
 #include <cstdlib>
 #include <ctime>
-#include <assert.h>
-#include <ranges>
+#include <limits>
 #include <algorithm>
 #include <numeric>
+#include <assert.h>
+#include <ranges>
+#include "../wide_node_linked_list.h"
+#include "../../base_types_definition.h"
 
 namespace ArrayUtilities
 {
-	class unit_test_manager
+	class wide_node_linked_lists_unit_test
 	{
 	public:
-		
-		static void run_test()
-		{
-			//test small list 
-			SmallList<int> list_test = {};
-
-			FreeList<int> free_list_test = {};
-
-			std::srand(std::time(nullptr)); // use current time as seed for random generator
-
-			//add random values to list up to capacity 
-			for (int i = 0; i < list_test.capacity(); i++)
-			{
-				int random_variable = std::rand();
-
-				list_test.push_back(random_variable);
-			}
-
-			for (int i = 0; i < list_test.size(); ++i)
-			{
-				free_list_test.insert(list_test[i]);
-			}
-		}
-
 		static void run_wide_node_linked_list_test()
 		{
 			//create wide node linked list
@@ -118,7 +91,7 @@ namespace ArrayUtilities
 			std::iota(items_to_add_03.begin(), items_to_add_03.end(), 0);
 
 			//add all the items to the array 
-			std::for_each(items_to_add_03.begin(), items_to_add_03.end(), [&](auto& x) {widenode_list.add(index_to_add_03,x); });
+			std::for_each(items_to_add_03.begin(), items_to_add_03.end(), [&](auto& x) {widenode_list.add(index_to_add_03, x); });
 
 			//check to see if all the items were added 
 			std::for_each(items_to_add_03.begin(), items_to_add_03.end(), [&](auto& x)
@@ -252,7 +225,6 @@ namespace ArrayUtilities
 							assert(!found_added_item, "the value of x should exist");
 						});
 				});
-
 
 		}
 	};

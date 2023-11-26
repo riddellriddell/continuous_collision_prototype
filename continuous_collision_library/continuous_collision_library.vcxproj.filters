@@ -45,6 +45,9 @@
     <ClInclude Include="unit_test_manager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UnitTests\OverlapTrackingUnitTests\OverlapTrackingUnitTest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="continuous_collision_library.cpp">

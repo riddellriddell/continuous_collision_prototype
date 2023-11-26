@@ -10,11 +10,22 @@ namespace math_2d_util
 	struct template_rect_2d
 	{
 		//default constructor 
-		template_rect_2d() {};
 
 		//xy coordinates for min and max bounds
 		template_vector_2d<T> min;
 		template_vector_2d<T> max;
+
+		//helper values
+		static constexpr template_rect_2d<T> max_size_rect()
+		{
+			return { template_vector_2d<T>::min(), template_vector_2d<T>::max() };
+		}
+
+		//rect turned inside out, this can be usefull if you want to stop a rect from returning true from bounds comparisons
+		static constexpr template_rect_2d<T> inverse_max_size_rect()
+		{
+			return{ template_vector_2d<T>::max(), template_vector_2d<T>::min() };
+		}
 	};
 
 	struct rect_2d_math

@@ -8,6 +8,8 @@ namespace SectorGrid
 	template <typename TDataType, typename TSectorGridDimensions>
 	struct sector
 	{
+		sector() = default;
+
 		//all the data held by the sector
 		std::array<TDataType, TSectorGridDimensions::sector_tile_count> data;
 

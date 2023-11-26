@@ -5,7 +5,7 @@
 #include <immintrin.h>
 #include "sector.h"
 #include "sector_grid_dimensions.h"
-#include "vector_types.h"
+#include "vector_2d_math_utils/vector_types.h"
 #include "sector_grid_index.h"
 #include <assert.h>
 
@@ -52,8 +52,10 @@ namespace SectorGrid
 	public:
 		union tile_sector_data_union
 		{
-			std::array<TDataType, TSectorGridDimensions::tile_count> tile_data;
-			std::array<sector<TDataType, TSectorGridDimensions>, TSectorGridDimensions::sector_grid_count> sector_data;
+			int test0;
+			TDataType text1;
+			//std::array<TDataType, TSectorGridDimensions::tile_count> tile_data;
+			//std::array<sector<TDataType, TSectorGridDimensions>, TSectorGridDimensions::sector_grid_count> sector_data;
 
 		}data;
 
@@ -63,14 +65,15 @@ namespace SectorGrid
 		//get a ref to the data at a sector tile index
 		TDataType& get_ref_to_data(const sector_tile_index<TSectorGridDimensions>& index);
 
-		constexpr template_sector_grid() {};
+		constexpr template_sector_grid() = default;
 
 	};
 
 	template<typename TDataType, sector_grid_dimension_concept TSectorGridDimensions>
 	inline TDataType& template_sector_grid<TDataType, TSectorGridDimensions>::get_ref_to_data(const sector_tile_index<TSectorGridDimensions>& index)
 	{
-		return data.tile_data[index.index];
+		auto trash = TDataType();
+		return trash;//data.tile_data[index.index];
 	}
 
 	template<sector_grid_dimension_concept TSectorGridDimensions>

@@ -3,7 +3,8 @@
 
 #include "framework.h"
 #include "continuous_collision_prototype.h"
-#include "unit_test_manager.h"
+#include "array_utilities/WideNodeLinkedList/UnitTests/wide_node_linked_list_unit_tests.h"
+#include "continuous_collision_library/UnitTests/OverlapTrackingUnitTests/OverlapTrackingUnitTest.h"
 
 #define MAX_LOADSTRING 100
 
@@ -27,7 +28,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: Place code here.
-    ArrayUtilities::unit_test_manager::run_wide_node_linked_list_test();
+    ArrayUtilities::wide_node_linked_lists_unit_test::run_wide_node_linked_list_test();
+    ContinuousCollisionLibrary::overlap_tracking_unit_test::run_test();
+
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);

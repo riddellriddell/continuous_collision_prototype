@@ -1,13 +1,12 @@
 #pragma once
-#include "sector_grid_dimensions.h"
-#include "sector_grid.h"
-#include "sector_grid_index.h"
+#include "sector_grid_data_structure/sector_grid.h"
+#include "sector_grid_data_structure/sector_grid_index.h"
 #include "base_types_definition.h"
-#include "wide_node_linked_list.h"
-#include "vector_types.h"
-#include "rect_types.h"
+#include "array_utilities/WideNodeLinkedList/wide_node_linked_list.h"
+#include "vector_2d_math_utils/vector_types.h"
+#include "vector_2d_math_utils/rect_types.h"
 #include "base_types_definition.h"
-#include "byte_vector_2d.h"
+#include "vector_2d_math_utils/byte_vector_2d.h"
 #include <limits>
 #include <algorithm>
 #include <cmath>
@@ -17,6 +16,7 @@
 
 namespace ContinuousCollisionLibrary
 {
+
 #pragma region OverlapFlagDef
 	//------------------- Overlap Falg Definition ----------------------------------
 
@@ -97,7 +97,7 @@ namespace ContinuousCollisionLibrary
 			return *this;
 		}
 
-		overlap_flag_template() {};
+		constexpr overlap_flag_template() = default;
 
 		overlap_flag_template(TFlagDataType flag):overlap_flag(flag){};
 	};
@@ -106,7 +106,7 @@ namespace ContinuousCollisionLibrary
 
 #pragma region TypeDef
 
-	typedef math_2d_util::ubrect tile_local_bounds;
+	using tile_local_bounds = math_2d_util::ubrect;
 
 	using grid_dimensions = SectorGrid::sector_grid_dimensions<16, 16>;
 	
@@ -144,7 +144,7 @@ namespace ContinuousCollisionLibrary
 	using sector_overlap_list = ArrayUtilities::wide_node_linked_list<grid_dimensions::sector_tile_count, uint16, max_overlap_pairs_per_sector, wide_node_linked_list_width, math_2d_util::byte_vector_2d>;
 
 #pragma endregion
-
+ 
 	struct overlap_tracking_grid
 	{
 
@@ -153,51 +153,52 @@ namespace ContinuousCollisionLibrary
 		
 		//setup the initial data structures
 		void initialize();
-
+		
 		//make bounds at index larget
 		void update_bounds();
-
+		
 		//calculates the bitflag for a tile relative to another tile
 		overlap_flags calculate_flag_for_tile(const math_2d_util::uivec2d & tile_to_create_flag_for, const math_2d_util::uivec2d & target_tile) const;
-
+		
 		//calcualte bit flag for an offset from a tile
 		overlap_flags calculate_flag_for_offset(const math_2d_util::uivec2d& offset) const;
 		
 		//convert from a flag to an offset starting at the top left corner of the offset window
 		math_2d_util::uivec2d calcualte_offset_for_flag_index(uint32 flag_index) const;
-
+		
 		//add flag to all tiles in rect
 		void add_flag_to_tiles(
 			math_2d_util::uivec2d& source_tile_cord, 
 			const math_2d_util::uirect& add_to_area, 
 			const math_2d_util::uirect& old_bounds, 
 			const math_2d_util::uirect& new_bounds);
-
+		
 		//remove flag from all tiles in rect 
 		void remove_flag_from_tiles(
 			math_2d_util::uivec2d& source_tile_cord, 
 			const math_2d_util::uirect& remove_area, 
 			const math_2d_util::uirect& old_bounds, 
 			const math_2d_util::uirect& new_bounds);
-
+		
 		//check if point is inside grid
 		bool is_point_in_grid(const math_2d_util::uivec2d& point);
-
+		
 		bool is_rect_in_grid(const math_2d_util::uirect& rect);
 
 		ContinuousCollisionLibrary::uint32 get_affinity_for_offset(const math_2d_util::uivec2d& offset) const;
 
 		//helper for calculating sector grid indexes
 		SectorGrid::sector_grid_helper<grid_dimensions> grid_helper;
-
+		
 		//structure holding the overlap flags for all tiles
 		SectorGrid::template_sector_grid<overlap_flags, grid_dimensions> overlaps;
-
+		
 		//structure holding the bounds of a tile 
-		SectorGrid::template_sector_grid<tile_local_bounds, grid_dimensions> bounds;
-
+		//SectorGrid::template_sector_grid<tile_local_bounds, grid_dimensions> bounds;
+		
 		//structure holding a list of all the intersecting tiles per sector
 		std::array<sector_overlap_list, grid_dimensions::sector_grid_count> overlap_pairs;
 	};
-}
+
+};
 

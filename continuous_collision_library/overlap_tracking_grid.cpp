@@ -1,11 +1,25 @@
-#include <algorithm>
-#include "vector_types.h"
-#include "byte_vector_2d.h"
+//#include <algorithm>
+//#include "vector_2d_math_utils/vector_types.h"
+//#include "vector_2d_math_utils/byte_vector_2d.h"
 #include "pch.h"
 #include "overlap_tracking_grid.h"
 
+ContinuousCollisionLibrary::overlap_tracking_grid::overlap_tracking_grid()
+{
+	//call the setup code
+	//initialize();
+}
 
+void ContinuousCollisionLibrary::overlap_tracking_grid::initialize()
+{
+	//set all the overlap flags to 0
+	overlaps = {};
 
+	// set the bounds of all tiles to be inside out / impossible to collide with 
+	
+	// initialize the per sector overlap trackers 
+
+}
 
 ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tracking_grid::calculate_flag_for_tile(
 	const math_2d_util::uivec2d & tile_to_create_flag_for, 
@@ -53,6 +67,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 	const math_2d_util::uirect& old_bounds, 
 	const math_2d_util::uirect& new_bounds)
 {
+	
 	//sanity check to make sure boudns falls within grid 
 	assert(is_rect_in_grid(add_to_area), "rect exits map bounds");
 
@@ -97,6 +112,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 				overlap_indexes[num_of_overlaps++] = overlap_flag_index;
 			}
 
+			/*
 			//loop over all items in the index
 			std::for_each(overlap_indexes.begin(), overlap_indexes.begin() + num_of_overlaps, [&](uint32 flag_index)
 				{
@@ -136,7 +152,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 						
 					}
 				});
-
+			*/
 			//calculate the offset for the flag 
 			auto flag = ContinuousCollisionLibrary::overlap_flags();
 
@@ -154,6 +170,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 
 	auto source_sub_tile = source_world_tile.components.sector_sub_tile_index;
 
+	/*
 	auto& source_overlap_sector = overlap_pairs[source_sector];
 
 	//the offset to get to the top left corner of the source tile pair window
@@ -193,6 +210,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 		target_sector_overlap_list.add(target_overlap_sub_tile, dif_target_byte_vec);
 		source_overlap_sector.add(target_overlap_sub_tile, dif_source_byte_vec);
 	}
+	*/
 }
 
 void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(math_2d_util::uivec2d& source_tile_cord, const math_2d_util::uirect& remove_area, const math_2d_util::uirect& old_bounds, const math_2d_util::uirect& new_bounds)

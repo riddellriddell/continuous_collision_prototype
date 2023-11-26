@@ -20,21 +20,21 @@ namespace math_2d_util
 		T y;
 
 
-		constexpr template_vector_2d():x(0), y(0) {};
+		constexpr template_vector_2d<T>():x(0), y(0) {};
 		constexpr template_vector_2d<T>(T _x, T _y) :x(_x), y(_y) {};
 
 		//return the largest possible vector 
-		constexpr  template_vector_2d<T> max()
+		static constexpr  template_vector_2d<T> max()
 		{
 			return template_vector_2d<T>(max_extent, max_extent);
 		}
 
-		constexpr  template_vector_2d<T> min()
+		static constexpr  template_vector_2d<T> min()
 		{
 			return template_vector_2d<T>(min_extent, min_extent);
 		}
 
-		constexpr  template_vector_2d<T> center()
+		static constexpr  template_vector_2d<T> center()
 		{
 			return template_vector_2d<T>(center_extent, center_extent);
 		}
