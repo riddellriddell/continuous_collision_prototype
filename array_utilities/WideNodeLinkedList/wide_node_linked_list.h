@@ -95,7 +95,7 @@ namespace ArrayUtilities
 		//all the nodes 
 		std::array<wide_node<node_width, TLinkType, TDataType>, node_count > nodes;
 	
-		//construcotr
+		//constructor
 		constexpr wide_node_linked_list();
 
 		//reset the state to of the linked list

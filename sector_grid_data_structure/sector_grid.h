@@ -50,12 +50,11 @@ namespace SectorGrid
 	struct  template_sector_grid
 	{
 	public:
+
 		union tile_sector_data_union
 		{
-			int test0;
-			TDataType text1;
-			//std::array<TDataType, TSectorGridDimensions::tile_count> tile_data;
-			//std::array<sector<TDataType, TSectorGridDimensions>, TSectorGridDimensions::sector_grid_count> sector_data;
+			std::array<TDataType, TSectorGridDimensions::tile_count> tile_data;
+			std::array<sector<TDataType, TSectorGridDimensions>, TSectorGridDimensions::sector_grid_count> sector_data;
 
 		}data;
 
@@ -67,13 +66,23 @@ namespace SectorGrid
 
 		constexpr template_sector_grid() = default;
 
+		//max capacity of all the tiles in this lookup
+		constexpr decltype(TSectorGridDimensions::tile_count) size()
+		{
+			return TSectorGridDimensions::tile_count;
+		}
+
+		//clears all the data to 0 
+		constexpr void clear_data()
+		{
+			std::fill_n(data.tile_data.data(), size(), 0);
+		}
 	};
 
 	template<typename TDataType, sector_grid_dimension_concept TSectorGridDimensions>
 	inline TDataType& template_sector_grid<TDataType, TSectorGridDimensions>::get_ref_to_data(const sector_tile_index<TSectorGridDimensions>& index)
 	{
-		auto trash = TDataType();
-		return trash;//data.tile_data[index.index];
+		return data.tile_data[index.index];
 	}
 
 	template<sector_grid_dimension_concept TSectorGridDimensions>

@@ -3,21 +3,27 @@
 //#include "vector_2d_math_utils/byte_vector_2d.h"
 #include "pch.h"
 #include "overlap_tracking_grid.h"
+#include <algorithm>
 
 ContinuousCollisionLibrary::overlap_tracking_grid::overlap_tracking_grid()
 {
 	//call the setup code
-	//initialize();
+	initialize();
 }
 
 void ContinuousCollisionLibrary::overlap_tracking_grid::initialize()
 {
 	//set all the overlap flags to 0
-	overlaps = {};
+	overlaps.clear_data();
 
 	// set the bounds of all tiles to be inside out / impossible to collide with 
-	
+	std::transform(bounds.data.tile_data.begin(), bounds.data.tile_data.end(), bounds.data.tile_data.begin(), [](const auto x)
+		{
+			return tile_local_bounds::inverse_max_size_rect(); 
+		});
+
 	// initialize the per sector overlap trackers 
+	std::for_each(overlap_pairs.begin(), overlap_pairs.end(), [](auto sector_overlap_pairs) {sector_overlap_pairs.reset();});
 
 }
 
@@ -26,40 +32,14 @@ ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tr
 	const math_2d_util::uivec2d & target_tile) const
 {
 	//get top left corner for overlap range
-	math_2d_util::uivec2d top_left_corner = { target_tile.x - tile_overlap_max_width, target_tile.y - tile_overlap_max_width };
+	math_2d_util::uivec2d top_left_corner = target_tile - ContinuousCollisionLibrary::overlap_flags::center();
 
 	//offset from top left corner
 	math_2d_util::uivec2d offset = tile_to_create_flag_for - top_left_corner;
 
 	//convert from uint to int vectors
-	return calculate_flag_for_offset(offset);
+	return ContinuousCollisionLibrary::overlap_flags(offset);
 }
-
-ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tracking_grid::calculate_flag_for_offset(const math_2d_util::uivec2d& offset) const
-{
-	//all offsets are from the top left corner of the target tile and are all in positive directions
-
-	//sanity check that the offsets are not larger than the largest possible flag width
-	assert(offset.x < tile_overlap_half_rep_max && offset.y < tile_overlap_half_rep_max, "Offset larget than allowed values");
-
-	uint32 flag_offset = offset.x + tile_overlap_half_rep_max * offset.y;
-
-	assert(flag_offset < 64, "the uint 64 represeing all the tiles overlapping this tile can only store 64 values staring at offset 0");
-
-	uint64 flag = 1ul << flag_offset;
-
-	return ContinuousCollisionLibrary::overlap_flags{ flag };
-}
-
-math_2d_util::uivec2d ContinuousCollisionLibrary::overlap_tracking_grid::calcualte_offset_for_flag_index(uint32 flag_index) const
-{
-	//extract the offset 
-	uint32 y_offset = flag_index / tile_overlap_half_rep_max;
-	uint32 x_offset = flag_index - (y_offset * tile_overlap_half_rep_max);
-
-	return math_2d_util::uivec2d{ x_offset , y_offset };
-}
-
 
 void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 	math_2d_util::uivec2d& source_tile_cord, 
@@ -80,11 +60,21 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 	std::array<SectorGrid::sector_tile_index<grid_dimensions>, max_overlap_pairs> new_overlaps;
 	uint32 num_of_new_overlaps = 0;
 
+
+	//alocate an array for all the possible overlaps 
+	//I am doing this calclulation in passes in the hopes that by doing it this way the 
+	//cpu / compiler will be better at parelelizing it 
+	std::array<uint32, overlap_flags::max_overlaps> overlap_indexes;
+	uint32 num_of_overlaps = 0;
+
 	//loop through all the tiles 
 	for (uint32 iy = add_to_area.min.y; iy < add_to_area.max.y; ++iy)
 	{
 		for (uint32 ix = add_to_area.min.x; ix < add_to_area.max.x; ++ix)
 		{
+			//reset the number of overlaps found at this tile
+			num_of_overlaps = 0;
+
 			math_2d_util::uivec2d target_xy{ ix,iy };
 
 			//convert from xy to lookup
@@ -97,13 +87,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 			//this calculates a point 4 tiles up/left from the target tile
 			//the target tile has a uint64 offset flags where each bit represents a value that can represent 64 points in a 8 by 8 tile window
 			//the center tile is considered at 4,4 biased to the bottom right
-			math_2d_util::uivec2d overlap_corner = target_xy - offset_for_0_to_7_vec;
+			math_2d_util::uivec2d overlap_corner = target_xy - overlap_flags::center();
 
-			//alocate an array for all the possible overlaps 
-			//I am doing this calclulation in passes in the hopes that by doing it this way the 
-			//cpu / compiler will be better at parelelizing it 
-			std::array<uint32, overlap_flags::max_overlaps> overlap_indexes;
-			uint32 num_of_overlaps = 0;
 
 			//loop through all tight tile bounds that overlap the target tile
 			//and pull out the overlap indexes 
@@ -112,19 +97,22 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 				overlap_indexes[num_of_overlaps++] = overlap_flag_index;
 			}
 
-			/*
+			
 			//loop over all items in the index
 			std::for_each(overlap_indexes.begin(), overlap_indexes.begin() + num_of_overlaps, [&](uint32 flag_index)
 				{
 					//calculate the offset for the flag 
 					//this value is 0-7 in both x and y axis
-					math_2d_util::uivec2d offset = calcualte_offset_for_flag_index(flag_index);
+					math_2d_util::uivec2d offset = overlap_flags::calcualte_offset_for_flag_index(flag_index);
 
 					//calculate the coordinate of this overlap flag
 					math_2d_util::uivec2d overlap_tile_coordinate = offset + overlap_corner;
 
+					//offset per axis
+					constexpr uint32 offset_per_axis = tile_local_bounds::vector_type::center_extent;
+
 					//calculate the top left corner of the overlap region for that tile
-					math_2d_util::uivec2d overlap_tile_overlap_region_top_left = overlap_tile_coordinate - tile_overlap_offset;
+					math_2d_util::uivec2d overlap_tile_overlap_region_top_left = overlap_tile_coordinate - math_2d_util::uivec2d{ offset_per_axis,offset_per_axis };
 
 					//convert from coordinate to sector grid index 
 					auto overlap_index = grid_helper.from_xy(overlap_tile_coordinate);
@@ -145,21 +133,24 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 					bool is_first_overlap_tile = target_xy == min_overlap_address;
 					
 					//if this is the first time these two tiles have overlapped
-					if (is_first_overlap_tile && !was_overlapping)
 					{
 						//add it to list of all overlap pairs for this tile
-						new_overlaps[num_of_new_overlaps++] = overlap_index;
+						new_overlaps[num_of_new_overlaps] = overlap_index;
 						
+						num_of_new_overlaps += is_first_overlap_tile && !was_overlapping;
 					}
 				});
-			*/
-			//calculate the offset for the flag 
-			auto flag = ContinuousCollisionLibrary::overlap_flags();
+			
+			//flag for source tile 
+			{
+				//get the offset 
+				math_2d_util::uivec2d offset_in_target_window = source_tile_cord - overlap_corner;
 
-			flag = calculate_flag_for_offset(target_xy);
+				auto flag = overlap_flags(offset_in_target_window);
 
-			//add overlap flag for tile
-			overlaps_in_tile |= flag;
+				//add overlap flag for tile
+				overlaps_in_tile |= flag;
+			}
 		}
 	}
 
@@ -170,7 +161,6 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 
 	auto source_sub_tile = source_world_tile.components.sector_sub_tile_index;
 
-	/*
 	auto& source_overlap_sector = overlap_pairs[source_sector];
 
 	//the offset to get to the top left corner of the source tile pair window
@@ -208,9 +198,9 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 
 		//add this tile to the target tile 
 		target_sector_overlap_list.add(target_overlap_sub_tile, dif_target_byte_vec);
-		source_overlap_sector.add(target_overlap_sub_tile, dif_source_byte_vec);
+		source_overlap_sector.add(source_sub_tile, dif_source_byte_vec);
 	}
-	*/
+
 }
 
 void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(math_2d_util::uivec2d& source_tile_cord, const math_2d_util::uirect& remove_area, const math_2d_util::uirect& old_bounds, const math_2d_util::uirect& new_bounds)

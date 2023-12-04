@@ -23,7 +23,7 @@ namespace math_2d_util
 		
 		uint8_t offset;
 		
-		constexpr byte_vector_2d():offset(0){};
+		constexpr byte_vector_2d() = default;
 		
 		constexpr byte_vector_2d(auto value):offset(value) {};
 
@@ -37,6 +37,7 @@ namespace math_2d_util
 		
 		};
 		
+		//apply the byte vec as an offset to a target vec 
 		void apply_offset(const auto& target) const;
 		
 		static byte_vector_2d from_vector(const auto& target);
@@ -55,6 +56,9 @@ namespace math_2d_util
 		
 		template<typename T>
 		inline static constexpr T center_as();
+
+		template<typename T>
+		operator T() const;
 
 		constexpr bool operator == (const byte_vector_2d&& other) const;
 			
@@ -113,6 +117,14 @@ namespace math_2d_util
 	inline constexpr T math_2d_util::byte_vector_2d::center_as()
 	{
 		return  T(center_extent, center_extent);
+	}
+
+	template<typename T>
+	inline byte_vector_2d::operator T() const
+	{	
+		auto x = offset & lower_bit_mask;
+		auto y = offset >> lower_bit_count;
+		return T(x, y);	
 	}
 
 };

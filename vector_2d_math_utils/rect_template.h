@@ -9,7 +9,9 @@ namespace math_2d_util
 	template<typename T>
 	struct template_rect_2d
 	{
-		//default constructor 
+		//the underlying type for the min and max values 
+		using number_type = T;
+		using vector_type = template_vector_2d<T>;
 
 		//xy coordinates for min and max bounds
 		template_vector_2d<T> min;
@@ -26,11 +28,23 @@ namespace math_2d_util
 		{
 			return{ template_vector_2d<T>::max(), template_vector_2d<T>::min() };
 		}
+
+		constexpr template_rect_2d() = default;
+		constexpr template_rect_2d(T min_x, T min_y, T max_x, T max_y):min(min_x, min_y), max(max_x, max_y) {};
+		constexpr template_rect_2d(const template_vector_2d<T> &_min, const template_vector_2d<T> &_max) :min(_min), max(_max) {};
+
+		//returns a rect where both the min and max are at the center tile
+		//this rect is considered zero sized as min is inclusive and max is exclusive 
+		static constexpr template_rect_2d center_rect()
+		{
+			return template_rect_2d<T>(vector_type::center(), vector_type::center());
+		}
 	};
 
 	struct rect_2d_math
 	{
 		//check if the two rects overlap
+		//this is a "half open interval" where min is inclusive but max is exclusive and the values from min to max -epsilon / 1 are considered inside the rect 
 		template<typename T>
 		static bool is_overlapping(const template_rect_2d<T>& rect_a, const template_rect_2d<T>& rect_b);
 

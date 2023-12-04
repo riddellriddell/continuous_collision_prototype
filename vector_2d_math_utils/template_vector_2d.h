@@ -12,15 +12,15 @@ namespace math_2d_util
 	struct template_vector_2d
 	{
 
-		static constexpr T max_extent = std::numeric_limits<T>::max(); //smalles value on an axis
-		static constexpr T min_extent = std::numeric_limits<T>::lowest(); //larges value on an axis
+		static constexpr T max_extent = std::numeric_limits<T>::max(); //larges value on an axis
+		static constexpr T min_extent = std::numeric_limits<T>::lowest();  //smalles value on an axis
 		static constexpr T center_extent = (min_extent == 0) ? (max_extent / 2) : 0; //center point on an axis 
 
 		T x;
 		T y;
 
 
-		constexpr template_vector_2d<T>():x(0), y(0) {};
+		constexpr template_vector_2d<T>() = default;
 		constexpr template_vector_2d<T>(T _x, T _y) :x(_x), y(_y) {};
 
 		//return the largest possible vector 

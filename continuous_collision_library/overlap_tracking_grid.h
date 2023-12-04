@@ -24,10 +24,29 @@ namespace ContinuousCollisionLibrary
 	template<typename TFlagDataType, int IoverlapRegionWidth>
 	struct overlap_flag_template
 	{
+
+		static constexpr uint32 width = IoverlapRegionWidth; //number of possible values on an axis
+		static constexpr uint32 axis_max = width -1; //max value that can be stored per axis (1 less than width due to 0)
+		static constexpr uint32 axis_center = axis_max / 2; //center point for an axis 
+
 		//what is the maximum number of overlaps for this tile including itself 
 		static constexpr uint32 max_overlaps = IoverlapRegionWidth * IoverlapRegionWidth;
 
+		static constexpr math_2d_util::uivec2d max() { return math_2d_util::uivec2d{ axis_max ,axis_max }; };
+		static constexpr math_2d_util::uivec2d center() { return math_2d_util::uivec2d{ axis_center,axis_center }; };
+
 		TFlagDataType overlap_flag;
+
+		//convert from a flag to an offset starting at the top left corner of the offset window
+		static constexpr math_2d_util::uivec2d calcualte_offset_for_flag_index(uint32 flag_index)
+		{
+			//extract the offset 
+			uint32 y_offset = flag_index / width;
+			uint32 x_offset = flag_index - (y_offset * width);
+
+			return math_2d_util::uivec2d{ x_offset , y_offset };
+		}
+
 
 		//helpter to itterate over all set bits in overlap flags
 		struct iterator
@@ -48,7 +67,7 @@ namespace ContinuousCollisionLibrary
 				current_flag_index = std::countr_zero(overlap_flag_copy);
 				
 				//clear the bit so it does not get returned next time
-				overlap_flag_copy ^= (1 << current_flag_index);
+				overlap_flag_copy ^= (uint64(1) << static_cast<uint64>(current_flag_index));
 			}
 
 			// Define the iterator pre-increment operator.
@@ -92,14 +111,35 @@ namespace ContinuousCollisionLibrary
 			return overlap_flag_template<TFlagDataType, IoverlapRegionWidth>{ overlap_flag | other.overlap_flag};
 		}
 
+
 		overlap_flag_template<TFlagDataType, IoverlapRegionWidth>& operator|=(const overlap_flag_template<TFlagDataType, IoverlapRegionWidth>& other) {
 			overlap_flag |= other.overlap_flag;
 			return *this;
 		}
 
+		//check if has same flag bits set 
+		bool has_flags(overlap_flag_template<TFlagDataType, IoverlapRegionWidth> &flags_to_check_for)
+		{
+			return overlap_flag& flags_to_check_for.overlap_flag;
+		}
+
 		constexpr overlap_flag_template() = default;
 
-		overlap_flag_template(TFlagDataType flag):overlap_flag(flag){};
+		constexpr overlap_flag_template(TFlagDataType flag):overlap_flag(flag){};
+
+		constexpr overlap_flag_template(math_2d_util::uivec2d& offset_to_encode)
+		{
+			//sanity check that the offsets are not larger than the largest possible flag width
+			assert(offset_to_encode.x < width&& offset_to_encode.y < width, "Offset larget than allowed values");
+
+			uint64 flag_offset = offset_to_encode.x + (width * offset_to_encode.y);
+
+			assert(flag_offset < max_overlaps, "the uint 64 represeing all the tiles overlapping this tile can only store max_overlaps values staring at offset 0");
+
+			auto flag = 1ull << flag_offset;
+
+			overlap_flag = flag;
+		}  
 	};
 
 #pragma endregion
@@ -110,7 +150,7 @@ namespace ContinuousCollisionLibrary
 
 	using grid_dimensions = SectorGrid::sector_grid_dimensions<16, 16>;
 	
-	typedef overlap_flag_template<uint64, 7> overlap_flags;
+	using overlap_flags = overlap_flag_template<uint64, 7>;
 
 	static constexpr uint32 tile_overlap_max_width = 7;
 
@@ -159,13 +199,7 @@ namespace ContinuousCollisionLibrary
 		
 		//calculates the bitflag for a tile relative to another tile
 		overlap_flags calculate_flag_for_tile(const math_2d_util::uivec2d & tile_to_create_flag_for, const math_2d_util::uivec2d & target_tile) const;
-		
-		//calcualte bit flag for an offset from a tile
-		overlap_flags calculate_flag_for_offset(const math_2d_util::uivec2d& offset) const;
-		
-		//convert from a flag to an offset starting at the top left corner of the offset window
-		math_2d_util::uivec2d calcualte_offset_for_flag_index(uint32 flag_index) const;
-		
+
 		//add flag to all tiles in rect
 		void add_flag_to_tiles(
 			math_2d_util::uivec2d& source_tile_cord, 
@@ -192,9 +226,9 @@ namespace ContinuousCollisionLibrary
 		
 		//structure holding the overlap flags for all tiles
 		SectorGrid::template_sector_grid<overlap_flags, grid_dimensions> overlaps;
-		
+
 		//structure holding the bounds of a tile 
-		//SectorGrid::template_sector_grid<tile_local_bounds, grid_dimensions> bounds;
+		SectorGrid::template_sector_grid<tile_local_bounds, grid_dimensions> bounds;
 		
 		//structure holding a list of all the intersecting tiles per sector
 		std::array<sector_overlap_list, grid_dimensions::sector_grid_count> overlap_pairs;
