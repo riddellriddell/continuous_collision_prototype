@@ -117,6 +117,20 @@ namespace ContinuousCollisionLibrary
 			return *this;
 		}
 
+
+		overlap_flag_template<TFlagDataType, IoverlapRegionWidth>& operator&=(const overlap_flag_template<TFlagDataType, IoverlapRegionWidth>& other) {
+			overlap_flag &= other.overlap_flag;
+			return *this;
+		}
+
+		overlap_flag_template<TFlagDataType, IoverlapRegionWidth>& operator~() const
+		{
+			overlap_flag_template<TFlagDataType, IoverlapRegionWidth> result;
+			result.overlap_flag = ~overlap_flag;
+			return result;
+		}
+
+
 		//check if has same flag bits set 
 		bool has_flags(overlap_flag_template<TFlagDataType, IoverlapRegionWidth> &flags_to_check_for)
 		{
@@ -218,6 +232,12 @@ namespace ContinuousCollisionLibrary
 		bool is_point_in_grid(const math_2d_util::uivec2d& point);
 		
 		bool is_rect_in_grid(const math_2d_util::uirect& rect);
+
+
+		//maximum estimated number of overlap pairs. at max an overlap only occurs at the max size of this tile plus the 
+		//max size of the other tile so 2 times max tile overlap squared 
+		static constexpr uint32 max_overlap_pairs = (tile_overlap_max_width + tile_overlap_max_width) * (tile_overlap_max_width + tile_overlap_max_width);
+
 
 		ContinuousCollisionLibrary::uint32 get_affinity_for_offset(const math_2d_util::uivec2d& offset) const;
 

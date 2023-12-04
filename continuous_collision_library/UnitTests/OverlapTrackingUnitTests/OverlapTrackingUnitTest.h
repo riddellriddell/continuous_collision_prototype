@@ -148,6 +148,46 @@ namespace ContinuousCollisionLibrary
 
 					});
 			}
+		
+			//remove flags for first bounds 
+			{
+				//the sector to remove flags for
+				math_2d_util::uivec2d target_tile(1, 1);
+
+				//the overlap region to remove flags 
+				math_2d_util::uirect area_to_remove_flags_from{ 0u, 0u, 3u, 3u };
+
+				math_2d_util::uirect new_bounds = math_2d_util::uirect::inverse_max_size_rect();
+
+				//add overlap flags to a region
+				overlap_grid->remove_flag_from_tiles(target_tile, area_to_remove_flags_from, area_to_remove_flags_from, new_bounds);
+
+				//update the bounds
+				overlap_grid->bounds.data.tile_data[overlap_grid->grid_helper.from_xy(target_tile).index] = ContinuousCollisionLibrary::tile_local_bounds::inverse_max_size_rect();
+
+				//check if flags were added
+				for (uint32 iy = area_to_remove_flags_from.min.y; iy < area_to_remove_flags_from.max.y; ++iy)
+				{
+					for (uint32 ix = area_to_remove_flags_from.min.x; ix < area_to_remove_flags_from.max.x; ++ix)
+					{
+						//get the tile to check
+						math_2d_util::uivec2d tile_to_check{ ix,iy };
+
+						//get the flag for that tile
+						auto flag_for_source_tile = overlap_grid->calculate_flag_for_tile(target_tile, tile_to_check);
+
+						//get the index of the flag data in the lookup array 
+						auto index = overlap_grid->grid_helper.from_xy(tile_to_check);
+
+						//check if that flag is set in the tracking grid 
+						auto& flag_data = overlap_grid->overlaps.get_ref_to_data(index);
+
+						//check if flag is set 
+						assert(!flag_data.has_flags(flag_for_source_tile));
+					}
+				}
+
+			}
 		}
 	};
 }
