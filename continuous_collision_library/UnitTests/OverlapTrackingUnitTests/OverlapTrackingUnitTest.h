@@ -21,6 +21,62 @@ namespace ContinuousCollisionLibrary
 			//create an overlap tracking grid 
 			auto overlap_grid = new ContinuousCollisionLibrary::overlap_tracking_grid();
 			
+			//test grid helper 
+			{
+				math_2d_util::uivec2d target_tile(0, 0);
+
+				auto sector_index = overlap_grid->grid_helper.from_xy(target_tile);
+
+				auto decoded_tile = overlap_grid->grid_helper.to_xy(sector_index);
+
+				assert(decoded_tile == target_tile);
+			}
+
+			//test grid helper 
+			{
+				math_2d_util::uivec2d target_tile(1, 0);
+
+				auto sector_index = overlap_grid->grid_helper.from_xy(target_tile);
+
+				auto decoded_tile = overlap_grid->grid_helper.to_xy(sector_index);
+
+				assert(decoded_tile == target_tile);
+			}
+
+			//test grid helper 
+			{
+				math_2d_util::uivec2d target_tile(15, 0);
+
+				auto sector_index = overlap_grid->grid_helper.from_xy(target_tile);
+
+				auto decoded_tile = overlap_grid->grid_helper.to_xy(sector_index);
+
+				assert(decoded_tile == target_tile);
+			}
+
+			//test grid helper 
+			{
+				math_2d_util::uivec2d target_tile(16, 0);
+
+				auto sector_index = overlap_grid->grid_helper.from_xy(target_tile);
+
+				auto decoded_tile = overlap_grid->grid_helper.to_xy(sector_index);
+
+				assert(decoded_tile == target_tile);
+			}
+
+			//test grid helper 
+			{
+				math_2d_util::uivec2d target_tile(0, 1);
+
+				auto sector_index = overlap_grid->grid_helper.from_xy(target_tile);
+
+				auto decoded_tile = overlap_grid->grid_helper.to_xy(sector_index);
+
+				assert(decoded_tile == target_tile);
+			}
+
+
 			{
 				//the sector to add flags for
 				math_2d_util::uivec2d target_tile(1, 1);

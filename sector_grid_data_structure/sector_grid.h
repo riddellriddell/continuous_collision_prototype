@@ -17,8 +17,20 @@ namespace SectorGrid
 		using combined_index = sector_tile_index<TSectorGridDimensions>::combined_index;
 
 		static constexpr combined_index sub_tile_bits_per_axis = std::bit_width(TSectorGridDimensions::sector_w - 1);
+		static constexpr combined_index sector_bits_per_axis = std::bit_width(TSectorGridDimensions::sectors_grid_w - 1);
 
-		static constexpr combined_index x_sub_sector_mask = ~(~0 << sub_tile_bits_per_axis);
+		//values for converting from xy
+		static constexpr combined_index axis_sub_sector_mask = ~(~0 << sub_tile_bits_per_axis);
+		static constexpr combined_index axis_sector_mask = ~axis_sub_sector_mask;
+		static constexpr combined_index x_axis_sub_sector_shift = 0;
+		static constexpr combined_index y_axis_sub_sector_shift = sub_tile_bits_per_axis;
+		static constexpr combined_index x_axis_sector_shift = sub_tile_bits_per_axis;
+		static constexpr combined_index y_axis_sector_shift = sub_tile_bits_per_axis + sector_bits_per_axis;
+
+
+		//values for converting from index
+		static constexpr combined_index x_sub_sector_mask = axis_sub_sector_mask;
+
 		static constexpr combined_index y_sub_sector_shift = sub_tile_bits_per_axis;
 		static constexpr combined_index y_sub_sector_mask = x_sub_sector_mask << sub_tile_bits_per_axis;
 
@@ -26,12 +38,10 @@ namespace SectorGrid
 		static_assert((x_sub_sector_mask& y_sub_sector_mask) == 0);
 
 
-		static constexpr combined_index sector_bits_per_axis = std::bit_width(TSectorGridDimensions::sectors_grid_w - 1);
-
 		static constexpr combined_index x_sector_shift = sub_tile_bits_per_axis;
-		static constexpr combined_index y_sector_shift = x_sector_shift + sector_bits_per_axis;
+		static constexpr combined_index y_sector_shift = sub_tile_bits_per_axis + sector_bits_per_axis;
 
-		static constexpr combined_index x_sector_mask = (~(~0 << sector_bits_per_axis)) << (x_sector_shift);
+		static constexpr combined_index x_sector_mask = (~(~0 << sector_bits_per_axis)) << (sub_tile_bits_per_axis * 2);
 		static constexpr combined_index y_sector_mask = x_sector_mask << sector_bits_per_axis;
 
 		//helper function to convert index to xy co ordinate 
@@ -100,7 +110,7 @@ namespace SectorGrid
 		uint32 y_sector_bits = (tile_index.index & y_sector_mask);
 		uint32 y_tile_bits = (tile_index.index & y_sub_sector_mask);
 
-		uint32 y_out = (y_sector_bits >> x_sector_shift) | (y_tile_bits >> y_sub_sector_shift);
+		uint32 y_out = (y_sector_bits >> y_sector_shift) | (y_tile_bits >> y_sub_sector_shift);
 
 		return math_2d_util::uivec2d{x_out,y_out};
 	}
@@ -111,18 +121,17 @@ namespace SectorGrid
 
 		using combined_index = sector_tile_index<TSectorGridDimensions>::combined_index;
 
+		const combined_index x_sub_tile_component = xy.x & axis_sub_sector_mask;
+		const combined_index y_sub_tile_component = xy.y & axis_sub_sector_mask;
 
-		const combined_index x_sub_tile_component = xy.x & x_sub_sector_mask;
-		const combined_index y_sub_tile_component = xy.y & x_sub_sector_mask;
-
-		const combined_index x_sector_component = xy.x & (~x_sub_sector_mask);
-		const combined_index y_sector_component = xy.y & (~x_sub_sector_mask);
+		const combined_index x_sector_component = xy.x & (axis_sector_mask);
+		const combined_index y_sector_component = xy.y & (axis_sector_mask);
 
 		const combined_index out_index_val =
 			x_sub_tile_component |
-			(y_sub_tile_component << y_sub_sector_shift) |
-			(x_sector_component << x_sector_shift) |
-			(y_sector_component << y_sector_shift);
+			(y_sub_tile_component << y_axis_sub_sector_shift) |
+			(x_sector_component << x_axis_sector_shift) |
+			(y_sector_component << y_axis_sector_shift);
 
 		assert(out_index_val < TSectorGridDimensions::tile_count, "address falls outside grid");
 
