@@ -93,14 +93,14 @@ namespace SectorGrid
 
 
 		//mask and shirf the sector x
-		auto x_sector_bits = (tile_index.index & x_sector_mask);
-		auto x_tile_bits = (tile_index.index & x_sub_sector_mask);
-		auto x_out = (x_sector_bits >> x_sector_shift) | x_tile_bits;
+		uint32 x_sector_bits = (tile_index.index & x_sector_mask);
+		uint32 x_tile_bits = (tile_index.index & x_sub_sector_mask);
+		uint32 x_out = (x_sector_bits >> x_sector_shift) | x_tile_bits;
 
-		auto y_sector_bits = (tile_index.index & y_sector_mask);
-		auto y_tile_bits = (tile_index.index & y_sub_sector_mask);
+		uint32 y_sector_bits = (tile_index.index & y_sector_mask);
+		uint32 y_tile_bits = (tile_index.index & y_sub_sector_mask);
 
-		auto y_out = (y_sector_bits >> x_sector_shift) | (y_tile_bits >> y_sub_sector_shift);
+		uint32 y_out = (y_sector_bits >> x_sector_shift) | (y_tile_bits >> y_sub_sector_shift);
 
 		return math_2d_util::uivec2d{x_out,y_out};
 	}
