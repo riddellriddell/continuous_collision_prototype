@@ -74,6 +74,8 @@ namespace SectorGrid
 		//get a ref to the data at a sector tile index
 		TDataType& get_ref_to_data(const sector_tile_index<TSectorGridDimensions>& index);
 
+		void set_data(const sector_tile_index<TSectorGridDimensions>& index, const TDataType& data_to_set);
+
 		constexpr template_sector_grid() = default;
 
 		//max capacity of all the tiles in this lookup
@@ -94,6 +96,13 @@ namespace SectorGrid
 	{
 		return data.tile_data[index.index];
 	}
+
+	template<typename TDataType, sector_grid_dimension_concept TSectorGridDimensions>
+	inline void template_sector_grid<TDataType, TSectorGridDimensions>::set_data(const sector_tile_index<TSectorGridDimensions>& index, const TDataType& data_to_set)
+	{
+		data.tile_data[index.index] = data_to_set;
+	}
+
 
 	template<sector_grid_dimension_concept TSectorGridDimensions>
 	inline math_2d_util::uivec2d sector_grid_helper<TSectorGridDimensions>::to_xy(const sector_tile_index<TSectorGridDimensions>& tile_index) const

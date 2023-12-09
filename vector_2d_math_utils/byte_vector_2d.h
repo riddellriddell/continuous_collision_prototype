@@ -58,7 +58,7 @@ namespace math_2d_util
 		inline static constexpr T center_as();
 
 		template<typename T>
-		operator T() const;
+		explicit operator T() const;
 
 		constexpr bool operator == (const byte_vector_2d&& other) const;
 			
@@ -124,7 +124,7 @@ namespace math_2d_util
 	{	
 		auto x = offset & lower_bit_mask;
 		auto y = offset >> lower_bit_count;
-		return T(x, y);	
+		return T( x, y );
 	}
 
 };

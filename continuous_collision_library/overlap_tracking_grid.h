@@ -163,6 +163,8 @@ namespace ContinuousCollisionLibrary
 	using tile_local_bounds = math_2d_util::ubrect;
 
 	using grid_dimensions = SectorGrid::sector_grid_dimensions<16, 16>;
+
+	using overlap_grid_index = SectorGrid::sector_tile_index<grid_dimensions>;
 	
 	using overlap_flags = overlap_flag_template<uint64, 7>;
 
@@ -209,24 +211,43 @@ namespace ContinuousCollisionLibrary
 		void initialize();
 		
 		//make bounds at index larget
-		void update_bounds();
+		void update_bounds(const math_2d_util::uivec2d& tile_coordinate_to_update, overlap_grid_index tile_sector_packed_index_to_update, const math_2d_util::uirect& new_world_bounds_for_tile_items);
 		
 		//calculates the bitflag for a tile relative to another tile
 		overlap_flags calculate_flag_for_tile(const math_2d_util::uivec2d & tile_to_create_flag_for, const math_2d_util::uivec2d & target_tile) const;
 
 		//add flag to all tiles in rect
 		void add_flag_to_tiles(
-			math_2d_util::uivec2d& source_tile_cord, 
+			const math_2d_util::uivec2d& source_tile_cord,
+			overlap_grid_index source_world_tile,
+			const math_2d_util::uirect& add_to_area,
+			const math_2d_util::uirect& old_bounds,
+			const math_2d_util::uirect& new_bounds);
+
+		//helper function that converts source tile cord to a grid index and calls the above function
+		//use the other function if you have the sector grid tile index available
+		void add_flag_to_tiles(
+			const math_2d_util::uivec2d& source_tile_cord, 
 			const math_2d_util::uirect& add_to_area, 
 			const math_2d_util::uirect& old_bounds, 
 			const math_2d_util::uirect& new_bounds);
 		
 		//remove flag from all tiles in rect 
 		void remove_flag_from_tiles(
-			math_2d_util::uivec2d& source_tile_cord, 
+			const math_2d_util::uivec2d& source_tile_cord,
+			overlap_grid_index source_world_tile,
+			const math_2d_util::uirect& remove_area,
+			const math_2d_util::uirect& old_bounds,
+			const math_2d_util::uirect& new_bounds);
+
+		//helper function that converts source tile cord to a grid index and calls the above function
+		void remove_flag_from_tiles(
+			const math_2d_util::uivec2d& source_tile_cord, 
 			const math_2d_util::uirect& remove_area, 
 			const math_2d_util::uirect& old_bounds, 
 			const math_2d_util::uirect& new_bounds);
+
+
 		
 		//check if point is inside grid
 		bool is_point_in_grid(const math_2d_util::uivec2d& point);

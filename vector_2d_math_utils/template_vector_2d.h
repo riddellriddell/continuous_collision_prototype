@@ -21,6 +21,7 @@ namespace math_2d_util
 
 
 		constexpr template_vector_2d<T>() = default;
+		constexpr template_vector_2d<T>(T _val) :x(_val), y(_val) {};
 		constexpr template_vector_2d<T>(T _x, T _y) :x(_x), y(_y) {};
 
 		//return the largest possible vector 
@@ -64,6 +65,17 @@ namespace math_2d_util
 			return *this; // Return a reference to this vector after the subtraction
 		}
 
+		template<typename TTarget_type>
+		TTarget_type convert_to() const
+		{
+			TTarget_type output = {};
+
+			output.x = static_cast<decltype(output.x)>(x);
+			output.y = static_cast<decltype(output.y)>(y);
+
+			return output;
+		};
+
 
 		// Overload the is equal == opperator to return true if both vectors hold the same values 
 		bool operator ==(const template_vector_2d<T>& other) 
@@ -71,9 +83,10 @@ namespace math_2d_util
 			return (x == other.x) && (y == other.y); // Return a reference to this vector after the subtraction
 		}
 
-		//conversion overlaods 
-		 template<typename TConvertTo>
-		 operator TConvertTo() const;
+
+		////conversion overlaods 
+		template<typename TConvertTo>
+		explicit operator TConvertTo() const;
 	};
 	
 	template<typename T>
@@ -81,9 +94,9 @@ namespace math_2d_util
 	template_vector_2d<T>::operator TConvertTo() const
 	{
 		TConvertTo converted;
-
-		converted.x = static_cast<decltype(converted.x)>(this.x);
-		converted.y = static_cast<decltype(converted.y)>(this.y);
+	
+		converted.x = static_cast<decltype(converted.x)>(this->x);
+		converted.y = static_cast<decltype(converted.y)>(this->y);
 		return converted;
 	};
 

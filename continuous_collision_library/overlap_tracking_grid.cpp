@@ -27,6 +27,120 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::initialize()
 
 }
 
+void ContinuousCollisionLibrary::overlap_tracking_grid::update_bounds(const math_2d_util::uivec2d& tile_coordinate_to_update, overlap_grid_index tile_sector_packed_index_to_update, const math_2d_util::uirect& new_world_bounds_for_tile_items)
+{
+	//check that the index and coordinate match
+	assert(grid_helper.to_xy(tile_sector_packed_index_to_update) == tile_coordinate_to_update, "Passed in tile xy corrdinate did not match tile index");
+
+	//get existing bounds 
+	auto old_local_bounds = bounds.get_ref_to_data(tile_sector_packed_index_to_update);
+
+	//get the top left corner the tile is projected from
+	auto bounds_window_top_left = tile_coordinate_to_update - tile_local_bounds::vector_type::center().convert_to<math_2d_util::uivec2d>();
+
+	//convert to world bounds
+	auto old_world_bounds = math_2d_util::rect_2d_math::get_offset_rect_as<math_2d_util::uirect>(old_local_bounds, bounds_window_top_left);
+
+	//array to hold the remove pass
+	std::array<math_2d_util::uirect, 4> remove_rects;
+	uint32 remove_count = 0;
+	
+	//array to hold the add pass
+	std::array<math_2d_util::uirect, 4> add_rects;
+	uint32 add_count = 0;
+
+	auto new_min_y = std::max(new_world_bounds_for_tile_items.min.y, old_world_bounds.min.y);
+	auto new_max_y = std::min(new_world_bounds_for_tile_items.max.y, old_world_bounds.max.y);
+
+	//------------- remove top and bottom before sides as removes are faster with long x and short y axis -----------------
+	
+	{
+		//trim the top
+		{
+			remove_rects[remove_count].min = old_world_bounds.min;
+			remove_rects[remove_count].max = math_2d_util::uivec2d{ old_world_bounds.max.x, new_world_bounds_for_tile_items.min.y };
+			remove_count += old_world_bounds.min.y < new_world_bounds_for_tile_items.min.y;
+		}
+
+		//trim the left
+		{
+			remove_rects[remove_count].min = math_2d_util::uivec2d{ old_world_bounds.min.x,new_min_y };
+			remove_rects[remove_count].max = math_2d_util::uivec2d{ new_world_bounds_for_tile_items.min.x,new_max_y };
+			remove_count += old_world_bounds.min.x < new_world_bounds_for_tile_items.min.x;
+		}
+
+		//trim the right
+		{
+			remove_rects[remove_count].min = math_2d_util::uivec2d{ new_world_bounds_for_tile_items.max.x, new_min_y };
+			remove_rects[remove_count].max = math_2d_util::uivec2d{ old_world_bounds.max.x, new_max_y };
+			remove_count += old_world_bounds.max.x > new_world_bounds_for_tile_items.max.x;
+		}
+
+		//trim the bottom 
+		{
+			remove_rects[remove_count].max = old_world_bounds.max;
+			remove_rects[remove_count].min = math_2d_util::uivec2d{ old_world_bounds.min.x, new_world_bounds_for_tile_items.max.y };
+			remove_count += old_world_bounds.max.y > new_world_bounds_for_tile_items.max.y;
+		}
+	}
+
+
+
+	//------------- add top and bottom before sides as adds are faster with long x and short y axis -----------------
+
+	{
+		//add to the top
+		{
+			add_rects[add_count].min = new_world_bounds_for_tile_items.min;
+			add_rects[add_count].max = math_2d_util::uivec2d{ new_world_bounds_for_tile_items.max.x, old_local_bounds.min.y };
+			add_count += old_world_bounds.min.y > new_world_bounds_for_tile_items.min.y;
+		}
+
+		//add to the left
+		{
+			add_rects[add_count].min = math_2d_util::uivec2d{ new_world_bounds_for_tile_items.min.x,new_min_y };
+			add_rects[add_count].max = math_2d_util::uivec2d{ old_local_bounds.min.x,new_max_y };
+			add_count += old_world_bounds.min.x > new_world_bounds_for_tile_items.min.x;
+		}
+
+		//add to the right
+		{
+			add_rects[add_count].min = math_2d_util::uivec2d{ old_local_bounds.max.x, new_min_y };
+			add_rects[add_count].max = math_2d_util::uivec2d{ new_world_bounds_for_tile_items.max.x, new_max_y };
+			add_count += old_world_bounds.max.x < new_world_bounds_for_tile_items.max.x;
+		}
+
+		//add to the bottom 
+		{
+			add_rects[add_count].max = new_world_bounds_for_tile_items.max;
+			add_rects[add_count].min = math_2d_util::uivec2d{ new_world_bounds_for_tile_items.min.x,old_local_bounds.max.y };
+			add_count += old_world_bounds.max.y < new_world_bounds_for_tile_items.max.y;
+		}
+
+	}
+
+	//loop through all the remove rects and change the flags 
+	for (uint32 i = 0; i < remove_count; i++)
+	{
+		remove_flag_from_tiles(tile_coordinate_to_update, tile_sector_packed_index_to_update, remove_rects[i], old_world_bounds, new_world_bounds_for_tile_items);
+	}
+
+	//loop through all the add rects and change the flags 
+	for (uint32 i = 0; i < add_count; i++)
+	{
+		add_flag_to_tiles(tile_coordinate_to_update, tile_sector_packed_index_to_update, (add_rects[i]), old_world_bounds, new_world_bounds_for_tile_items);
+	}
+
+	//convert new world bounds back to local bounds
+	auto new_local_min = new_world_bounds_for_tile_items.min - bounds_window_top_left;
+	auto new_local_max = new_world_bounds_for_tile_items.min - bounds_window_top_left;
+
+	//apply the update to the bounds of the rect 
+	old_local_bounds.min = static_cast<tile_local_bounds::vector_type>(new_local_min);
+	old_local_bounds.max = static_cast<tile_local_bounds::vector_type>(new_local_max);
+
+}
+
 ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tracking_grid::calculate_flag_for_tile(
 	const math_2d_util::uivec2d & tile_to_create_flag_for, 
 	const math_2d_util::uivec2d & target_tile) const
@@ -42,14 +156,30 @@ ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tr
 }
 
 void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
-	math_2d_util::uivec2d& source_tile_cord, 
-	const math_2d_util::uirect& add_to_area, 
-	const math_2d_util::uirect& old_bounds, 
+	const math_2d_util::uivec2d& source_tile_cord,
+	const math_2d_util::uirect& add_to_area,
+	const math_2d_util::uirect& old_bounds,
 	const math_2d_util::uirect& new_bounds)
 {
+	//the source tile index
+	auto source_world_tile = grid_helper.from_xy(source_tile_cord);
+
+	add_flag_to_tiles(source_tile_cord, source_world_tile, add_to_area, old_bounds, new_bounds);
+}
+
+void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
+	const math_2d_util::uivec2d& source_tile_cord,
+	overlap_grid_index source_world_tile,
+	const math_2d_util::uirect& add_to_area,
+	const math_2d_util::uirect& old_bounds,
+	const math_2d_util::uirect& new_bounds)
+{
+
 	
 	//sanity check to make sure boudns falls within grid 
 	assert(is_rect_in_grid(add_to_area), "rect exits map bounds");
+
+	assert(grid_helper.to_xy(source_world_tile) == source_tile_cord, "source cord and source index must be for the same tile");
 
 
 	//the per tile overlap list is a lot more likely to trigger a cache miss so I am 
@@ -93,7 +223,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 				overlap_indexes_in_tile[num_of_overlaps_in_tile++] = overlap_flag_index;
 			}
 
-			
+
 			//loop over all items in the index
 			std::for_each(overlap_indexes_in_tile.begin(), overlap_indexes_in_tile.begin() + num_of_overlaps_in_tile, [&](uint32 flag_index)
 				{
@@ -104,11 +234,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 					//calculate the coordinate of this overlap flag
 					math_2d_util::uivec2d overlap_tile_coordinate = offset + overlap_corner;
 
-					//offset per axis
-					constexpr uint32 offset_per_axis = tile_local_bounds::vector_type::center_extent;
-
 					//calculate the top left corner of the overlap region for that tile
-					math_2d_util::uivec2d overlap_tile_overlap_region_top_left = overlap_tile_coordinate - math_2d_util::uivec2d{ offset_per_axis,offset_per_axis };
+					math_2d_util::uivec2d overlap_tile_overlap_region_top_left = overlap_tile_coordinate - static_cast<math_2d_util::uivec2d>(tile_local_bounds::vector_type::center());
 
 					//convert from coordinate to sector grid index 
 					auto overlap_index = grid_helper.from_xy(overlap_tile_coordinate);
@@ -149,9 +276,6 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 			}
 		}
 	}
-
-	//the source tile index
-	auto source_world_tile = grid_helper.from_xy(source_tile_cord);
 
 	auto source_sector = source_world_tile.components.sector_index;
 
@@ -198,11 +322,21 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 	}
 }
 
-void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(math_2d_util::uivec2d& source_tile_cord, const math_2d_util::uirect& remove_area, const math_2d_util::uirect& old_bounds, const math_2d_util::uirect& new_bounds)
+
+
+void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(const math_2d_util::uivec2d& source_tile_cord, const math_2d_util::uirect& remove_area, const math_2d_util::uirect& old_bounds, const math_2d_util::uirect& new_bounds)
+{
+	//the source tile index
+	auto source_world_tile = grid_helper.from_xy(source_tile_cord);
+
+	remove_flag_from_tiles(source_tile_cord, source_world_tile, remove_area, old_bounds, new_bounds);
+}
+
+void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(const math_2d_util::uivec2d& source_tile_cord, overlap_grid_index source_world_tile,  const math_2d_util::uirect & remove_area, const math_2d_util::uirect & old_bounds, const math_2d_util::uirect & new_bounds)
 {
 	//sanity check to make sure boudns falls within grid 
 	assert(is_rect_in_grid(remove_area), "rect exits map bounds");
-
+	assert(grid_helper.to_xy(source_world_tile) == source_tile_cord, "source cord and source index must be for the same tile");
 
 	//the per tile overlap list is a lot more likely to trigger a cache miss so I am 
 	//delaying it and doing it in a sepparate pass to hopefully not trash the cache as much
@@ -248,8 +382,6 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(m
 				overlaps_in_tile &= ~flag;
 			}
 
-
-
 			//loop through all tight tile bounds that overlap the target tile
 			//and pull out the overlap indexes 
 			for (uint32 overlap_flag_index : overlaps_in_tile)
@@ -268,11 +400,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(m
 					//calculate the coordinate of this overlap flag
 					math_2d_util::uivec2d overlap_tile_coordinate = offset + overlap_corner;
 
-					//offset per axis
-					constexpr uint32 offset_per_axis = tile_local_bounds::vector_type::center_extent;
-
 					//calculate the top left corner of the overlap region for that tile
-					math_2d_util::uivec2d overlap_tile_overlap_region_top_left = overlap_tile_coordinate - math_2d_util::uivec2d{ offset_per_axis,offset_per_axis };
+					math_2d_util::uivec2d overlap_tile_overlap_region_top_left = overlap_tile_coordinate - static_cast<math_2d_util::uivec2d>(tile_local_bounds::vector_type::center());
 
 					//convert from coordinate to sector grid index 
 					auto overlap_index = grid_helper.from_xy(overlap_tile_coordinate);
@@ -305,9 +434,6 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(m
 		}
 	}
 
-	//the source tile index
-	auto source_world_tile = grid_helper.from_xy(source_tile_cord);
-
 	auto source_sector = source_world_tile.components.sector_index;
 
 	auto source_sub_tile = source_world_tile.components.sector_sub_tile_index;
@@ -319,6 +445,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(m
 
 	//the top left corner for the window that all overlaping tiles must fall inside
 	const auto source_overlap_pair_top_left_corner = source_tile_cord - window_offset;
+
 
 	//loop through all the new overlapping tiles and add this tile to the pairs list for those tiles
 	for (uint32 i = 0; i < num_of_new_overlaps; ++i)
