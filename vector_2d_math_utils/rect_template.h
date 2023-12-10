@@ -29,6 +29,14 @@ namespace math_2d_util
 			return{ template_vector_2d<T>::max(), template_vector_2d<T>::min() };
 		}
 
+		//compare rects
+		constexpr bool operator == (const template_rect_2d<T>& other_rect) const 
+		{
+			return (min == other_rect.min) && (max == other_rect.max);
+		}
+
+
+
 		constexpr template_rect_2d() = default;
 		constexpr template_rect_2d(T min_x, T min_y, T max_x, T max_y):min(min_x, min_y), max(max_x, max_y) {};
 		constexpr template_rect_2d(const template_vector_2d<T> &_min, const template_vector_2d<T> &_max) :min(_min), max(_max) {};
@@ -45,20 +53,20 @@ namespace math_2d_util
 	{
 		//check if the two rects overlap
 		//this is a "half open interval" where min is inclusive but max is exclusive and the values from min to max -epsilon / 1 are considered inside the rect 
-		template<typename T>
-		static bool is_overlapping(const template_rect_2d<T>& rect_a, const template_rect_2d<T>& rect_b);
+		template<typename Trect_a_base_val, typename Trect_b_base_val>
+		static bool is_overlapping(const template_rect_2d<Trect_a_base_val>& rect_a, const template_rect_2d<Trect_b_base_val>& rect_b);
 
 		//create a new rect offset by the given vector 
 		template<typename Treturn_type, typename Trect, typename Toffset>
 		static Treturn_type get_offset_rect_as(const Trect& rect_to_offset, const Toffset& offset_by);
 
 		//get the top left corner of the overlapping region between two rects
-		template<typename T>
-		static math_2d_util::template_vector_2d<T> get_top_left_corner_of_overlap(const template_rect_2d<T>& rect_a, const template_rect_2d<T>& rect_b);
+		template<typename Trect_a_base_val, typename Trect_b_base_val, typename Treturn = Trect_b_base_val>
+		static math_2d_util::template_vector_2d<Treturn> get_top_left_corner_of_overlap(const template_rect_2d<Trect_a_base_val>& rect_a, const template_rect_2d<Trect_b_base_val>& rect_b);
 	};
 
-	template<typename T>
-	inline bool rect_2d_math::is_overlapping(const template_rect_2d<T>& rect_a, const template_rect_2d<T>& rect_b)
+	template<typename Trect_a_base_val, typename Trect_b_base_val>
+	inline bool rect_2d_math::is_overlapping(const template_rect_2d<Trect_a_base_val>& rect_a, const template_rect_2d<Trect_b_base_val>& rect_b)
 	{
 		//min max
 		bool in_right = rect_a.min.x < rect_b.max.x;
@@ -84,12 +92,12 @@ namespace math_2d_util
 		return offset_rect;
 	};
 
-	template<typename T>
-	inline math_2d_util::template_vector_2d<T> rect_2d_math::get_top_left_corner_of_overlap(const template_rect_2d<T>& rect_a, const template_rect_2d<T>& rect_b)
+	template<typename Trect_a_base_val, typename Trect_b_base_val, typename Treturn>
+	inline math_2d_util::template_vector_2d<Treturn> rect_2d_math::get_top_left_corner_of_overlap(const template_rect_2d<Trect_a_base_val>& rect_a, const template_rect_2d<Trect_b_base_val>& rect_b)
 	{
 		assert(is_overlapping(rect_a, rect_b), "Attempting to get overlap for non overlapping rects");
 
-		math_2d_util::template_vector_2d<T> top_left_corner;
+		math_2d_util::template_vector_2d<Treturn> top_left_corner;
 
 		top_left_corner.x = std::max(std::min(rect_a.max.x, rect_b.min.x), rect_a.min.x);
 		top_left_corner.y = std::max(std::min(rect_a.max.y, rect_b.min.y), rect_a.min.y);

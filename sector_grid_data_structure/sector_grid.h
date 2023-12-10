@@ -45,9 +45,11 @@ namespace SectorGrid
 		static constexpr combined_index y_sector_mask = x_sector_mask << sector_bits_per_axis;
 
 		//helper function to convert index to xy co ordinate 
-		math_2d_util::uivec2d to_xy(const sector_tile_index<TSectorGridDimensions>& index) const;
+		template<typename Treturn_type = math_2d_util::uivec2d>
+		Treturn_type to_xy(const sector_tile_index<TSectorGridDimensions>& index) const;
 
-		sector_tile_index<TSectorGridDimensions> from_xy(const math_2d_util::uivec2d& xy) const;
+		template<typename Tcord_type = math_2d_util::uivec2d>
+		sector_tile_index<TSectorGridDimensions> from_xy(const Tcord_type& xy) const;
 
 	};
 
@@ -87,7 +89,7 @@ namespace SectorGrid
 		//clears all the data to 0 
 		constexpr void clear_data()
 		{
-			std::fill_n(data.tile_data.data(), size(), 0);
+			std::fill_n(data.tile_data.data(), size(), TDataType{});
 		}
 	};
 
@@ -104,12 +106,12 @@ namespace SectorGrid
 	}
 
 
+
 	template<sector_grid_dimension_concept TSectorGridDimensions>
-	inline math_2d_util::uivec2d sector_grid_helper<TSectorGridDimensions>::to_xy(const sector_tile_index<TSectorGridDimensions>& tile_index) const
+	template<typename Treturn_type>
+	inline Treturn_type sector_grid_helper<TSectorGridDimensions>::to_xy(const sector_tile_index<TSectorGridDimensions>& tile_index) const
 	{
-
 		using combined_index = sector_tile_index<TSectorGridDimensions>::combined_index;
-
 
 		//mask and shirf the sector x
 		uint32 x_sector_bits = (tile_index.index & x_sector_mask);
@@ -121,12 +123,16 @@ namespace SectorGrid
 
 		uint32 y_out = (y_sector_bits >> y_sector_shift) | (y_tile_bits >> y_sub_sector_shift);
 
-		return math_2d_util::uivec2d{x_out,y_out};
+		return Treturn_type(static_cast<Treturn_type::axis_type>(x_out), static_cast<Treturn_type::axis_type>(y_out));
 	}
 
+
 	template<sector_grid_dimension_concept TSectorGridDimensions>
-	inline sector_tile_index<TSectorGridDimensions> sector_grid_helper<TSectorGridDimensions>::from_xy(const math_2d_util::uivec2d& xy) const
+	template<typename Tcord_type>
+	inline sector_tile_index<TSectorGridDimensions> sector_grid_helper<TSectorGridDimensions>::from_xy(const Tcord_type& xy) const
 	{
+		//make sure no negative numbers are passed in as that will break the calculations of the index 
+		assert(xy.x >= 0 && xy.y >= 0);
 
 		using combined_index = sector_tile_index<TSectorGridDimensions>::combined_index;
 

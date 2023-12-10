@@ -79,6 +79,7 @@ namespace math_2d_util
 	{
 		//make sure the vector is inside an expected range
 		assert((target.x < max_offset) && (target.y < max_offset), "offset is too large to represent with a single byte");
+		assert((target.x >= 0 ) && (target.y >= 0), "offset is too small to represent with a single byte");
 	
 		//pack vector into one byte 
 		byte_vector_2d out = { static_cast<uint8_t>((target.y << lower_bit_count) | target.x) };

@@ -39,6 +39,9 @@
     <ClInclude Include="shared_2d_math_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="byte_local_extents_rect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="vector_2d_math_utils.cpp">
@@ -51,6 +54,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="byte_vector_2d.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="byte_local_extents_rect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

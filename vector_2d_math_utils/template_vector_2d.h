@@ -11,7 +11,7 @@ namespace math_2d_util
 	template<typename T>
 	struct template_vector_2d
 	{
-
+		using axis_type = T;
 		static constexpr T max_extent = std::numeric_limits<T>::max(); //larges value on an axis
 		static constexpr T min_extent = std::numeric_limits<T>::lowest();  //smalles value on an axis
 		static constexpr T center_extent = (min_extent == 0) ? (max_extent / 2) : 0; //center point on an axis 
@@ -78,7 +78,7 @@ namespace math_2d_util
 
 
 		// Overload the is equal == opperator to return true if both vectors hold the same values 
-		bool operator ==(const template_vector_2d<T>& other) 
+		bool constexpr operator == (const template_vector_2d<T>& other) const
 		{
 			return (x == other.x) && (y == other.y); // Return a reference to this vector after the subtraction
 		}

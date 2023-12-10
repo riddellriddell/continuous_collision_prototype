@@ -9,6 +9,7 @@
 #include "vector_2d_math_utils/byte_vector_2d.h"
 #include <limits>
 #include <algorithm>
+#include <utility>
 #include <cmath>
 #include <bit>
 
@@ -24,7 +25,6 @@ namespace ContinuousCollisionLibrary
 	template<typename TFlagDataType, int IoverlapRegionWidth>
 	struct overlap_flag_template
 	{
-
 		static constexpr uint32 width = IoverlapRegionWidth; //number of possible values on an axis
 		static constexpr uint32 axis_max = width -1; //max value that can be stored per axis (1 less than width due to 0)
 		static constexpr uint32 axis_center = axis_max / 2; //center point for an axis 
@@ -32,19 +32,24 @@ namespace ContinuousCollisionLibrary
 		//what is the maximum number of overlaps for this tile including itself 
 		static constexpr uint32 max_overlaps = IoverlapRegionWidth * IoverlapRegionWidth;
 
-		static constexpr math_2d_util::uivec2d max() { return math_2d_util::uivec2d{ axis_max ,axis_max }; };
-		static constexpr math_2d_util::uivec2d center() { return math_2d_util::uivec2d{ axis_center,axis_center }; };
+		//get the center and max as a specific type / number format
+		//but default to a unsigned vec if not possible 
+		template<typename T = math_2d_util::uivec2d>
+		static constexpr T max() { return T(axis_max ,axis_max); };
+		
+		template<typename T = math_2d_util::uivec2d>
+		static constexpr T center() { return T(static_cast<decltype(std::declval<T>().x)>(axis_center), static_cast<decltype(std::declval<T>().y)>(axis_center)); };
 
 		TFlagDataType overlap_flag;
 
 		//convert from a flag to an offset starting at the top left corner of the offset window
-		static constexpr math_2d_util::uivec2d calcualte_offset_for_flag_index(uint32 flag_index)
+		static constexpr math_2d_util::ivec2d calcualte_offset_for_flag_index(uint32 flag_index)
 		{
 			//extract the offset 
-			uint32 y_offset = flag_index / width;
-			uint32 x_offset = flag_index - (y_offset * width);
+			int32 y_offset = flag_index / width;
+			int32 x_offset = flag_index - (y_offset * width);
 
-			return math_2d_util::uivec2d{ x_offset , y_offset };
+			return math_2d_util::ivec2d{ x_offset , y_offset };
 		}
 
 
@@ -141,10 +146,12 @@ namespace ContinuousCollisionLibrary
 
 		constexpr overlap_flag_template(TFlagDataType flag):overlap_flag(flag){};
 
-		constexpr overlap_flag_template(math_2d_util::uivec2d& offset_to_encode)
+		template<typename Toffset_type>
+		constexpr overlap_flag_template(const Toffset_type& offset_to_encode)
 		{
 			//sanity check that the offsets are not larger than the largest possible flag width
-			assert(offset_to_encode.x < width&& offset_to_encode.y < width, "Offset larget than allowed values");
+			assert(offset_to_encode.x < width && offset_to_encode.y < width, "Offset larget than allowed values");
+			assert(offset_to_encode.x >= 0 && offset_to_encode.y >= 0, "Offset less than allowed values");
 
 			uint64 flag_offset = offset_to_encode.x + (width * offset_to_encode.y);
 
@@ -211,48 +218,51 @@ namespace ContinuousCollisionLibrary
 		void initialize();
 		
 		//make bounds at index larget
-		void update_bounds(const math_2d_util::uivec2d& tile_coordinate_to_update, overlap_grid_index tile_sector_packed_index_to_update, const math_2d_util::uirect& new_world_bounds_for_tile_items);
+		void update_bounds(const math_2d_util::ivec2d& tile_coordinate_to_update, overlap_grid_index tile_sector_packed_index_to_update, const math_2d_util::irect& new_world_bounds_for_tile_items);
 		
 		//calculates the bitflag for a tile relative to another tile
-		overlap_flags calculate_flag_for_tile(const math_2d_util::uivec2d & tile_to_create_flag_for, const math_2d_util::uivec2d & target_tile) const;
+		overlap_flags calculate_flag_for_tile(const math_2d_util::ivec2d & tile_to_create_flag_for, const math_2d_util::ivec2d & target_tile) const;
 
 		//add flag to all tiles in rect
 		void add_flag_to_tiles(
-			const math_2d_util::uivec2d& source_tile_cord,
+			const math_2d_util::ivec2d& source_tile_cord,
 			overlap_grid_index source_world_tile,
-			const math_2d_util::uirect& add_to_area,
-			const math_2d_util::uirect& old_bounds,
-			const math_2d_util::uirect& new_bounds);
+			const math_2d_util::irect& add_to_area,
+			const math_2d_util::irect& old_bounds,
+			const math_2d_util::irect& new_bounds);
 
 		//helper function that converts source tile cord to a grid index and calls the above function
 		//use the other function if you have the sector grid tile index available
 		void add_flag_to_tiles(
-			const math_2d_util::uivec2d& source_tile_cord, 
-			const math_2d_util::uirect& add_to_area, 
-			const math_2d_util::uirect& old_bounds, 
-			const math_2d_util::uirect& new_bounds);
+			const math_2d_util::ivec2d& source_tile_cord, 
+			const math_2d_util::irect& add_to_area, 
+			const math_2d_util::irect& old_bounds, 
+			const math_2d_util::irect& new_bounds);
 		
 		//remove flag from all tiles in rect 
 		void remove_flag_from_tiles(
-			const math_2d_util::uivec2d& source_tile_cord,
+			const math_2d_util::ivec2d& source_tile_cord,
 			overlap_grid_index source_world_tile,
-			const math_2d_util::uirect& remove_area,
-			const math_2d_util::uirect& old_bounds,
-			const math_2d_util::uirect& new_bounds);
+			const math_2d_util::irect& remove_area,
+			const math_2d_util::irect& old_bounds,
+			const math_2d_util::irect& new_bounds);
 
 		//helper function that converts source tile cord to a grid index and calls the above function
 		void remove_flag_from_tiles(
-			const math_2d_util::uivec2d& source_tile_cord, 
-			const math_2d_util::uirect& remove_area, 
-			const math_2d_util::uirect& old_bounds, 
-			const math_2d_util::uirect& new_bounds);
+			const math_2d_util::ivec2d& source_tile_cord, 
+			const math_2d_util::irect& remove_area, 
+			const math_2d_util::irect& old_bounds, 
+			const math_2d_util::irect& new_bounds);
 
 
 		
 		//check if point is inside grid
 		bool is_point_in_grid(const math_2d_util::uivec2d& point);
-		
+		bool is_point_in_grid(const math_2d_util::ivec2d& point);
+
+
 		bool is_rect_in_grid(const math_2d_util::uirect& rect);
+		bool is_rect_in_grid(const math_2d_util::irect& rect);
 
 
 		//maximum estimated number of overlap pairs. at max an overlap only occurs at the max size of this tile plus the 
