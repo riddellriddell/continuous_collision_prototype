@@ -36,7 +36,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::update_bounds(const math
 	auto signed_tile_coordinate_to_update = static_cast<math_2d_util::ivec2d>(tile_coordinate_to_update);
 
 	//get existing bounds 
-	auto old_local_bounds = bounds.get_ref_to_data(tile_sector_packed_index_to_update);
+	auto& old_local_bounds = bounds.get_ref_to_data(tile_sector_packed_index_to_update);
 
 	//get the top left corner the tile is projected from
 	auto bounds_window_top_left = signed_tile_coordinate_to_update - tile_local_bounds::vector_type::center().convert_to<math_2d_util::ivec2d>();
@@ -259,7 +259,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 					auto overlap_index = grid_helper.from_xy(overlap_tile_coordinate);
 
 					//get the bounds of the overlapped tile 
-					auto bounds_of_overlapped_tile = bounds.get_ref_to_data(overlap_index);
+					const auto bounds_of_overlapped_tile = bounds.get_ref_to_data(overlap_index);
 
 					//convert bounds from local space to world space using the top left corner offset
 					auto world_bounds_of_overlapped_tile = math_2d_util::rect_2d_math::get_offset_rect_as<math_2d_util::irect>(bounds_of_overlapped_tile, overlap_tile_overlap_region_top_left);
@@ -425,7 +425,7 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(c
 					auto overlap_index = grid_helper.from_xy(overlap_tile_coordinate);
 
 					//get the bounds of the overlapped tile 
-					auto bounds_of_overlapped_tile = bounds.get_ref_to_data(overlap_index);
+					const auto bounds_of_overlapped_tile = bounds.get_ref_to_data(overlap_index);
 
 					//convert bounds from local space to world space using the top left corner offset
 					auto world_bounds_of_overlapped_tile = math_2d_util::rect_2d_math::get_offset_rect_as<math_2d_util::irect>(bounds_of_overlapped_tile, overlap_tile_overlap_region_top_left);

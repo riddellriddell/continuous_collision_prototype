@@ -401,7 +401,6 @@ namespace ContinuousCollisionLibrary
 						assert(!flag_data.has_flags(flag_for_source_tile));
 					}
 				}
-
 			}
 		}
 	};
