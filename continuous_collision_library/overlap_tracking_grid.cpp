@@ -341,7 +341,6 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 }
 
 
-
 void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(const math_2d_util::ivec2d& source_tile_cord, const math_2d_util::irect& remove_area, const math_2d_util::irect& old_bounds, const math_2d_util::irect& new_bounds)
 {
 	//the source tile index
