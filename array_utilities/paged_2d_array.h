@@ -61,6 +61,9 @@ namespace ArrayUtilities
 		//removes the last item in a y axis array and frees pages if needed 
 		void pop_back(x_axis_count_type x_axis_index);
 
+		//find the read write address 
+		virtual_memory_map_type::real_address find_address(x_axis_count_type x_axis_index, virtual_memory_map_type::virtual_address_type) const;
+
 		//total amount of data that needs to be alocated 
 		//the worst case is one item in every x axis cell and then one cell with all the remaining items 
 		static constexpr size_t max_pages = calculate_number_of_pages_needed(Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size);
@@ -95,7 +98,7 @@ namespace ArrayUtilities
 		assert(new_y_address.address < Imax_y_items, "too many items added to x axis array");
 
 		//get the page for this 
-		auto virtual_page_number = virtual_memory_lookup[x_axis_index].extract_page_number_from_virtual_address(new_y_address);
+		auto virtual_page_number = virtual_memory_map_type::extract_page_number_from_virtual_address(new_y_address);
 
 		//check if adding this item needs a new memory page 
 		const bool is_page_alocated = virtual_memory_lookup[x_axis_index].does_virtual_page_have_real_page(virtual_page_number);
@@ -122,6 +125,11 @@ namespace ArrayUtilities
 
 		//check if we need to free the underlying memory page
 		bool is_only_item_in_page = virtual_memory_map_type::is_first_item_in_page(address_to_pop);
+
+		auto virtual_page_index = virtual_memory_map_type::extract_page_number_from_virtual_address(address_to_pop);
+
+		//clear the memory page but only if it is the last item in the memory pool
+		paged_memory_tracker.branchless_free(virtual_memory_lookup[x_axis_index].get_page_handle_to_return(virtual_page_index), is_only_item_in_page);
 	}
 
 }

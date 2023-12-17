@@ -110,6 +110,6 @@ namespace ArrayUtilities
 		free_page_count += do_free;
 
 		//make the handle invalid 
-		handle.destroy();
+		handle.branchless_destroy(do_free);
 	}
 }

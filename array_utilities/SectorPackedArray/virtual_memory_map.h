@@ -90,7 +90,10 @@ namespace ArrayUtilities
 		//this is done in a non branching optimal way
 		void non_branching_add_page(auto virtual_page_number, page_handle_type page_to_add, bool apply_page);
 
-
+		//gets a refference to a physical page that this virtual page map is using
+		//this is to pass to the page tracker to return to the page pool
+		//need to find a better way to structue this 
+		page_handle_type& get_page_handle_to_return(auto virtual_page_number);
 
 	};
 	
@@ -168,5 +171,15 @@ namespace ArrayUtilities
 		//by adding the rest of the page number it should set the virtual page to the new page value
 		//if apply page == 0 then we are just adding 0 and should make no change
 		pages_in_space[virtual_page_number].branchless_set_handle(page_to_add, apply_page);
+	}
+	template<size_t page_size, size_t max_number_of_pages_in_virtual_address_space, size_t total_number_of_pages>
+	inline  virtual_memory_map<page_size, max_number_of_pages_in_virtual_address_space, total_number_of_pages>::page_handle_type& virtual_memory_map<page_size, max_number_of_pages_in_virtual_address_space, total_number_of_pages>::get_page_handle_to_return(auto virtual_page_number)
+	{
+		page_handle_type& page = pages_in_space[virtual_page_number];
+
+		//check that the page handle is valid and has not already been destroyed
+		assert(page.is_valid(), "should not be handing out reffs to non allocated pages, this function is intended for getting pages to later destroy / return to the page pool");
+
+		return page;
 	}
 }
