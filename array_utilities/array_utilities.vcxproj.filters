@@ -42,6 +42,21 @@
     <ClInclude Include="WideNodeLinkedList\UnitTests\wide_node_linked_list_unit_tests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SectorPackedArray\paged_memory_header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SectorPackedArray\virtual_memory_map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="paged_2d_array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="paged_wide_node_linked_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SectorPackedArray\shared_virtual_memory_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="array_utilities.cpp">
@@ -54,6 +69,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="WideNodeLinkedList\wide_node_linked_list.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SectorPackedArray\paged_memory_header.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SectorPackedArray\virtual_memory_map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="paged_2d_array.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="paged_wide_node_linked_list.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -162,16 +162,22 @@
     <ClInclude Include="base_types_definition.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="free_list.h" />
+    <ClInclude Include="paged_2d_array.h" />
+    <ClInclude Include="paged_wide_node_linked_list.h" />
     <ClInclude Include="SectorPackedArray\paged_memory_header.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="SectorPackedArray\shared_virtual_memory_types.h" />
     <ClInclude Include="small_list.h" />
     <ClInclude Include="UnitTests\unit_test_manager.h" />
+    <ClInclude Include="SectorPackedArray\virtual_memory_map.h" />
     <ClInclude Include="WideNodeLinkedList\UnitTests\wide_node_linked_list_unit_tests.h" />
     <ClInclude Include="wide_node_affinity_linked_list.h" />
     <ClInclude Include="WideNodeLinkedList\wide_node_linked_list.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="array_utilities.cpp" />
+    <ClCompile Include="paged_2d_array.cpp" />
+    <ClCompile Include="paged_wide_node_linked_list.cpp" />
     <ClCompile Include="SectorPackedArray\paged_memory_header.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -180,6 +186,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="UnitTests\unit_test_manager.cpp" />
+    <ClCompile Include="SectorPackedArray\virtual_memory_map.cpp" />
     <ClCompile Include="WideNodeLinkedList\wide_node_linked_list.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
