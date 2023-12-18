@@ -7,7 +7,7 @@ namespace ArrayUtilities
 	struct page_handle
 	{
 	private:
-		static constexpr invalid_page_value = std::numeric_limits<Tnode_index_type>::max();
+		static constexpr Tnode_index_type invalid_page_value = std::numeric_limits<Tnode_index_type>::max();
 
 		Tnode_index_type page_number;
 

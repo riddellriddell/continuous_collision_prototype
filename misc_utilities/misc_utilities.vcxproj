@@ -157,7 +157,13 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="int_type_selection.h" />
+    <ClInclude Include="int_wrapper.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="strong_type\is_strong_type.hpp" />
+    <ClInclude Include="strong_type\st.hpp" />
+    <ClInclude Include="strong_type\traits.hpp" />
+    <ClInclude Include="strong_type\type.hpp" />
+    <ClInclude Include="strong_type\unwrap.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="misc_utilities.cpp" />
@@ -167,6 +173,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="strong_type\LICENSE" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

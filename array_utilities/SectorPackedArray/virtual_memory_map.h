@@ -11,6 +11,40 @@ namespace ArrayUtilities
 	struct virtual_address
 	{
 		Taddress_type address;
+
+		//prefix 
+		virtual_address<Taddress_type>& operator++()
+		{
+			++address;
+
+			return *this;
+		}
+
+		virtual_address<Taddress_type>& operator--()
+		{
+			--address;
+
+			return *this;
+		}
+
+		//postfix plus
+		virtual_address<Taddress_type>& operator++(Taddress_type)
+		{
+			Taddress_type temp{ address };
+
+			++address;
+
+			return temp;
+		}
+
+		virtual_address<Taddress_type>& operator--(Taddress_type)
+		{
+			Taddress_type temp{ address };
+
+			--address;
+
+			return temp;
+		}
 	};
 
 	template<typename Taddress_type,size_t Ipage_bits>
@@ -42,20 +76,22 @@ namespace ArrayUtilities
 		//the non virtual address type needed to actually access the memory 
 		using real_address_value_type = MiscUtilities::uint_s<total_number_of_pages * page_size >::int_type_t;
 
+		//the bits that make up the local address
+		static constexpr uint32_t local_address_bits = std::bit_width(page_size - 1);
+		static constexpr virtual_address_value_type local_address_mask = (1 << local_address_bits) - 1;
+		static constexpr virtual_address_value_type page_address_mask = ~local_address_mask;
+		static constexpr page_address_value_type invalid_page_address = std::numeric_limits<page_address_value_type>::max();
+
+
 	public:
 
 		using virtual_address_type = virtual_address<virtual_address_value_type>;
-		using real_address_type = real_address<real_address_value_type>;
+		using real_address_type = real_address<real_address_value_type, local_address_bits>;
 		using page_handle_type = page_handle<real_address_value_type>;
 
 	private:
 
-		//the bits that make up the local address
-		static constexpr uint32_t local_address_bits = std::bit_width(page_size - 1);
-
-		static constexpr virtual_address_value_type local_address_mask = (1 << local_address_bits) - 1;
-		static constexpr virtual_address_value_type page_address_mask = ~local_address_mask;
-		static constexpr page_address_value_type invalid_page_address = std::numeric_limits<page_address_value_type>::max();
+		
 
 		//pages need to be a power of 2 to work efficiently
 		static_assert((1 << local_address_bits) == page_size);
@@ -122,7 +158,7 @@ namespace ArrayUtilities
 	template<size_t page_size, size_t max_number_of_pages_in_virtual_address_space, size_t total_number_of_pages>
 	virtual_memory_map<page_size, max_number_of_pages_in_virtual_address_space, total_number_of_pages>::real_address_type virtual_memory_map<page_size, max_number_of_pages_in_virtual_address_space, total_number_of_pages>::resolve_address_using_virtual_page_offset(virtual_address_type address, auto virtual_page_number)
 	{
-		assert(extract_page_number_from_virtual_address(address) == virtual_page_number, "this function is an optimization over just passing in the address and calculating the page number on the fly, the passed in page number should match that of the virtual address")
+		assert(extract_page_number_from_virtual_address(address) == virtual_page_number, "this function is an optimization over just passing in the address and calculating the page number on the fly, the passed in page number should match that of the virtual address");
 
 		return real_address_type(convert_to_real_using_page_internal(address.address, virtual_page_number));
 	}

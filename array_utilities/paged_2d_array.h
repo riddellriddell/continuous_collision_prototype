@@ -50,10 +50,10 @@ namespace ArrayUtilities
 		using y_axis_count_type = MiscUtilities::uint_s<Imax_total_y_items + 1>::int_type_t;
 		using x_axis_count_type = MiscUtilities::uint_s<Inumber_of_x_axis_items + 1>::int_type_t;
 
-		using virtual_memory_map_type = virtual_memory_map<page_size, max_y_axis_pages, max_pages>;
+		using virtual_memory_map_type = virtual_memory_map<Ipage_size, Imax_y_items, Imax_total_y_items>;
 	
 		static constexpr y_axis_count_type invalid_y_axis_value = std::numeric_limits<y_axis_count_type>::max();
-		static constexpr x_axis_count_type invalid_x_axis_value = std::numeric_limits<invalid_x_axis_value>::max();
+		static constexpr x_axis_count_type invalid_x_axis_value = std::numeric_limits<x_axis_count_type>::max();
 
 		//adds an item to the back of the array and if required alocates new memory pagex 
 		virtual_memory_map_type::real_address push_back(x_axis_count_type x_axis_index);
@@ -62,15 +62,15 @@ namespace ArrayUtilities
 		void pop_back(x_axis_count_type x_axis_index);
 
 		//find the read write address 
-		virtual_memory_map_type::real_address find_address(x_axis_count_type x_axis_index, virtual_memory_map_type::virtual_address_type) const;
+		virtual_memory_map_type::real_address find_address(x_axis_count_type x_axis_index, virtual_memory_map_type::virtual_address_type virtual_address) const;
 
 		//total amount of data that needs to be alocated 
 		//the worst case is one item in every x axis cell and then one cell with all the remaining items 
 		static constexpr size_t max_pages = calculate_number_of_pages_needed(Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size);
-		static constexpr size_t max_y_axis_pages = ((max_y_items - 1) / page_size) + 1;
+		static constexpr size_t max_y_axis_pages = ((Imax_y_items - 1) / Ipage_size) + 1;
 		
 		//the maximum number of items neede for all pages 
-		static constexpr size_t max_total_entries = max_pages * page_size;
+		static constexpr size_t max_total_entries = max_pages * Ipage_size;
 
 		//array of all the address mappings 
 		std::array<virtual_memory_map_type, Inumber_of_x_axis_items> virtual_memory_lookup;
@@ -81,18 +81,32 @@ namespace ArrayUtilities
 		//the number of items in the y axis for each x axis 
 		std::array<y_axis_count_type, Inumber_of_x_axis_items> y_axis_count;
 
+		//iterator for stepping over all real addresses in the y axis 
+		struct y_address_iterator
+		{
+			//refference to the virtual memory map to iterate over
+			virtual_memory_map_type& memory_map;
+
+			//refferene to the y axis count to count up to 
+			y_axis_count_type& y_axis_count;
+
+			//the current virtual address 
+			virtual_memory_map_type::virtual_address_type current_address;
+
+		};
+
 	};
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
 	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::virtual_memory_map_type::real_address  paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::push_back(x_axis_count_type x_axis_index)
 	{
-		assert(x_axis_index < Inumber_of_x_axis_items, "indexing outside x array bounds")
+		assert(x_axis_index < Inumber_of_x_axis_items, "indexing outside x array bounds");
 
-			//increment the axis count 
-			y_axis_count[x_axis_index]++;
+		//increment the axis count 
+		y_axis_count[x_axis_index]++;
 
 		//create virtual address 
-		virtual_memory_map_type::virtual_address_type new_y_address{ y_axis_count[x_axis_index] };
+		virtual_memory_map_type::virtual_address_type new_y_address = { y_axis_count[x_axis_index] };
 
 		//check we have not exceeded the y axis count limit
 		assert(new_y_address.address < Imax_y_items, "too many items added to x axis array");
@@ -132,5 +146,10 @@ namespace ArrayUtilities
 		paged_memory_tracker.branchless_free(virtual_memory_lookup[x_axis_index].get_page_handle_to_return(virtual_page_index), is_only_item_in_page);
 	}
 
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::virtual_memory_map_type::real_address paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::find_address(x_axis_count_type x_axis_index, virtual_memory_map_type::virtual_address_type virtual_address) const
+	{
+		return virtual_memory_lookup[x_axis_index].resolve_address(virtual_address);
+	}
 }
 
