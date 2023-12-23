@@ -1,5 +1,5 @@
 #pragma once
-
+#include <assert.h>
 
 namespace ArrayUtilities
 {
@@ -13,36 +13,38 @@ namespace ArrayUtilities
 
 	public:
 
-		bool is_valid()
+		constexpr bool is_valid() const
 		{
 			return page_number != invalid_page_value;
 		}
 
-		void destroy()
+		constexpr void destroy()
 		{
-			check(is_valid());
+			assert(is_valid());
 			page_number = invalid_page_value;
 		}
 
-		void branchless_destroy(bool apply_destroy)
+		constexpr void branchless_destroy(bool apply_destroy)
 		{
-			check(is_valid() && apply_destroy);
+			assert(is_valid() && apply_destroy);
 			page_number -= ((page_number + 1) * apply_destroy);
 		}
 
-		page_handle(Tnode_index_type _page_number) :page_number(_page_number) {};
+		constexpr page_handle() :page_number(invalid_page_value) {};
+
+		constexpr page_handle(Tnode_index_type _page_number) :page_number(_page_number) {};
 
 		//accessor to get the page 
-		Tnode_index_type get_page()
+		constexpr Tnode_index_type get_page() const
 		{
-			check(is_valid());
+			assert(is_valid());
 
 			return page_number;
 		}
 
-		void branchless_set_handle(page_handle new_handle_value, bool apply_page)
+		constexpr void branchless_set_handle(page_handle new_handle_value, bool apply_page)
 		{
-			assert(apply_page && (new_handle_value.is_valid() == false), "This function assumes if your setting the page address that there is not a page already mapped to that address");
+			assert(!apply_page || (new_handle_value.is_valid() == true), "This function assumes if your setting the page address that there is not a page already mapped to that address");
 
 
 			//this assumes the existing page is a invalid value which == max value

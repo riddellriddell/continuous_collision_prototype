@@ -57,6 +57,9 @@
     <ClInclude Include="SectorPackedArray\shared_virtual_memory_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SectorPackedArray\UnitTests\unit_test_paged_2d_array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="array_utilities.cpp">
@@ -72,9 +75,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SectorPackedArray\paged_memory_header.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SectorPackedArray\virtual_memory_map.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="paged_2d_array.cpp">

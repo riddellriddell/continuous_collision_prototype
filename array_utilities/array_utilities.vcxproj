@@ -167,6 +167,7 @@
     <ClInclude Include="SectorPackedArray\paged_memory_header.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="SectorPackedArray\shared_virtual_memory_types.h" />
+    <ClInclude Include="SectorPackedArray\UnitTests\unit_test_paged_2d_array.h" />
     <ClInclude Include="small_list.h" />
     <ClInclude Include="UnitTests\unit_test_manager.h" />
     <ClInclude Include="SectorPackedArray\virtual_memory_map.h" />
@@ -186,7 +187,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="UnitTests\unit_test_manager.cpp" />
-    <ClCompile Include="SectorPackedArray\virtual_memory_map.cpp" />
     <ClCompile Include="WideNodeLinkedList\wide_node_linked_list.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

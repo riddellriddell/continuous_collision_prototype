@@ -32,6 +32,9 @@ namespace ArrayUtilities
 		//return a handle but in a non branching way
 		void branchless_free(page_handle_type& handle, bool do_free);
 
+		//how many pages are there left 
+		constexpr page_index_type remaining_page_count() const;
+
 	private:
 
 		//list of all the memory pages that are not in use 
@@ -50,14 +53,14 @@ namespace ArrayUtilities
 	void paged_memory_header<Inumber_of_pages>::reset()
 	{
 		free_page_count = free_pages.size();
-		std::iota(free_pages.begin(), free_pages.end(), 0);
+		std::iota(free_pages.rbegin(), free_pages.rend(), 0);
 	}
 
 	template<size_t Inumber_of_pages>
 	inline  paged_memory_header<Inumber_of_pages>::page_handle_type paged_memory_header<Inumber_of_pages>::allocate()
 	{
 		//check that there are still pages to create 
-		check(free_page_count != 0);
+		assert(free_page_count != 0);
 
 		return page_handle(free_pages[--free_page_count]);
 	}
@@ -66,7 +69,7 @@ namespace ArrayUtilities
 	inline paged_memory_header<Inumber_of_pages>::page_handle_type paged_memory_header<Inumber_of_pages>::branchless_alocate(bool do_allocation)
 	{
 		//check that there are still pages to create 
-		check(free_page_count != 0);
+		assert(free_page_count != 0);
 
 		//optionally decrement the number of free pages 
 		free_page_count -= do_allocation;
@@ -79,13 +82,13 @@ namespace ArrayUtilities
 	inline void paged_memory_header<Inumber_of_pages>::free(page_handle_type& handle)
 	{
 		//check that the page is valid 
-		check(handle.is_valid());
+		assert(handle.is_valid());
 
 		//check we have not retuned to many pages 
-		check(free_page_count <= Inumber_of_pages);
+		assert(free_page_count <= Inumber_of_pages);
 
 		//check that it has not already been returned
-		check(std::find(free_pages.begin, free_pages.begin + free_page_count, handle.get_page()));
+		assert(std::find(free_pages.begin(), free_pages.begin() + free_page_count, handle.get_page()) == (free_pages.begin() + free_page_count));
 
 		free_pages[free_page_count++] = handle.get_page();
 
@@ -97,13 +100,13 @@ namespace ArrayUtilities
 	inline void paged_memory_header<Inumber_of_pages>::branchless_free(page_handle_type& handle, bool do_free)
 	{
 		//check that the page is valid 
-		check(handle.is_valid());
+		assert(handle.is_valid());
 
 		//check we have not retuned to many pages 
-		check(free_page_count <= Inumber_of_pages);
+		assert(free_page_count <= Inumber_of_pages);
 
 		//check that it has not already been returned
-		check(std::find(free_pages.begin, free_pages.begin + free_page_count, handle.get_page()));
+		assert(std::find(free_pages.begin(), free_pages.begin() + free_page_count, handle.get_page()) == (free_pages.begin() + free_page_count));
 
 		free_pages[free_page_count] = handle.get_page();
 
@@ -111,5 +114,10 @@ namespace ArrayUtilities
 
 		//make the handle invalid 
 		handle.branchless_destroy(do_free);
+	}
+	template<size_t Inumber_of_pages>
+	inline constexpr paged_memory_header<Inumber_of_pages>::page_index_type paged_memory_header<Inumber_of_pages>::remaining_page_count() const
+	{
+		return free_page_count;
 	}
 }
