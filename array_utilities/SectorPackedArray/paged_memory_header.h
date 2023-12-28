@@ -24,7 +24,7 @@ namespace ArrayUtilities
 		page_handle_type allocate();
 
 		//similar to alocate but usses a bool to apply the alocation in a non branching way
-		page_handle_type branchless_alocate(bool do_allocation);
+		page_handle_type branchless_allocate(bool do_allocation);
 
 		//return an allocated handle 
 		void free(page_handle_type& handle);
@@ -66,7 +66,7 @@ namespace ArrayUtilities
 	}
 
 	template<size_t Inumber_of_pages>
-	inline paged_memory_header<Inumber_of_pages>::page_handle_type paged_memory_header<Inumber_of_pages>::branchless_alocate(bool do_allocation)
+	inline paged_memory_header<Inumber_of_pages>::page_handle_type paged_memory_header<Inumber_of_pages>::branchless_allocate(bool do_allocation)
 	{
 		//check that there are still pages to create 
 		assert(free_page_count != 0);

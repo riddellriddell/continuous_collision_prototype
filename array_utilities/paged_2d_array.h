@@ -124,7 +124,7 @@ namespace ArrayUtilities
 		const bool is_page_alocated = virtual_memory_lookup[x_axis_index].does_virtual_page_have_real_page(virtual_page_number);
 
 		//allocate a new page if needed
-		auto new_page = paged_memory_tracker.branchless_alocate(!is_page_alocated);
+		auto new_page = paged_memory_tracker.branchless_allocate(!is_page_alocated);
 
 		//optionally apply the new page value and convert the address over to a "physical address"
 		virtual_memory_lookup[x_axis_index].non_branching_add_page(virtual_page_number, new_page,!is_page_alocated);

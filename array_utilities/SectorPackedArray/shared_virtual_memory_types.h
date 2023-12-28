@@ -13,6 +13,11 @@ namespace ArrayUtilities
 
 	public:
 
+		/// <summary>
+		/// exposes the underlying data type 
+		/// </summary>
+		using data_type = Tnode_index_type;
+
 		constexpr bool is_valid() const
 		{
 			return page_number != invalid_page_value;

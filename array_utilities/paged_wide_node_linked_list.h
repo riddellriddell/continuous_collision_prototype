@@ -536,97 +536,131 @@ namespace ArrayUtilities
 		assert(address_of_node_to_return < total_number_of_nodes);
 
 		//get the page the node is in
-		node_link_type return_node_page = address_of_node_to_return >> node_page_bitshift;
+		page_handle_type return_node_page(address_of_node_to_return >> node_page_bitshift);
 
 		//get the info for the page 
-		page_link_info& page_info = per_page_link_list_data[return_node_page];
+		page_link_info& return_page_info = per_page_link_list_data[return_node_page.get_page()];
 
 		//check if the page was full
-		page_info.
+		bool is_this_page_not_in_the_free_page_list = page_info.is_full_page();
+
+		constexpr bool use_branchless = false;
+
+		//get the memory page this node is mapped to 
+		page_handle_type root_address_group_handle = convert_root_node_to_root_page_handle(root_node_index);
+
+		//get pointer to active page link list 
+		page_link_info& root_group_sentinal = page_meta_linked_list[root_address_group_handle.get_page()];
+
+		//if this page is not already attached to the free page part of the linked list then we need to transfer it across
+		if constexpr(use_branchless)
+		{
+			//get the page handle to remove but if not removing from the full page list then point to the sentinel 
+			page_handle_type next_full_page_handle = is_this_page_not_in_the_free_page_list ? return_page_info.full_page_link_info.next_page :root_group_sentinal.full_page_link_info.next_page;
+			page_handle_type last_full_page_handle = is_this_page_not_in_the_free_page_list ? return_page_info.full_page_link_info.last_page :root_group_sentinal.full_page_link_info.last_page;
+
+			page_handle_type full_page_to_remove_handle = is_this_page_not_in_the_free_page_list ? return_node_page : root_address_group_handle;
+
+			//remove from the full page list 
+			page_link_info& old_full_next_page = page_meta_linked_list[next_full_page_handle.get_page()];
+			page_link_info& old_full_last_page = page_meta_linked_list[last_full_page_handle.get_page()];
+			page_link_info& page_to_remove = page_meta_linked_list[full_page_to_remove_handle.get_page()];
+
+			old_full_next_page.full_page_link_info.last_page = page_to_remove.full_page_link_info.last_page;
+			old_full_last_page.full_page_link_info.next_page = page_to_remove.full_page_link_info.next_page;
+
+
+			page_handle_type next_partial_page_handle = is_this_page_not_in_the_free_page_list? root_group_sentinal.partial_page_link_info.next_page : return_page_info.partial_page_link_info.next_page;
+			page_handle_type last_partial_page_handel = is_this_page_not_in_the_free_page_list ? root_address_group_handle : return_page_info.partial_page_link_info.last_page;
+
+
+			page_link_info& partial_next_page = page_meta_linked_list[next_partial_page_handle.get_page()];
+			page_link_info& partial_last_page = page_meta_linked_list[last_partial_page_handel.get_page()];
+
+			partial_next_page.partial_page_link_info.last_page = return_node_page;
+			partial_last_page.partial_page_link_info.next_page = return_node_page;
+
+			return_page_info.partial_page_link_info.next_page = next_partial_page_handle;
+			return_page_info.partial_page_link_info.last_page = last_partial_page_handel;
+
+			//reset the free node count
+			page_info.free_node_address_info.free_node_count = 0;
+			free_node_source_page.free_node_address_info.free_node_address = invalid_node_address;
+		}
+		else
+		{
+			if ([[unlikely]] is_this_page_not_in_the_free_page_list)
+			{
+				//remove from the full page list 
+				page_link_info& old_full_next_page = page_meta_linked_list[return_page_info.full_page_link_info.next_page.get_page()];
+				page_link_info& old_full_last_page = page_meta_linked_list[return_page_info.full_page_link_info.last_page.get_page()];
+
+				old_full_next_page.full_page_link_info.last_page = return_page_info.full_page_link_info.last_page;
+				old_full_last_page.full_page_link_info.next_page = return_page_info.full_page_link_info.next_page;
+
+
+				//get the page info of the current page attached to the free page linked list 
+				page_link_info& old_free_page = page_meta_linked_list[root_group_sentinal.partial_page_link_info.next_page.get_page()];
+
+				return_page_info.partial_page_link_info.next_page = root_group_sentinal.partial_page_link_info.next_page;
+				return_page_info.partial_page_link_info.last_page = root_address_group_handle;
+
+				root_group_sentinal.partial_page_link_info.next_page = return_node_page;
+				old_free_page.partial_page_link_info.last_page = return_node_page;
+
+				//reset the free node count
+				page_info.free_node_address_info.free_node_count = 0;
+				free_node_source_page.free_node_address_info.free_node_address = invalid_node_address;
+
+			}
+		}
 
 		//add node to free node list 
 		wide_node& node_to_return = nodes[address_of_node_to_return];
 
 		//set the child node
-		node_to_return.child_node = page_info.free .free_node_address;
+		node_to_return.child_node = return_page_info.free_node_address_info.free_node_address;
 
 		//update the freed address
-		page_info.free_node_address = address_of_node_to_return;
-
-		//check if this page was full
-		bool was_full_page = page_info.has_no_free_nodes();
+		return_page_info.free_node_address_info.free_node_address = address_of_node_to_return;
 
 		//update the freed node count
-		++page_info.free_node_count;
+		++return_page_info.free_node_address_info.free_node_count;
 
-		//check if page had been fully freed and can be returned to the page pool 
-		bool all_nodes_returned = page_info.has_no_nodes_in_use();
+		//check if this page is now empty 
+		bool is_page_now_empty = return_page_info.has_no_nodes_in_use();
 
-		if ([[unlikely]] was_full_page)
+		if constexpr (use_branchless)
 		{
-			//get the root node group
-			auto root_address_group = convert_from_root_node_to_root_node_group_address(root_node_index);
+			//get next page or your own page if invalid
+			page_handle_type next_partial_page_address = is_page_now_empty ? return_page_info.partial_page_link_info.next_page : return_node_page;
+			page_handle_type last_partial_page_address = is_page_now_empty ? return_page_info.partial_page_link_info.last_page : return_node_page;
 
-			auto& group_info = root_group_info[root_address_group];
+			//un link the next page from this one so that if it ever removes itself it does not break anything
+			page_meta_linked_list[next_partial_page_address.get_page()].partial_page_link_info.last_page = return_page_info.partial_page_link_info.last_page;
+			page_meta_linked_list[last_partial_page_address.get_page()].partial_page_link_info.next_page = return_page_info.partial_page_link_info.next_page;
 
-			page_handle& last_page = page_info.last_page.is_valid() ? page_info.last_page : group_info.full_page_start;
-
-			//page_handle& next_page = page_info.next_page.is_valid() ? page_info.next_page : group_info.full_page_start;
-
-			//either this is the first page in the group in which case  group_info.full_page_start should be pointing at it 
-			//or it is attached to the first page in the full group in which case it should have a valid last page 
-			assert(last_page.is_valid());
-
-			//cut out of full group list
-			page_link_info& last_page = page_info
-
-				page_info.last_page.get_page();
-
-
-
-			group_info.partial_page_start
-
-			//extrack from neighbours and add to free list
-			
-
+			//return page handle 
+			page_header.branchless_free(return_node_page, is_page_now_empty);
 		}
-
-		if ([[unlikely]] all_nodes_returned)
+		else
 		{
-			//we need to put this page back into the page pool
+			//if there are no elements left in this page then we can return it to the free page handler so other pages can use it 
+			if ([[unlikely]] is_page_now_empty)
+			{
+				//un link it from the free page handle list in the root node
+				//get next page or your own page if invalid
+				page_handle_type next_partial_page_address = return_page_info.partial_page_link_info.next_page;
+				page_handle_type last_partial_page_address = return_page_info.partial_page_link_info.last_page;
 
-			//step 1 
+				//un link the next page from this one so that if it ever removes itself it does not break anything
+				page_meta_linked_list[next_partial_page_address.get_page()].partial_page_link_info.last_page = last_partial_page_address;
+				page_meta_linked_list[last_partial_page_address.get_page()].partial_page_link_info.next_page = next_partial_page_address;
+
+				//return page handle 
+				page_header.free(return_node_page);
+			}
 		}
-
-		//if returning this node will not make the page empty and this wont be the first node in the free pool for the node 
-
-		//make sure we are getting a valid node index that is in this page
-		assert(page_info. != invalid_node_address);
-		assert((page_info.free_node_push_address >> node_page_bitshift) == return_node_page);
-
-		//get the last node in the chain
-		wide_node& last_free_node_added = nodes[page_info.free_node_push_address];
-
-		//get this node 
-		wide_node& node_to_reutrn = nodex[address_of_node_to_return];
-
-		//splice in return node to the free chain
-		node_to_reutrn.parent_node = last_free_node_added.parent_node;
-
-		last_free_node_added.parent_node = address_of_node_to_return;
-
-		node_to_reutrn.child_node = page_info.free_node_push_address;
-
-		//update the pointer to oldest node 
-		page_info.free_node_push_address = address_of_node_to_return;
-
-		//update the number of free nodes in cell
-		page_info.free_node_count++;
-
-		//get the parent root page for the node 
-		auto root_page = root_virtual_address_map.resolve_virtual_address_to_page_handle(root_node_index);
-
-		//t
 	}
 
 	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
