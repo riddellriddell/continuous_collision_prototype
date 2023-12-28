@@ -46,12 +46,22 @@ namespace ArrayUtilities
 		{
 			assert(!apply_page || (new_handle_value.is_valid() == true), "This function assumes if your setting the page address that there is not a page already mapped to that address");
 
-
 			//this assumes the existing page is a invalid value which == max value
 			//by adding 1 max value wraps arround to 0,
 			//by adding the rest of the page number it should set the virtual page to the new page value
 			//if apply page == 0 then we are just adding 0 and should make no change
-			page_number += ((new_handle_value.page_number + 1) * apply_page);
+//			page_number += ((new_handle_value.page_number + 1) * apply_page);
+
+			//dont try and beat the compiler 
+			page_number = apply_page ? new_handle_value.get_page() : page_number;
+
 		}
+	
+		//creates an invalid page handle 
+		static constexpr invalid_page()
+		{
+			return page_handle{ invalid_page_value };
+		}
+	
 	};
 }
