@@ -47,6 +47,13 @@ namespace ArrayUtilities
 			return page_number;
 		}
 
+		//same as get page but wont throw asserts as you are explicitly expecting invalid values here 
+		constexpr Tnode_index_type get_page_expecting_invalid() const
+		{
+
+			return page_number;
+		}
+
 		constexpr void branchless_set_handle(page_handle new_handle_value, bool apply_page)
 		{
 			assert(!apply_page || (new_handle_value.is_valid() == true), "This function assumes if your setting the page address that there is not a page already mapped to that address");
@@ -63,9 +70,9 @@ namespace ArrayUtilities
 		}
 	
 		//creates an invalid page handle 
-		static constexpr invalid_page()
+		static constexpr page_handle< Tnode_index_type> invalid_page()
 		{
-			return page_handle{ invalid_page_value };
+			return page_handle<Tnode_index_type>{ invalid_page_value };
 		}
 	
 	};

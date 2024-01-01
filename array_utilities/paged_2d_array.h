@@ -53,7 +53,7 @@ namespace ArrayUtilities
 		using virtual_memory_map_type = virtual_memory_map<Ipage_size, Imax_y_items, Imax_total_y_items>;
 
 		//the address type returned when pulling from the mem map
-		using real_address_type = virtual_memory_map_type::real_address_type;
+		using real_node_address_type = virtual_memory_map_type::real_node_address_type;
 	
 		static constexpr y_axis_count_type invalid_y_axis_value = std::numeric_limits<y_axis_count_type>::max();
 		static constexpr x_axis_count_type invalid_x_axis_value = std::numeric_limits<x_axis_count_type>::max();
@@ -61,13 +61,13 @@ namespace ArrayUtilities
 		static constexpr uint32_t page_size = Ipage_size;
 
 		//adds an item to the back of the array and if required alocates new memory pagex 
-		virtual_memory_map_type::real_address_type push_back(x_axis_count_type x_axis_index);
+		virtual_memory_map_type::real_node_address_type push_back(x_axis_count_type x_axis_index);
 		
 		//removes the last item in a y axis array and frees pages if needed 
 		void pop_back(x_axis_count_type x_axis_index);
 
 		//find the read write address 
-		virtual_memory_map_type::real_address_type find_address(x_axis_count_type x_axis_index, virtual_memory_map_type::virtual_address_type virtual_address) const;
+		virtual_memory_map_type::real_node_address_type find_address(x_axis_count_type x_axis_index, virtual_memory_map_type::virtual_address_type virtual_address) const;
 
 		//total amount of data that needs to be alocated 
 		//the worst case is one item in every x axis cell and then one cell with all the remaining items 
@@ -104,7 +104,7 @@ namespace ArrayUtilities
 	};
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
-	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::virtual_memory_map_type::real_address_type  paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::push_back(x_axis_count_type x_axis_index)
+	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::virtual_memory_map_type::real_node_address_type  paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::push_back(x_axis_count_type x_axis_index)
 	{
 		assert(x_axis_index < Inumber_of_x_axis_items, "indexing outside x array bounds");
 
@@ -153,7 +153,7 @@ namespace ArrayUtilities
 	};
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
-	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::virtual_memory_map_type::real_address_type paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::find_address(x_axis_count_type x_axis_index, virtual_memory_map_type::virtual_address_type virtual_address) const
+	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::virtual_memory_map_type::real_node_address_type paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::find_address(x_axis_count_type x_axis_index, virtual_memory_map_type::virtual_address_type virtual_address) const
 	{
 		return virtual_memory_lookup[x_axis_index].resolve_address(virtual_address);
 	};

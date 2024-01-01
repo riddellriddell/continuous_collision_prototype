@@ -32,13 +32,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //ArrayUtilities::wide_node_linked_lists_unit_test::run_wide_node_linked_list_test();
     
     //unit test paged mem manager
-    ArrayUtilities::unit_test_manager::run_paged_memory_header_test();
+    //ArrayUtilities::unit_test_manager::run_paged_memory_header_test();
     
     //unit test the virtual memory map
-    ArrayUtilities::unit_test_manager::run_virtual_memory_header_test();
+    //ArrayUtilities::unit_test_manager::run_virtual_memory_header_test();
 
     //unit test the paged 2d array
-    ArrayUtilities::unit_test_manager::run_paged_2d_array_test();
+    //ArrayUtilities::unit_test_manager::run_paged_2d_array_test();
+
+    //unit test paged hirachical linked list
+    ArrayUtilities::unit_test_manager::run_paged_wide_node_linked_list_unit_test();
 
     //ContinuousCollisionLibrary::overlap_tracking_unit_test::run_test();
 

@@ -10,31 +10,31 @@
 namespace ArrayUtilities
 {
 	//function for calculating the number of memory pages needed for the given number of root nodes
-	static constexpr size_t calculate_memory_pages_for_wide_linked_list(size_t root_node_count, size_t node_width, size_t max_entries_per_root, size_t max_entries_per_root_group, size_t max_global_entries, size_t page_size, size_t root_node_group_size)
+	static constexpr size_t calculate_memory_pages_for_wide_linked_list(size_t root_entry_count, size_t node_width, size_t max_entries_per_root, size_t max_entries_per_root_group, size_t max_global_entries, size_t page_size, size_t root_entry_group_size)
 	{
 		
 		//step 1 put an item in every node to get as many entries as possible to try and fill a memory page
-		size_t one_entry_root_nodes_in_group = std::min(std::min(std::min(root_node_group_size, max_entries_per_root_group), max_global_entries), page_size);
+		size_t one_entry_root_nodes_in_group = std::min(std::min(std::min(root_entry_group_size, max_entries_per_root_group), max_global_entries), page_size);
 
 		//get the number of entries still available after adding single items to every root
 		size_t nodes_left_in_page = page_size - one_entry_root_nodes_in_group;
 
-		size_t nodes_needed_to_force_a_new_node_on_next_page = node_width - 1;
+		size_t elements_needed_to_force_a_new_node_on_next_page = node_width - 1;
 
 		//lets ignore the max peer root and assume we can spread the elements around the root group to
 		//get enough entries to fill the page 
-		size_t min_entries_to_fill_page_to_overflow = one_entry_root_nodes_in_group + (nodes_left_in_page * node_width) + nodes_needed_to_force_a_new_node_on_next_page;
+		size_t min_entries_to_fill_page_to_overflow = one_entry_root_nodes_in_group + (nodes_left_in_page * node_width) + elements_needed_to_force_a_new_node_on_next_page;
 
-		size_t number_of_root_node_groups = root_node_count / root_node_group_size;
+		size_t number_of_root_groups = root_entry_count / root_entry_group_size;
 
 		//if every root group had one entry
-		size_t pages_taken_up_by_single_entry = std::min(number_of_root_node_groups, max_global_entries);
+		size_t pages_taken_up_by_single_entry = std::min(number_of_root_groups, max_global_entries);
 
 
 		size_t entries_remaining = max_global_entries - pages_taken_up_by_single_entry;
 
 		//with the remaining entries work out how many pages you could fill enought to require another page
-		size_t filled_to_overflow_pages = entries_remaining / min_entries_to_fill_page_to_overflow;
+		size_t filled_to_overflow_pages = std::min(number_of_root_groups, entries_remaining / min_entries_to_fill_page_to_overflow);
 
 		//subtract from remaining elements
 		entries_remaining -= filled_to_overflow_pages * min_entries_to_fill_page_to_overflow;
@@ -48,23 +48,27 @@ namespace ArrayUtilities
 		//the total number of pages needed 
 		size_t total_pages_needed = pages_taken_up_by_single_entry + filled_to_overflow_pages + fully_filled_pages;
 
+		//sanity check to make sure we have enough room 
+		assert(total_pages_needed * node_width * page_size > max_global_entries);
+
 		return total_pages_needed;
 	}
 
-	static constexpr size_t calculate_max_pages_per_root_group(size_t node_width, size_t max_entries_per_root, size_t max_entries_per_root_group, size_t max_global_entries, size_t page_size, size_t root_node_group_size)
+	static constexpr size_t calculate_max_pages_per_root_group(size_t node_width, size_t max_entries_per_root, size_t max_entries_per_root_group, size_t max_global_entries, size_t page_size, size_t root_entry_group_size)
 	{
 		//maximum number of sub nodes if all root nodes are filled to capacity
 		//this does not take into account partial fill of nodes to maximize entities per root group 
 		//TODO::Calculate this correctly
-		size_t max_possible_entities_per_root_group = std::min(std::min(root_node_group_size * node_width * max_entries_per_root, max_entries_per_root_group), max_global_entries);
+		size_t max_possible_entities_per_root_group = std::min(std::min(root_entry_group_size * max_entries_per_root, max_entries_per_root_group), max_global_entries);
 
-		return (((max_possible_entities_per_root_group + (node_width - 1)) / node_width ) + (page_size - 1)) / page_size;
+
+		return (max_possible_entities_per_root_group + ((page_size * node_width)- 1)) / (page_size * node_width);
 	}
 
 
 	template<
 		typename Tdatatype, 
-		size_t Iroot_node_count, 
+		size_t Iroot_entries_count, 
 		size_t Inode_width, 
 		size_t Imax_entries_per_root, 
 		size_t Imax_entries_per_root_group, 
@@ -79,54 +83,56 @@ namespace ArrayUtilities
 		//remove the offeset component of an address leaving only the page or root group
 		
 		//make sure root node count is a power of 2 
-		static_assert((Imax_entries_per_root_group& (Imax_entries_per_root_group - 1)) == 0);
+		static_assert((Iroot_node_group_size& (Iroot_node_group_size - 1)) == 0);
 		
 		//make sure items in page are a power of 2 
 		static_assert((Ipage_size& (Ipage_size - 1)) == 0);
 
+
 		//the maximum number of pages this system will ever need
-		static constexpr size_t total_pages = calculate_memory_pages_for_wide_linked_list(Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size);
+		static constexpr size_t total_pages = calculate_memory_pages_for_wide_linked_list(Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size);
 
 		static constexpr size_t max_pages_per_root_group = calculate_max_pages_per_root_group(Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size);
 
-		static constexpr size_t total_number_of_nodes = total_pages * Inode_width;
+		static constexpr size_t total_number_of_nodes = total_pages * Ipage_size;
 
-		
-
-
-		//the address type used
-		using address_type = uint32_t;
-		using root_node_address_type = uint32_t;
-		using real_address_type = uint32_t;
-		using page_handle_type = page_handle<uint32_t>;
-
-
+	public:
 		//type used to track nodes, must be one more than the max to allow for an invalid value
 		using node_link_type = MiscUtilities::uint_s<total_number_of_nodes + 1>::int_type_t;
-
+	private:
 		//value for an ivalid node
 		static constexpr node_link_type invalid_node_address = std::numeric_limits<node_link_type>::max();
 
 		//the bit shift to convert from node address to the page the node is in 
 		static constexpr node_link_type node_page_bitshift = std::bit_width(Ipage_size - 1);
 
+		
+
+		//the address type used
+		using root_entry_address_type = MiscUtilities::uint_s<Iroot_entries_count + 1>::int_type_t;
+
 		//number type to use for node groups 
-		using root_node_group_address_type = MiscUtilities::uint_s<(Iroot_node_count / Iroot_node_group_size) + total_pages>::int_type_t;
+		using root_entry_group_address_type = MiscUtilities::uint_s<(Iroot_entries_count / Iroot_node_group_size) + total_pages>::int_type_t;
 
-		using root_node_virtual_map_type = virtual_memory_map<Iroot_node_group_size, Iroot_node_count / Iroot_node_group_size, total_pages>;
-
-		//the virtual address to use when accessing addresses for root nodex 
-		using root_node_virtual_address_type = root_node_virtual_map_type::virtual_address_type;
-
-		static root_node_address_type invalid_root_node_value = std::numeric_limits< root_node_address_type>::max();
+		static constexpr root_entry_address_type invalid_root_node_value = std::numeric_limits<root_entry_address_type>::max();
 
 		//bitshift needed to convert from root node address to root group
-		static constexpr  root_node_group_address_type  extract_root_group_bit_shift = std::bit_width(Iroot_node_group_size - 1);
+		static constexpr  root_entry_group_address_type  extract_root_group_bit_shift = std::bit_width(Iroot_node_group_size - 1);
 
-		static constexpr root_node_group_address_type number_of_root_groups = Iroot_node_count / Iroot_node_group_size;
+		static constexpr root_entry_group_address_type number_of_root_groups = Iroot_entries_count / Iroot_node_group_size;
+
+
+
+		//because we use page handles for the sentinal objects as well we need the page handle type to also be big enough to store those addresses 
+		using page_handle_value_type = typename MiscUtilities::uint_s < total_pages + number_of_root_groups + 1>::int_type_t;
+
+		using page_handle_type = typename page_handle<page_handle_value_type>;
+
 
 #pragma region SubStructDefinition
 
+		//the per node definition 
+		//the nodes hold the data as well as the link to the next node in the single linked list 
 		struct wide_node
 		{
 			//the invalid data type, this gets used to detect if a node is empty and can be used 
@@ -134,7 +140,7 @@ namespace ArrayUtilities
 
 			struct active_node
 			{
-				std::array<Tdatatype, node_width> data;
+				std::array<Tdatatype, Inode_width> data;
 				node_link_type child_node;
 			};
 
@@ -149,11 +155,11 @@ namespace ArrayUtilities
 				union
 				{
 					free_node_links node_links;
-					std::array<Tdatatype, node_width> data;
+					std::array<Tdatatype, Inode_width> data;
 				};
 
 				//structure breaks if the data * width is smaller than the link type
-				static_assert(sizeof(std::array<TDataType, node_width>) > sizeof(free_node_links), "size of node links larger than data size, will cause issues with node sizes");
+				static_assert(sizeof(std::array<Tdatatype, Inode_width>) > sizeof(free_node_links), "size of node links larger than data size, will cause issues with node sizes");
 
 				//this is set to a specific value to indicate that this node is free / not in use
 				node_link_type free_node_flag;
@@ -185,13 +191,6 @@ namespace ArrayUtilities
 
 		};
 
-		struct root_node
-		{
-			node_link_type active_node; //the last node that is not 100 percent filled that we are adding new items to and we start our read from
-			MiscUtilities::uint_s<Inode_width>::int_type_t write_index_in_active_node; //index in the partially filled node to write to
-		};
-
-
 		//each page acts like its own linked list
 		//when returning a node it gets reatached to the free list for the page
 		//pages also need to 
@@ -200,11 +199,10 @@ namespace ArrayUtilities
 		struct page_link_info
 		{
 			using free_node_count_type = MiscUtilities::uint_s<Ipage_size>::int_type_t;
-		 
 
 			struct free_node_address_data
 			{
-				real_address_type free_node_address;
+				node_link_type free_node_address;
 
 				free_node_count_type free_node_count;
 			};
@@ -236,26 +234,19 @@ namespace ArrayUtilities
 
 			void set_as_full_page_branchless(bool apply);
 
-			void is_full_page();
+			bool is_full_page();
 
 			bool has_no_nodes_in_use() const;
 
-			bool has_no_free_nodes() const;
+			bool has_free_nodes() const;
 
-			bool has_valid_partial_page() const;
+			bool has_valid_partial_page(page_handle_type handle_to_page_info) const;
 
-			bool has_valid_full_page() const;
+			bool has_valid_full_page(page_handle_type handle_to_page_info) const;
+
+			page_link_info() {};
 		};
 
-		struct root_group_info
-		{
-			//address of active free node page
-			page_handle_type partial_page_start;
-
-			//address of the first page attached to this root node group
-			page_handle_type full_page_start;
-
-		};
 
 #pragma endregion
 
@@ -265,142 +256,35 @@ namespace ArrayUtilities
 		//page header to track what memory pages are free
 		paged_memory_header<total_pages> page_header;
 
-		//virtual memory map that maps all the sectors to their first page
-		root_node_virtual_map_type root_virtual_address_map;
-
-		//array of all the root headers
-		//std::array< root_group_info, number_of_root_groups> root_group_info;
-
-		//array of all the page headers
-		//std::array< page_link_info, total_pages> per_page_link_list_data;
-
-		//array of pointers to the start of a per page free list
-		std::array<root_node, Iroot_node_count > root_node_ptrs;
-
 		//nodes that hold all the data 
 		std::array< wide_node, total_number_of_nodes> nodes;
 	public:
-		//add an item to index x
-		address_type add_to_index(root_node_address_type root_node_index, Tdatatype& data_to_add);
-
-		//remove a given value
-		void remove_value(root_node_address_type root_node_index, Tdatatype& data_to_remove);
 
 		//return an itterator for looping over all the agents attached to a root index
-		real_address_type get_free_node(root_node_virtual_address_type root_node_index);
+		node_link_type get_free_node(root_entry_address_type root_node_index);
 
-		void return_node(root_node_virtual_address_type root_node_index, real_address_type address_of_node_to_return);
+		void return_node(root_entry_address_type root_node_index, node_link_type address_of_node_to_return);
 
-		static constexpr page_handle_type convert_root_node_to_root_page_handle(root_node_address_type root_node_index);
+		static constexpr page_handle_type convert_root_node_to_root_page_handle(root_entry_address_type root_node_index);
+		
+		//reset all the data structures back to their initial states
+		constexpr void reset();
 
+		constexpr paged_wide_node_linked_list();
+
+		constexpr node_link_type get_total_node_count() const;
+
+		constexpr page_handle_value_type empty_page_count() const;
 	};
 
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::address_type 
-		paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::add_to_index(root_node_address_type root_node_index, Tdatatype& data_to_add)
+	
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::node_link_type
+		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::get_free_node(root_entry_address_type root_node_index)
 	{
+
 		//check root node is in expected range
-		assert(root_node_index < Iroot_node_count, "trying to add to a root node that does not exist / is out of bounds");
-
-		//get the node the root points to 
-		root_node& root_node_data = root_node_ptrs[root_node_index];
-
-		//using the root node count get the index to write to
-		uint32 index_in_node = root_node_data.write_index + 1;
-
-		//check this item is the first element in a new wide node 
-		//which means an empty free node needs to be pulled from the free list
-		if (index_in_node == node_width)
-		{
-			//need to get node off the free list 
-			auto node_index = get_free_node();
-
-			assert(nodes[node_index].is_free(), "node pulled from free list is not initializesd to a free state");
-
-			//point this new node to the previous active head node
-			nodes[node_index].active_node_data.child_node = root_node_data.write_node;
-
-			//update the node the root is pointing too
-			root_node_data.write_node = node_index;
-
-			index_in_node = 0;
-		}
-
-		//copy across the data
-		nodes[root_node_data.write_node].active_node_data.data[index_in_node] = data;
-
-		//update the write index
-		root_node_data.write_index = index_in_node;
-	}
-
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline void paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::remove_value(root_node_address_type root_node_index, Tdatatype& data_to_remove)
-	{
-		//check root node is in expected range
-		assert(root_node_index < Iroot_node_count, "trying to add to a root node that does not exist / is out of bounds");
-
-		//get the node the root points to 
-		root_node<TLinkType, node_count>& root_node_data = root_node_ptrs[root_node_index];
-
-		//get the number of nodes in the first half full node
-		uint32 first_node_entry_index = root_node_data.write_index;
-
-		uint32 write_node_index = root_node_data.write_node;
-
-		uint32 active_node = write_node_index;
-
-		uint32 active_node_read_index = first_node_entry_index;
-
-		for (; active_node != invalid_node_index;)
-		{
-			//does node match
-			if (nodes[active_node].active_node_data.data[active_node_read_index] == data)
-			{
-				//copy across lead value
-				nodes[active_node].active_node_data.data[active_node_read_index] = nodes[write_node_index].active_node_data.data[first_node_entry_index];
-
-				//check if write node is empty 
-				if (!first_node_entry_index)
-				{
-					//clean up and update the point 
-					root_node_data.write_node = nodes[write_node_index].active_node_data.child_node;
-
-					//update the new read index
-					//this will be decremented into the actual read index later
-					root_node_data.write_index = node_width;
-
-					//return last node to free list 
-					return_node(write_node_index);
-				}
-
-				root_node_data.write_index--;
-
-				return;
-			}
-
-			bool is_last_item_in_node = static_cast<bool>(!active_node_read_index);
-
-			//reset the wide node read index
-			active_node_read_index += (node_width * is_last_item_in_node);
-
-			//change read node to child of current node 
-			active_node = (active_node * !is_last_item_in_node) + (nodes[active_node].active_node_data.child_node * is_last_item_in_node);
-
-			//decrement index 
-			--active_node_read_index;
-		}
-
-		assert(false, "only here if no matching node found");
-	}
-
-
-
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::real_address_type
-		paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::get_free_node(root_node_virtual_address_type root_node_index)
-	{
-		//check root node is in expected range
-		assert(root_node_index < Iroot_node_count, "trying to add to a root node that does not exist / is out of bounds");
+		assert(root_node_index < Iroot_entries_count, "trying to add to a root node that does not exist / is out of bounds");
 
 		//get the memory page this node is mapped to 
 		page_handle_type root_address_group_handle = convert_root_node_to_root_page_handle(root_node_index);
@@ -411,7 +295,7 @@ namespace ArrayUtilities
 		page_handle_type free_page_start = root_group_sentinal.partial_page_link_info.next_page;
 
 		//if invalid page link then get new page 
-		bool needs_new_free_page = !root_group_sentinal.has_valid_partial_page(); 
+		bool needs_new_free_page = !root_group_sentinal.has_valid_partial_page(root_address_group_handle);
 
 		constexpr bool use_branchless_page_update = false;
 
@@ -429,12 +313,12 @@ namespace ArrayUtilities
 		}
 		else
 		{
-			if ([[unlikely]] needs_new_free_page)
+			if ( needs_new_free_page) [[unlikely]]
 			{
 				free_page_start = page_header.allocate();
 
-				root_group_sentinal.partial_page_link_info.next_page = new_page;
-				root_group_sentinal.partial_page_link_info.last_page = new_page;
+				root_group_sentinal.partial_page_link_info.next_page = free_page_start;
+				root_group_sentinal.partial_page_link_info.last_page = free_page_start;
 
 				auto& new_page_info = page_meta_linked_list[free_page_start.get_page()];
 
@@ -452,17 +336,17 @@ namespace ArrayUtilities
 		wide_node& node_to_return = nodes[page_first_free_node_address];
 
 		//update pointer to first node to point to child
-		free_node_source_page.free_node_address_info.free_node_address = node_to_return.free_node_data.child_node;
+		free_node_source_page.free_node_address_info.free_node_address = node_to_return.free_node_data.node_links.child_node;
 
 		//we should have more than 0 nodes at this point 
 		//if we dont we will have a wrap arround error
-		assert(age_link_info.free_node_count > 0);
+		assert(free_node_source_page.free_node_address_info.free_node_count > 0);
 
 		//update count for page 
 		--free_node_source_page.free_node_address_info.free_node_count;
 
 		//if page is out of nodes update the root node pointer to point to the next page
-		bool page_has_empty_nodes = !free_node_source_page.has_no_free_nodes();
+		bool page_has_empty_nodes = free_node_source_page.has_free_nodes();
 
 		if constexpr (use_branchless_page_update)
 		{
@@ -496,7 +380,7 @@ namespace ArrayUtilities
 		else
 		{
 			//use a branch and pay for a prediction miss
-			if ([[unlikely]] page_has_empty_nodes == false)
+			if ( page_has_empty_nodes == false) [[unlikely]]
 			{
 				//get next page or your own page if invalid
 				page_handle_type next_partial_page_address = free_node_source_page.partial_page_link_info.next_page;
@@ -526,11 +410,11 @@ namespace ArrayUtilities
 
 	}
 
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline void paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::return_node(root_node_virtual_address_type root_node_index, real_address_type address_of_node_to_return)
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::return_node(root_entry_address_type root_node_index, node_link_type address_of_node_to_return)
 	{
 		//check that root node is in expected range
-		assert(root_node < Iroot_node_count);
+		assert(root_node_index < Iroot_entries_count);
 
 		//check that node to return is in expected range
 		assert(address_of_node_to_return < total_number_of_nodes);
@@ -539,10 +423,10 @@ namespace ArrayUtilities
 		page_handle_type return_node_page(address_of_node_to_return >> node_page_bitshift);
 
 		//get the info for the page 
-		page_link_info& return_page_info = per_page_link_list_data[return_node_page.get_page()];
+		page_link_info& return_page_info = page_meta_linked_list[return_node_page.get_page()];
 
 		//check if the page was full
-		bool is_this_page_not_in_the_free_page_list = page_info.is_full_page();
+		bool is_this_page_not_in_the_free_page_list = return_page_info.is_full_page();
 
 		constexpr bool use_branchless = false;
 
@@ -584,12 +468,12 @@ namespace ArrayUtilities
 			return_page_info.partial_page_link_info.last_page = last_partial_page_handel;
 
 			//reset the free node count
-			page_info.free_node_address_info.free_node_count = 0;
-			free_node_source_page.free_node_address_info.free_node_address = invalid_node_address;
+			return_page_info.free_node_address_info.free_node_count = 0;
+			return_page_info.free_node_address_info.free_node_address = invalid_node_address;
 		}
 		else
 		{
-			if ([[unlikely]] is_this_page_not_in_the_free_page_list)
+			if ( is_this_page_not_in_the_free_page_list) [[unlikely]]
 			{
 				//remove from the full page list 
 				page_link_info& old_full_next_page = page_meta_linked_list[return_page_info.full_page_link_info.next_page.get_page()];
@@ -609,8 +493,8 @@ namespace ArrayUtilities
 				old_free_page.partial_page_link_info.last_page = return_node_page;
 
 				//reset the free node count
-				page_info.free_node_address_info.free_node_count = 0;
-				free_node_source_page.free_node_address_info.free_node_address = invalid_node_address;
+				return_page_info.free_node_address_info.free_node_count = 0;
+				return_page_info.free_node_address_info.free_node_address = invalid_node_address;
 
 			}
 		}
@@ -619,7 +503,7 @@ namespace ArrayUtilities
 		wide_node& node_to_return = nodes[address_of_node_to_return];
 
 		//set the child node
-		node_to_return.child_node = return_page_info.free_node_address_info.free_node_address;
+		node_to_return.free_node_data.node_links.child_node = return_page_info.free_node_address_info.free_node_address;
 
 		//update the freed address
 		return_page_info.free_node_address_info.free_node_address = address_of_node_to_return;
@@ -646,7 +530,7 @@ namespace ArrayUtilities
 		else
 		{
 			//if there are no elements left in this page then we can return it to the free page handler so other pages can use it 
-			if ([[unlikely]] is_page_now_empty)
+			if ( is_page_now_empty) [[unlikely]]
 			{
 				//un link it from the free page handle list in the root node
 				//get next page or your own page if invalid
@@ -663,64 +547,152 @@ namespace ArrayUtilities
 		}
 	}
 
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline constexpr  paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_handle_type 
-		paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::convert_root_node_to_root_page_handle(root_node_address_type root_node_index)
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline constexpr  paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_handle_type 
+		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::convert_root_node_to_root_page_handle(root_entry_address_type root_node_index)
 	{
-		assert(std::numeric_limits<page_handle_type::data_type>::max() < ((root_node_index >> extract_root_group_bit_shift) + total_pages));
+		//make sure the underlying data type we are using can represent this address
+		assert(std::numeric_limits<page_handle_type::data_type>::max() > ((root_node_index >> extract_root_group_bit_shift) + total_pages));
 		//create page handle type 
 		return page_handle_type((root_node_index >> extract_root_group_bit_shift) + total_pages);
 	}
 
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline void paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::set_as_full_page()
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline constexpr void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::reset()
+	{
+		//reset all page info for non sentinals 
+		for (uint32_t i = 0; i < total_pages; ++i)
+		{
+			//page handle for this index
+			page_handle_type page_for_index(i);
+
+			//link page to itself
+			page_meta_linked_list[i].partial_page_link_info.next_page = page_for_index;
+			page_meta_linked_list[i].partial_page_link_info.last_page = page_for_index;
+
+			node_link_type first_node_address = i * Ipage_size;
+
+			//check we have a sane value
+			assert(first_node_address < nodes.size());
+
+			//setup the free node list
+			page_meta_linked_list[i].free_node_address_info.free_node_address = first_node_address;
+			page_meta_linked_list[i].free_node_address_info.free_node_count = Ipage_size;
+
+		}
+
+
+		//reset all page infor for sentinals 
+		for (uint32_t i = total_pages; i < total_pages + number_of_root_groups; ++i)
+		{
+			//page handle for this index
+			page_handle_type page_for_index(i);
+
+			//link page to itself
+			page_meta_linked_list[i].partial_page_link_info.next_page = page_for_index;
+			page_meta_linked_list[i].partial_page_link_info.last_page = page_for_index;
+
+			page_meta_linked_list[i].full_page_link_info.next_page = page_for_index;
+			page_meta_linked_list[i].full_page_link_info.last_page = page_for_index;
+
+		}
+
+		//correctly link up all nodes to their page info headers
+		for (uint32_t i = 0; i < total_pages; ++i)
+		{
+			//get the first node pointed to by the page info 
+			node_link_type first_node_in_page = page_meta_linked_list[i].free_node_address_info.free_node_address;
+
+			for (uint32_t inode_index = 0; inode_index < (Ipage_size - 1); ++inode_index)
+			{
+				nodes[first_node_in_page].free_node_data.node_links.child_node = first_node_in_page + 1;
+
+				++first_node_in_page;
+			}
+
+			//make sure the last node points to an invalid handel 
+			nodes[first_node_in_page].free_node_data.node_links.child_node = invalid_node_address;
+		}
+
+		//the memory page header is setup by default but we are resetting it in case we are resetting the entire date structure mid sim
+		page_header.reset();
+	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline constexpr paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::paged_wide_node_linked_list()
+	{
+		reset();
+	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline constexpr paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::node_link_type paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::get_total_node_count() const
+	{
+		return total_number_of_nodes;
+	}
+	
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::set_as_full_page()
 	{
 		//when full page the partial page values don't get used and when its a partial page
 		//this value should never be null as our page link list is circular and should never be null
-		partial_page_link_info.last_page = page_handle_type::invalid_page_value();
+		partial_page_link_info.last_page = page_handle_type::invalid_page();
 	}
 
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline void paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::set_as_full_page_branchless(bool apply)
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::set_as_full_page_branchless(bool apply)
 	{
 		//when full page the partial page values don't get used and when its a partial page
 		//this value should never be null as our page link list is circular and should never be null
 		partial_page_link_info.last_page == apply?  page_handle_type::invalid_page_value(): partial_page_link_info.last_page;
 	}
 
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline void paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::is_full_page()
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::is_full_page()
 	{
-		return partial_page_link_info.last_page == page_handle_type::invalid_page_value();
+		return partial_page_link_info.last_page.get_page_expecting_invalid() == page_handle_type::invalid_page().get_page_expecting_invalid();
 	}
 
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_no_nodes_in_use() const
-	{
-		//should auto cast the number to a bool
-		return free_node_address_info.free_node_count;
-	}
-
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_no_free_nodes() const
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_no_nodes_in_use() const
 	{
 		//make sure nothing crazy has happened
 		assert(free_node_address_info.free_node_count <= Ipage_size);
 
 		return free_node_address_info.free_node_count == Ipage_size;
+		
 	}
 
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_valid_partial_page() const
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_free_nodes() const
 	{
+		//should auto cast the number to a bool
+		return free_node_address_info.free_node_count;
+	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_valid_partial_page(page_handle_type handle_to_page_info) const
+	{
+		//this page should be pointing to itself if it is not valid 
+		assert(partial_page_link_info.next_page.get_page() != handle_to_page_info.get_page() || partial_page_link_info.next_page.get_page() == partial_page_link_info.last_page.get_page());
+
 		//if this node is pointing to itself then there are no partial pages with free nodes that can be used that are attached to this root
-		return partial_page_link_info.next_page != partial_page_link_info.last_page;
+		return partial_page_link_info.next_page.get_page() != handle_to_page_info.get_page();
 	}
 
-	template<typename Tdatatype, size_t Iroot_node_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_node_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_valid_full_page() const
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_valid_full_page(page_handle_type handle_to_page_info) const
 	{
-		return full_page_link_info.next_page != full_page_link_info.last_page;
+		//this page should be pointing to itself if it is not valid 
+		assert(full_page_link_info.next_page.get_page() != handle_to_page_info.get_page() || full_page_link_info.next_page.get_page() == full_page_link_info.last_page.get_page());
+
+		return full_page_link_info.next_page.get_page() != handle_to_page_info.get_page();
 	}
 
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline constexpr paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_handle_value_type 
+		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::empty_page_count() const
+	{
+		return page_header.remaining_page_count();
+	}
 }
