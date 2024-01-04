@@ -109,7 +109,7 @@ namespace ArrayUtilities
 		
 		void remove(uint32 root_node_index, TDataType data);
 
-		struct iterator
+		struct itterator
 		{
 
 			typedef wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType> parent_list_type;
@@ -141,21 +141,21 @@ namespace ArrayUtilities
 			}
 			
 			// Define the iterator pre-increment operator.
-			iterator& operator++() {
+			itterator& operator++() {
 				next();
 				return *this;
 			}
 			
 			// Define the iterator equality operators.
-			bool operator==(const iterator & other) const {
+			bool operator==(const itterator & other) const {
 				return (read_index == other.read_index) && (node_index == other.node_index);
 			}
 			
-			bool operator!=(const iterator & other) const {
+			bool operator!=(const itterator & other) const {
 				return (read_index != other.read_index) || (node_index != other.node_index);
 			}
 			
-			iterator(parent_list_type& parent_list, TLinkType root_node_index) :
+			itterator(parent_list_type& parent_list, TLinkType root_node_index) :
 				read_index((parent_list.root_node_ptrs[root_node_index].write_index)),
 				node_index(parent_list.root_node_ptrs[root_node_index].write_node),
 				nodes(&(parent_list.nodes))
@@ -163,14 +163,14 @@ namespace ArrayUtilities
 			}
 			
 			//end index itterator
-			iterator() :read_index(node_width -1), node_index(invalid_node_index),nodes(nullptr) {}
+			itterator() :read_index(node_width -1), node_index(invalid_node_index),nodes(nullptr) {}
 		};
 	
 		//get an iterator to iterate through all the data items in a root node 
-		iterator get_root_node_start(TLinkType root_node_index);
+		itterator get_root_node_start(TLinkType root_node_index);
 
 		//end itterator 
-		iterator end();
+		itterator end();
 	private:
 
 		//reset all the pointers to root nodes 
@@ -202,16 +202,16 @@ namespace ArrayUtilities
 	}
 
 	template<size_t root_node_count, typename TLinkType, size_t node_count, size_t node_width, typename TDataType>
-	inline wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::iterator wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::get_root_node_start(TLinkType root_node_index)
+	inline wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::itterator wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::get_root_node_start(TLinkType root_node_index)
 	{
 		auto& itterator_target = *this;
-		return iterator(itterator_target,root_node_index);
+		return itterator(itterator_target,root_node_index);
 	}
 
 	template<size_t root_node_count, typename TLinkType, size_t node_count, size_t node_width, typename TDataType>
-	inline wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::iterator wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::end()
+	inline wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::itterator wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::end()
 	{
-		return wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::iterator();
+		return wide_node_linked_list<root_node_count, TLinkType, node_count, node_width, TDataType>::itterator();
 	}
 
 	template<size_t root_node_count, typename TLinkType, size_t node_count, size_t node_width, typename TDataType>

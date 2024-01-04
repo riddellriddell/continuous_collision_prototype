@@ -54,7 +54,7 @@ namespace ContinuousCollisionLibrary
 
 
 		//helpter to itterate over all set bits in overlap flags
-		struct iterator
+		struct itterator
 		{
 			TFlagDataType overlap_flag_copy;
 
@@ -76,38 +76,38 @@ namespace ContinuousCollisionLibrary
 			}
 
 			// Define the iterator pre-increment operator.
-			iterator& operator++() {
+			itterator& operator++() {
 				next();
 				return *this;
 			}
 
 			// Define the iterator equality operators.
-			bool operator==(const iterator& other) const {
+			bool operator==(const itterator& other) const {
 				return current_flag_index == other.current_flag_index;
 			}
 
-			bool operator!=(const iterator& other) const {
+			bool operator!=(const itterator& other) const {
 				return current_flag_index != other.current_flag_index;
 			}
 
-			iterator(TFlagDataType overlap_flag) :overlap_flag_copy(overlap_flag), current_flag_index(end)
+			itterator(TFlagDataType overlap_flag) :overlap_flag_copy(overlap_flag), current_flag_index(end)
 			{ 
 				next();
 			}
 
 			//end index itterator
-			iterator() :overlap_flag_copy(0), current_flag_index(end) {}
+			itterator() :overlap_flag_copy(0), current_flag_index(end) {}
 			
 		};
 
 		// Define begin and end functions to create iterators.
-		iterator begin() const
+		itterator begin() const
 		{
-			return iterator(overlap_flag); //initalise itterator with bits, 
+			return itterator(overlap_flag); //initalise itterator with bits, 
 		}
 
-		iterator end() const {
-			return iterator(); // End iterator has no valid bit index.
+		itterator end() const {
+			return itterator(); // End iterator has no valid bit index.
 		}
 
 		//operators to combine flags

@@ -12,7 +12,6 @@ namespace ArrayUtilities
 	//function for calculating the number of memory pages needed for the given number of root nodes
 	static constexpr size_t calculate_memory_pages_for_wide_linked_list(size_t root_entry_count, size_t node_width, size_t max_entries_per_root, size_t max_entries_per_root_group, size_t max_global_entries, size_t page_size, size_t root_entry_group_size)
 	{
-		
 		//step 1 put an item in every node to get as many entries as possible to try and fill a memory page
 		size_t one_entry_root_nodes_in_group = std::min(std::min(std::min(root_entry_group_size, max_entries_per_root_group), max_global_entries), page_size);
 
@@ -29,7 +28,6 @@ namespace ArrayUtilities
 
 		//if every root group had one entry
 		size_t pages_taken_up_by_single_entry = std::min(number_of_root_groups, max_global_entries);
-
 
 		size_t entries_remaining = max_global_entries - pages_taken_up_by_single_entry;
 
@@ -184,6 +182,7 @@ namespace ArrayUtilities
 			//sets the first value in the wide node to invalid / max value
 			//indicating there are no active entries in this wide node and that 
 			//it can be used by root nodes to store more values
+			//this is mostly a debug feature 
 			void mark_as_free()
 			{
 				free_node_data.free_node_flag = invalid_link_value;
@@ -247,6 +246,18 @@ namespace ArrayUtilities
 			page_link_info() {};
 		};
 
+		//small data structure that represents the start of the single linked list 
+		//attached to a root node in the structure 
+		struct root_node
+		{
+			using write_index_type = MiscUtilities::uint_s<Inode_width + 1>::int_type_t;
+
+			node_link_type write_node; //the last node that is not 100 percent filled 
+			write_index_type write_index; //what index in the write node are we writing to
+		};
+
+
+
 
 #pragma endregion
 
@@ -256,8 +267,13 @@ namespace ArrayUtilities
 		//page header to track what memory pages are free
 		paged_memory_header<total_pages> page_header;
 
+		//array of all the root node pointers 
+		std::array<root_node, Iroot_entries_count> root_node_ptrs = {};
+
 		//nodes that hold all the data 
-		std::array< wide_node, total_number_of_nodes> nodes;
+		std::array< wide_node, total_number_of_nodes> nodes = {};
+
+
 	public:
 
 		//return an itterator for looping over all the agents attached to a root index
@@ -272,9 +288,89 @@ namespace ArrayUtilities
 
 		constexpr paged_wide_node_linked_list();
 
+		//function to add a value to a root node
+		//the root node is the node to add to
+		//data is the values to copy
+		void add(root_entry_address_type root_node_index, Tdatatype data);
+
+
+		void remove(root_entry_address_type root_node_index, Tdatatype data);
+
 		constexpr node_link_type get_total_node_count() const;
 
 		constexpr page_handle_value_type empty_page_count() const;
+
+
+		struct itterator
+		{
+
+			using parent_type = paged_wide_node_linked_list<
+				Tdatatype,
+				Iroot_entries_count,
+				Inode_width,
+				Imax_entries_per_root,
+				Imax_entries_per_root_group,
+				Imax_global_entries,
+				Ipage_size,
+				Iroot_node_group_size>;
+
+			static constexpr node_link_type invalid_node_index = std::numeric_limits<node_link_type>::max();
+
+			typename root_node::write_index_type  read_index;
+			node_link_type node_index;
+
+			//pointer to wide node array 
+			std::array<wide_node, total_number_of_nodes >* nodes;
+
+			// Define the iterator dereference operator.
+			Tdatatype& operator*() const
+			{
+				return (*nodes)[node_index].active_node_data.data[read_index];
+			}
+
+			void next()
+			{
+				//check if we are at the last in the node
+				bool last_in_node = !read_index;
+
+				//if we are the last in the node change the ndde we are pointing to 
+				node_index = last_in_node ? (*nodes)[node_index].active_node_data.child_node : node_index;
+
+				//go to next index in node or if it is the last node reset read index to node width -1 
+				read_index = (read_index + (Inode_width * last_in_node)) - 1;
+			}
+
+			// Define the iterator pre-increment operator.
+			itterator& operator++() {
+				next();
+				return *this;
+			}
+
+			// Define the iterator equality operators.
+			bool operator==(const itterator& other) const {
+				return (read_index == other.read_index) && (node_index == other.node_index);
+			}
+
+			bool operator!=(const itterator& other) const {
+				return (read_index != other.read_index) || (node_index != other.node_index);
+			}
+
+			itterator(parent_type& parent_list, root_entry_address_type root_node_index) :
+				read_index((parent_list.root_node_ptrs[root_node_index].write_index)),
+				node_index(parent_list.root_node_ptrs[root_node_index].write_node),
+				nodes(&(parent_list.nodes))
+			{
+			}
+
+			//end index itterator
+			itterator() :read_index(Inode_width - 1), node_index(invalid_node_index), nodes(nullptr) {}
+		};
+
+		//get an iterator to iterate through all the data items in a root node 
+		itterator get_root_node_start(root_entry_address_type root_node_index);
+
+		//end itterator 
+		itterator end();
 	};
 
 	
@@ -418,6 +514,10 @@ namespace ArrayUtilities
 
 		//check that node to return is in expected range
 		assert(address_of_node_to_return < total_number_of_nodes);
+
+		//mark the return node as free
+		//this can probably be stripped out in shipping
+		nodes[address_of_node_to_return].mark_as_free();
 
 		//get the page the node is in
 		page_handle_type return_node_page(address_of_node_to_return >> node_page_bitshift);
@@ -607,21 +707,125 @@ namespace ArrayUtilities
 			{
 				nodes[first_node_in_page].free_node_data.node_links.child_node = first_node_in_page + 1;
 
+				nodes[first_node_in_page].mark_as_free();
+
 				++first_node_in_page;
 			}
 
 			//make sure the last node points to an invalid handel 
 			nodes[first_node_in_page].free_node_data.node_links.child_node = invalid_node_address;
+			nodes[first_node_in_page].mark_as_free();
 		}
 
 		//the memory page header is setup by default but we are resetting it in case we are resetting the entire date structure mid sim
 		page_header.reset();
+
+		//reset all the root node pointers
+		std::for_each(root_node_ptrs.begin(), root_node_ptrs.end(), [&](auto& root_ptr)
+			{
+				root_ptr.write_node = invalid_node_address;
+				root_ptr.write_index = Inode_width - 1;
+			});
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
 	inline constexpr paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::paged_wide_node_linked_list()
 	{
 		reset();
+	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::add(root_entry_address_type root_node_index, Tdatatype data)
+	{
+		//check root node is in expected range
+		assert(root_node_index < Iroot_entries_count, "trying to add to a root node that does not exist / is out of bounds");
+
+		//get the node the root points to 
+		root_node& root_node_data = root_node_ptrs[root_node_index];
+
+		//using the root node count get the index to write to
+		typename root_node::write_index_type index_in_node = root_node_data.write_index + 1;
+
+		//check this item is the first element in a new wide node 
+		//which means an empty free node needs to be pulled from the free list
+		if (index_in_node >= Inode_width)
+		{
+			//need to get node off the free list 
+			auto node_index = get_free_node(root_node_index);
+
+			assert(nodes[node_index].is_free(), "node pulled from free list is not initializesd to a free state");
+
+			//point this new node to the previous active head node
+			nodes[node_index].active_node_data.child_node = root_node_data.write_node;
+
+			//update the node the root is pointing too
+			root_node_data.write_node = node_index;
+
+			index_in_node = 0;
+		}
+
+		//copy across the data
+		nodes[root_node_data.write_node].active_node_data.data[index_in_node] = data;
+
+		//update the write index
+		root_node_data.write_index = index_in_node;
+	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::remove(root_entry_address_type root_node_index, Tdatatype data)
+	{
+		//get the node the root points to 
+		root_node& root_node_data = root_node_ptrs[root_node_index];
+
+		//get the number of nodes in the first half full node
+		typename root_node::write_index_type first_node_entry_index = root_node_data.write_index;
+
+		node_link_type write_node_index = root_node_data.write_node;
+
+		node_link_type active_node = write_node_index;
+
+		node_link_type active_node_read_index = first_node_entry_index;
+
+		for (; active_node != invalid_node_address;)
+		{
+			//does node match
+			if (nodes[active_node].active_node_data.data[active_node_read_index] == data)
+			{
+				//copy across lead value
+				nodes[active_node].active_node_data.data[active_node_read_index] = nodes[write_node_index].active_node_data.data[first_node_entry_index];
+
+				//check if write node is empty 
+				if (!first_node_entry_index)
+				{
+					//clean up and update the point 
+					root_node_data.write_node = nodes[write_node_index].active_node_data.child_node;
+
+					//update the new read index
+					//this will be decremented into the actual read index later
+					root_node_data.write_index = Inode_width;
+
+					//return last node to free list 
+					return_node(root_node_index, write_node_index);
+				}
+
+				root_node_data.write_index--;
+
+				return;
+			}
+
+			bool is_last_item_in_node = static_cast<bool>(!active_node_read_index);
+
+			//reset the wide node read index
+			active_node_read_index += (Inode_width * is_last_item_in_node);
+
+			//change read node to child of current node 
+			active_node = (active_node * !is_last_item_in_node) + (nodes[active_node].active_node_data.child_node * is_last_item_in_node);
+
+			//decrement index 
+			--active_node_read_index;
+		}
+
+		assert(false, "only here if no matching node found");
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
@@ -695,4 +899,22 @@ namespace ArrayUtilities
 	{
 		return page_header.remaining_page_count();
 	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, 
+		Iroot_node_group_size>::itterator paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::get_root_node_start(root_entry_address_type root_node_index)
+	{
+		auto& itterator_target = *this;
+		return itterator(itterator_target, root_node_index);
+	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::itterator 
+		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::end()
+	{
+		return itterator();
+	}
+
+
+
 }
