@@ -7,64 +7,13 @@
 namespace ArrayUtilities
 {
 
-	template<typename Taddress_type>
-	struct virtual_address
-	{
-		Taddress_type address;
 
-		//prefix 
-		virtual_address<Taddress_type>& operator++()
-		{
-			++address;
-
-			return *this;
-		}
-
-		virtual_address<Taddress_type>& operator--()
-		{
-			--address;
-
-			return *this;
-		}
-
-		//postfix plus
-		virtual_address<Taddress_type>& operator++(int)
-		{
-			Taddress_type temp{ address };
-
-			++address;
-
-			return temp;
-		}
-
-		virtual_address<Taddress_type>& operator--(int)
-		{
-			Taddress_type temp{ address };
-
-			--address;
-
-			return temp;
-		}
-	};
-
-	template<typename Taddress_type,size_t Ipage_bits>
-	struct real_address
-	{
-	private:
-		static constexpr Taddress_type  page_bits_mask = (1 << Ipage_bits) - 1;
-	public:
-
-		using address_value_type = Taddress_type;
-
-		Taddress_type address;
-
-		constexpr bool is_valid() const;
-	};
 
 	//this structure is for mapping a contigious address space across discontigious memory pages 
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	struct virtual_memory_map
 	{
+
 	private:
 
 		//the address size we will use to track pages 
@@ -84,8 +33,62 @@ namespace ArrayUtilities
 		//the bits that make up the local address
 		static constexpr uint32_t local_address_bits = std::bit_width(Ipage_size - 1);
 
-		using virtual_address_type = virtual_address<virtual_address_value_type>;
-		using real_node_address_type = real_address<real_address_value_type, local_address_bits>;
+	public:
+
+		struct virtual_address
+		{
+			virtual_address_value_type address;
+
+			//prefix 
+			virtual_address& operator++()
+			{
+				++address;
+
+				return *this;
+			}
+
+			virtual_address& operator--()
+			{
+				--address;
+
+				return *this;
+			}
+
+			//postfix plus
+			virtual_address& operator++(int)
+			{
+				virtual_address_value_type temp{ address };
+
+				++address;
+
+				return temp;
+			}
+
+			virtual_address& operator--(int)
+			{
+				virtual_address_value_type temp{ address };
+
+				--address;
+
+				return temp;
+			}
+		};
+
+		struct real_address
+		{
+		private:
+			static constexpr real_address_value_type  page_bits_mask = (1 << local_address_bits) - 1;
+		public:
+
+			using address_value_type = real_address_value_type;
+
+			real_address_value_type address;
+		};
+
+
+
+		using virtual_address_type = virtual_address;
+		using real_node_address_type = real_address;
 		using page_handle_type = page_handle<page_address_value_type>;
 
 	private:
