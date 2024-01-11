@@ -4,6 +4,7 @@
 #include <array>
 #include <limits>
 #include <bit>
+#include <span>
 #include "array_utilities/SectorPackedArray/paged_memory_header.h"
 #include "array_utilities/SectorPackedArray/virtual_memory_map.h"
 
@@ -252,11 +253,31 @@ namespace ArrayUtilities
 		{
 			using write_index_type = MiscUtilities::uint_s<Inode_width + 1>::int_type_t;
 
+			using root_group_active_node_index_type = MiscUtilities::uint_s<Iroot_node_group_size>::int_type_t;
+
+			
 			node_link_type write_node; //the last node that is not 100 percent filled 
 			write_index_type write_index; //what index in the write node are we writing to
+			root_group_active_node_index_type active_node_index; //index in the active nodes list. this is so we can itterate over all the active nodes easy 
 		};
 
+		struct active_root_group_nodes_tracker
+		{
+			using root_node_index_type = MiscUtilities::uint_s<Iroot_node_group_size>::int_type_t;
 
+			using active_node_count_type = MiscUtilities::uint_s<Iroot_node_group_size>::int_type_t;
+
+
+			active_node_count_type active_node_count; //how mant nodes are active in this root group 
+			std::array< active_node_count_type, Iroot_node_group_size> active_nodes;
+
+			
+			active_node_count_type add_active_node( root_node_index_type index_in_root_group); //adds the active node to the list and updates the index of it 
+			active_node_count_type remove_active_node(root_node_index_type index_in_root_group);
+
+			std::array< active_node_count_type, Iroot_node_group_size>::const_iterator begin() const;
+			std::array< active_node_count_type, Iroot_node_group_size>::const_iterator end() const;
+		};
 
 
 #pragma endregion
@@ -272,6 +293,9 @@ namespace ArrayUtilities
 
 		//nodes that hold all the data 
 		std::array< wide_node, total_number_of_nodes> nodes = {};
+
+		//list of active nodes in each root group
+
 
 
 	public:

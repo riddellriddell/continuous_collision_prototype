@@ -42,6 +42,9 @@
     <ClInclude Include="strong_type\unwrap.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="bits_needed_for_unsigned_int.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="misc_utilities.cpp">

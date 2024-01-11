@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="bits_needed_for_unsigned_int.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="int_type_selection.h" />
     <ClInclude Include="int_wrapper.h" />

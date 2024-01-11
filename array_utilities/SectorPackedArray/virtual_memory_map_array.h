@@ -1,66 +1,31 @@
-#pragma once 
+#pragma once
+
 #include <array>
-#include <bit>
-#include "misc_utilities/int_type_selection.h"
-#include "array_utilities/SectorPackedArray/shared_virtual_memory_types.h"
 
 namespace ArrayUtilities
 {
 
-	//the real address needs to be external to the structure because 2 different virtual memory maps can map to the same real address 
-	//this is due to type punning allowing access to arrays through a combined or x,y address 
-	template<typename real_address_value_type, real_address_value_type local_address_bits>
-	struct real_address
-	{
-	private:
-		static constexpr real_address_value_type  page_bits_mask = (1 << local_address_bits) - 1;
-	public:
-
-		using address_value_type = real_address_value_type;
-
-		real_address_value_type address;
-	};
-
 
 	//this structure is for mapping a contigious address space across discontigious memory pages 
-	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
-	struct virtual_memory_map
+	template<size_t virtual_array_size, size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
+	struct virtual_memory_map_array
 	{
-
 	private:
 
-		//the address size we will use to track pages 
-		//one is added so we can safely assume max value == invalid address 
-		using page_address_value_type = MiscUtilities::uint_s<Itotal_number_of_pages + 1>::int_type_t;
-
-		//the virtual address type 
-		using virtual_address_value_type = MiscUtilities::uint_s<Imax_number_of_pages_in_virtual_address_space * Ipage_size >::int_type_t;
-
-		//the non virtual address type needed to actually access the memory 
-		using real_address_value_type = MiscUtilities::uint_s<Itotal_number_of_pages * Ipage_size >::int_type_t;
- 
-	public:
-
-		static constexpr virtual_address_value_type number_of_items_per_page = Ipage_size;
-
-		//the bits that make up the local address
-		static constexpr uint32_t local_address_bits = std::bit_width(Ipage_size - 1);
-
-	public:
-
+		template<typename Taddress_type>
 		struct virtual_address
 		{
-			virtual_address_value_type address;
+			Taddress_type address;
 
 			//prefix 
-			virtual_address& operator++()
+			virtual_address<Taddress_type>& operator++()
 			{
 				++address;
 
 				return *this;
 			}
 
-			virtual_address& operator--()
+			virtual_address<Taddress_type>& operator--()
 			{
 				--address;
 
@@ -68,18 +33,18 @@ namespace ArrayUtilities
 			}
 
 			//postfix plus
-			virtual_address& operator++(int)
+			virtual_address<Taddress_type>& operator++(int)
 			{
-				virtual_address_value_type temp{ address };
+				Taddress_type temp{ address };
 
 				++address;
 
 				return temp;
 			}
 
-			virtual_address& operator--(int)
+			virtual_address<Taddress_type>& operator--(int)
 			{
-				virtual_address_value_type temp{ address };
+				Taddress_type temp{ address };
 
 				--address;
 
@@ -87,8 +52,39 @@ namespace ArrayUtilities
 			}
 		};
 
+		template<typename Taddress_type, size_t Ipage_bits>
+		struct real_address
+		{
+		private:
+			static constexpr Taddress_type  page_bits_mask = (1 << Ipage_bits) - 1;
+		public:
 
-		using virtual_address_type = virtual_address;
+			using address_value_type = Taddress_type;
+
+			Taddress_type address;
+
+			constexpr bool is_valid() const;
+		};
+
+
+		//the address size we will use to track pages 
+		//one is added so we can safely assume max value == invalid address 
+		using page_address_value_type = MiscUtilities::uint_s<Itotal_number_of_pages + 1>::int_type_t;
+
+		//the virtual address type 
+		using virtual_address_value_type = MiscUtilities::uint_s<Imax_number_of_pages_in_virtual_address_space* Ipage_size >::int_type_t;
+
+		//the non virtual address type needed to actually access the memory 
+		using real_address_value_type = MiscUtilities::uint_s<Itotal_number_of_pages* Ipage_size >::int_type_t;
+
+	public:
+
+		static constexpr virtual_address_value_type number_of_items_per_page = Ipage_size;
+
+		//the bits that make up the local address
+		static constexpr uint32_t local_address_bits = std::bit_width(Ipage_size - 1);
+
+		using virtual_address_type = virtual_address<virtual_address_value_type>;
 		using real_node_address_type = real_address<real_address_value_type, local_address_bits>;
 		using page_handle_type = page_handle<page_address_value_type>;
 
@@ -101,7 +97,7 @@ namespace ArrayUtilities
 		static_assert((1 << local_address_bits) == Ipage_size);
 
 		//the all the pages assigned to this address space 
-		std::array<page_handle_type, Imax_number_of_pages_in_virtual_address_space> pages_in_space;
+		std::array<page_handle_type, Imax_number_of_pages_in_virtual_address_space * virtual_array_size> pages_in_space;
 
 		real_address_value_type convert_to_real_using_page_internal(virtual_address_value_type virtual_address, auto page_number) const;
 
@@ -123,7 +119,7 @@ namespace ArrayUtilities
 
 		//extract page handle from real address 
 		static constexpr page_handle_type extract_page_handle_from_real_address(real_node_address_type address);
-		
+
 		//check if address is first item in a memory page
 		static bool is_first_item_in_real_page(virtual_address_type address);
 
@@ -140,7 +136,7 @@ namespace ArrayUtilities
 		page_handle_type& get_page_handle_to_return(auto virtual_page_number);
 
 	};
-	
+
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_address_value_type virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::convert_to_real_using_page_internal(virtual_address_value_type virtual_address, auto page_number) const
 	{
@@ -185,7 +181,7 @@ namespace ArrayUtilities
 
 		return pages_in_space[virtual_page_number];
 	}
-	
+
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	inline bool virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::does_address_have_page(virtual_address_type address) const
 	{
@@ -194,14 +190,14 @@ namespace ArrayUtilities
 
 		return does_virtual_page_have_real_page(virtual_page_number);
 
-		
+
 	}
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	inline constexpr virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::virtual_address_value_type virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::extract_page_number_from_virtual_address(virtual_address_type address)
 	{
 		return address.address >> local_address_bits;
 	}
-	
+
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	inline constexpr virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::page_handle_type virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::extract_page_handle_from_real_address(real_node_address_type address)
 	{

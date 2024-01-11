@@ -297,7 +297,7 @@ namespace ArrayUtilities
 			std::unique_ptr<paged_link_list_type> paged_hirachical_list = std::make_unique<paged_link_list_type>();
 			
 			//run get and return node test
-			if(false)
+			if(true)
 			{
 				assert(paged_hirachical_list->get_total_node_count() >= (std::numeric_limits<uint16_t>::max() / Inode_width));
 

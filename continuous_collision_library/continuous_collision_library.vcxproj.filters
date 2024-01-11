@@ -48,6 +48,12 @@
     <ClInclude Include="UnitTests\OverlapTrackingUnitTests\OverlapTrackingUnitTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="2d_physics_main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HandleSystem\handle_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="continuous_collision_library.cpp">

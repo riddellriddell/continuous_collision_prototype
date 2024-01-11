@@ -159,8 +159,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="2d_physics_main.h" />
     <ClInclude Include="base_types_definition.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="HandleSystem\handle_system.h" />
     <ClInclude Include="overlap_tracking_grid.h" />
     <ClInclude Include="spiral_indexing_lookup_table.h" />
     <ClInclude Include="tight_grid_element.h" />
