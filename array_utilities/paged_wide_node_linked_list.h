@@ -267,20 +267,31 @@ namespace ArrayUtilities
 
 			using active_node_count_type = MiscUtilities::uint_s<Iroot_node_group_size>::int_type_t;
 
+			using active_node_itterator_type = std::array<active_node_count_type, Iroot_node_group_size>::const_iterator;
 
-			active_node_count_type active_node_count; //how mant nodes are active in this root group 
-			std::array< active_node_count_type, Iroot_node_group_size> active_nodes;
+			active_node_count_type active_node_count = 0; //how mant nodes are active in this root group 
+			std::array< active_node_count_type, Iroot_node_group_size> active_nodes = {};
 
 			
-			active_node_count_type add_active_node( root_node_index_type index_in_root_group); //adds the active node to the list and updates the index of it 
-			active_node_count_type remove_active_node(root_node_index_type index_in_root_group);
+			active_node_count_type add_active_node_and_return_index(root_node_index_type index_in_root_group); //adds the active node to the list and updates the index of it 
+			active_node_count_type copy_last_item_over_index_and_return_old_index_of_item_coppied(root_node_index_type index_in_active_list);
 
-			std::array< active_node_count_type, Iroot_node_group_size>::const_iterator begin() const;
-			std::array< active_node_count_type, Iroot_node_group_size>::const_iterator end() const;
+			std::array< active_node_count_type, Iroot_node_group_size>::const_iterator begin() const
+			{
+				return active_nodes.cbegin();
+			}
+
+			std::array< active_node_count_type, Iroot_node_group_size>::const_iterator end() const
+			{
+				return active_nodes.cbegin() + active_node_count;
+			}
 		};
 
 
 #pragma endregion
+
+
+#pragma region DataMemberDefinition
 
 		//linked list meta data for all the pages plus data for the sentinal objects 
 		std::array<page_link_info, total_pages + number_of_root_groups> page_meta_linked_list;
@@ -295,7 +306,14 @@ namespace ArrayUtilities
 		std::array< wide_node, total_number_of_nodes> nodes = {};
 
 		//list of active nodes in each root group
+		std::array< active_root_group_nodes_tracker, number_of_root_groups> active_root_node_tracker;
 
+#pragma endregion
+
+
+		void add_root_node_to_active_nodes(root_entry_group_address_type root_group, root_entry_address_type root_node_index);
+
+		void remove_node_from_active_nodes(root_entry_group_address_type root_group, root_entry_address_type root_node_index);
 
 
 	public:
@@ -392,12 +410,79 @@ namespace ArrayUtilities
 
 		//get an iterator to iterate through all the data items in a root node 
 		itterator get_root_node_start(root_entry_address_type root_node_index);
+					
+		itterator end();
+
+		root_entry_group_address_type get_root_group_for_index(root_entry_address_type root_node_index);
 
 		//end itterator 
-		itterator end();
+		using active_node_itterator_type = std::array<typename active_root_group_nodes_tracker::active_node_count_type, Iroot_node_group_size>::const_iterator;
+
+		active_node_itterator_type get_active_nodes_in_group_start(root_entry_group_address_type root_group);
+		active_node_itterator_type get_active_nodes_in_group_end(root_entry_group_address_type root_group);
+
 	};
 
 	
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::add_root_node_to_active_nodes(root_entry_group_address_type root_group, root_entry_address_type root_node_index)
+	{
+		//make sure the root group and the trakcer match up
+		assert(root_group == get_root_group_for_index(root_node_index));
+
+		//get the root node
+		root_node& root_node_to_add = root_node_ptrs[root_node_index];
+
+		//get the root node group active tracker
+		active_root_group_nodes_tracker& root_group_trakcer = active_root_node_tracker[root_group];
+
+		//the index in the root group
+		auto root_group_index = root_node_index - (Iroot_node_group_size * root_group);
+
+		//add the root group
+		auto index_added_at = root_group_trakcer.add_active_node_and_return_index(root_group_index);
+
+		assert(index_added_at < Iroot_node_group_size);
+
+		root_node_to_add.active_node_index = index_added_at;
+
+	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::remove_node_from_active_nodes(root_entry_group_address_type root_group, root_entry_address_type root_node_index)
+	{
+		//make sure the root group and the trakcer match up
+		assert(root_group == get_root_group_for_index(root_node_index));
+
+		//get the root node
+		root_node& root_node_to_remove = root_node_ptrs[root_node_index];
+
+		//get the root node group active tracker
+		active_root_group_nodes_tracker& root_group_tracker = active_root_node_tracker[root_group];
+
+		//the index in the root group
+		auto start_of_root_group = Iroot_node_group_size * root_group;
+
+		//check that the node is in the active list at the location it says it is 
+		{
+			auto root_group_index = root_node_index - start_of_root_group;
+
+			auto node_to_remove = *(root_group_tracker.begin() + root_node_to_remove.active_node_index);
+
+			assert(node_to_remove == root_group_index);
+		}
+
+		//remove from the root group
+		auto index_of_replacement_item = root_group_tracker.copy_last_item_over_index_and_return_old_index_of_item_coppied(root_node_to_remove.active_node_index);
+
+		assert(index_of_replacement_item < Iroot_node_group_size);
+
+		//get replacement node 
+		root_node& replacement_root_node = root_node_ptrs[index_of_replacement_item + start_of_root_group];
+
+		replacement_root_node.active_node_index = root_node_to_remove.active_node_index;
+	}
+
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
 	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::node_link_type
 		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::get_free_node(root_entry_address_type root_node_index)
@@ -774,6 +859,16 @@ namespace ArrayUtilities
 		//which means an empty free node needs to be pulled from the free list
 		if (index_in_node >= Inode_width)
 		{
+			//check if node needs 
+			if (root_node_data.write_node == invalid_node_address)
+			{
+				//calculate root group
+				auto root_group = get_root_group_for_index(root_node_index );
+
+				//remove the node from the active nodes list
+				add_root_node_to_active_nodes(root_group, root_node_index);
+			}
+
 			//need to get node off the free list 
 			auto node_index = get_free_node(root_node_index);
 
@@ -823,6 +918,16 @@ namespace ArrayUtilities
 				{
 					//clean up and update the point 
 					root_node_data.write_node = nodes[write_node_index].active_node_data.child_node;
+
+					//if all the elelments attached to this node have been returned we can remove this node from the active nodes list
+					if (root_node_data.write_node == invalid_node_address)
+					{
+						//calculate root group
+						auto root_group = get_root_group_for_index(root_node_index);
+
+						//remove the node from the active nodes list
+						remove_node_from_active_nodes(root_group, root_node_index);
+					}
 
 					//update the new read index
 					//this will be decremented into the actual read index later
@@ -939,6 +1044,51 @@ namespace ArrayUtilities
 		return itterator();
 	}
 
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::root_entry_group_address_type 
+		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::get_root_group_for_index(root_entry_address_type root_node_index)
+	{
+		assert(root_node_index < number_of_root_groups);
+		return root_node_index / Iroot_node_group_size;
+	}
 
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::active_node_itterator_type
+		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::get_active_nodes_in_group_start(root_entry_group_address_type root_group)
+	{
+		return active_root_node_tracker[root_group].begin();
+	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::active_node_itterator_type 
+		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::get_active_nodes_in_group_end(root_entry_group_address_type root_group)
+	{
+		return active_root_node_tracker[root_group].end();
+	}
+
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::active_root_group_nodes_tracker::active_node_count_type
+		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::active_root_group_nodes_tracker::add_active_node_and_return_index(root_node_index_type index_in_root_group)
+	{
+		assert(index_in_root_group < active_nodes.size());
+
+		//check that this value has not been added twice
+		assert(std::find(active_nodes.begin(), active_nodes.begin() + active_node_count, index_in_root_group) == active_nodes.begin() + active_node_count);
+
+		 active_nodes[active_node_count] = index_in_root_group;
+		 return active_node_count++;
+	}
+
+	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
+	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::active_root_group_nodes_tracker::active_node_count_type 
+		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::active_root_group_nodes_tracker::copy_last_item_over_index_and_return_old_index_of_item_coppied(root_node_index_type index_in_active_list)
+	{
+		assert(index_in_active_list < active_node_count);
+
+		active_nodes[index_in_active_list] = active_nodes[--active_node_count];
+
+		return active_node_count;
+	}
 
 }
