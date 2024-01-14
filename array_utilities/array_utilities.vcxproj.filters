@@ -60,6 +60,12 @@
     <ClInclude Include="SectorPackedArray\UnitTests\unit_test_paged_2d_array.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="HandleSystem\handle_data_lookup_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HandleSystem\handle_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="array_utilities.cpp">

@@ -27,10 +27,10 @@ namespace ArrayUtilities
 		page_handle_type branchless_allocate(bool do_allocation);
 
 		//return an allocated handle 
-		void free(page_handle_type& handle);
+		void free(page_handle_type& default_handle_type);
 
 		//return a handle but in a non branching way
-		void branchless_free(page_handle_type& handle, bool do_free);
+		void branchless_free(page_handle_type& default_handle_type, bool do_free);
 
 		//how many pages are there left 
 		constexpr page_index_type remaining_page_count() const;
@@ -79,41 +79,41 @@ namespace ArrayUtilities
 	}
 
 	template<size_t Inumber_of_pages>
-	inline void paged_memory_header<Inumber_of_pages>::free(page_handle_type& handle)
+	inline void paged_memory_header<Inumber_of_pages>::free(page_handle_type& default_handle_type)
 	{
 		//check that the page is valid 
-		assert(handle.is_valid());
+		assert(default_handle_type.is_valid());
 
 		//check we have not retuned to many pages 
 		assert(free_page_count <= Inumber_of_pages);
 
 		//check that it has not already been returned
-		assert(std::find(free_pages.begin(), free_pages.begin() + free_page_count, handle.get_page()) == (free_pages.begin() + free_page_count));
+		assert(std::find(free_pages.begin(), free_pages.begin() + free_page_count, default_handle_type.get_page()) == (free_pages.begin() + free_page_count));
 
-		free_pages[free_page_count++] = handle.get_page();
+		free_pages[free_page_count++] = default_handle_type.get_page();
 
 		//make the handle invalid 
-		handle.destroy();
+		default_handle_type.destroy();
 	}
 	
 	template<size_t Inumber_of_pages>
-	inline void paged_memory_header<Inumber_of_pages>::branchless_free(page_handle_type& handle, bool do_free)
+	inline void paged_memory_header<Inumber_of_pages>::branchless_free(page_handle_type& default_handle_type, bool do_free)
 	{
 		//check that the page is valid 
-		assert(handle.is_valid());
+		assert(default_handle_type.is_valid());
 
 		//check we have not retuned to many pages 
 		assert(free_page_count <= Inumber_of_pages);
 
 		//check that it has not already been returned
-		assert(std::find(free_pages.begin(), free_pages.begin() + free_page_count, handle.get_page()) == (free_pages.begin() + free_page_count));
+		assert(std::find(free_pages.begin(), free_pages.begin() + free_page_count, default_handle_type.get_page()) == (free_pages.begin() + free_page_count));
 
-		free_pages[free_page_count] = handle.get_page();
+		free_pages[free_page_count] = default_handle_type.get_page();
 
 		free_page_count += do_free;
 
 		//make the handle invalid 
-		handle.branchless_destroy(do_free);
+		default_handle_type.branchless_destroy(do_free);
 	}
 	template<size_t Inumber_of_pages>
 	inline constexpr paged_memory_header<Inumber_of_pages>::page_index_type paged_memory_header<Inumber_of_pages>::remaining_page_count() const

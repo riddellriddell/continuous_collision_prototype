@@ -7,6 +7,7 @@
 #include "misc_utilities/bits_needed_for_unsigned_int.h"
 #include "continuous_collision_library/overlap_tracking_grid.h"
 #include "continuous_collision_library/HandleSystem/handle_system.h"
+#include "continuous_collision_library/HandleSystem/handle_data_lookup_system.h"
 #include "array_utilities/paged_2d_array.h"
 
 
@@ -32,19 +33,16 @@ namespace ContinuousCollisionLibrary
 		//the address type used to find an address in the per sector data lookup array
 		using combined_virtual_memory_address_type = paged_data_header_type::combined_address_virtual_memory_map_type;
 
+		using handle_data_lookup_system_type = HandleSystem::handle_data_lookup_system < Imax_objects, combined_virtual_memory_address_type>;
+
 		//the real address type 
 		using real_address_type = paged_data_header_type::real_node_address_type;
 
 		//header to track what index a given piece of data for an object in a sector should be located 
 		paged_data_header_type object_data_header;
 
-		//list of all available handles 
-		HandleSystem::handle_system<bits_needed_to_store_handle_count> handles;
-
-		//lookup table for the address in memory for the given handle 
-		std::array<combined_virtual_memory_address_type, Imax_objects> handle_address_lookup;
-
-
+		//the system to manage all the handles and data lookup addresses 
+		handle_data_lookup_system_type handle_manager;
 
 
 		//grid tracking collisions 
