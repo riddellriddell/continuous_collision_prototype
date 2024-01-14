@@ -419,6 +419,19 @@ namespace ArrayUtilities
 						assert(found_added_item, "the value of x was not correctly retrieved");
 					}
 
+					//check if correctly added to active node lists
+					{
+						bool added_to_active_root_list;
+
+						auto root_group = paged_hirachical_list->get_root_group_for_index(index_to_add_01);
+
+						//loop throuhg all the active nodes in a root group
+						std::for_each(paged_hirachical_list->get_active_nodes_in_group_start(root_group), paged_hirachical_list->get_active_nodes_in_group_end(root_group), [&](auto& x)
+							{
+								assert(x == root_group + index_to_add_01, "the value of the active roots was not correctly retrieved");
+							});
+					}
+
 					//remove the value inserted 
 					paged_hirachical_list->remove(index_to_add_01, static_cast<uint8>(item_to_add_01));
 
@@ -432,6 +445,21 @@ namespace ArrayUtilities
 
 						assert(!found_added_item, "the value of x should have been removed");
 					}
+
+
+					//check if correctly added to active node lists
+					{
+						bool added_to_active_root_list;
+
+						auto root_group = paged_hirachical_list->get_root_group_for_index(index_to_add_01);
+
+						//loop throuhg all the active nodes in a root group
+						std::for_each(paged_hirachical_list->get_active_nodes_in_group_start(root_group), paged_hirachical_list->get_active_nodes_in_group_end(root_group), [&](auto& x)
+							{
+								assert(false, "at this point there should be no active nodes");
+							});
+					}
+
 				}
 
 				//add single item to index 1
@@ -453,6 +481,19 @@ namespace ArrayUtilities
 						assert(found_added_item, "the value of x was not correctly retrieved");
 					}
 
+					//check if correctly added to active node lists
+					{
+						bool added_to_active_root_list;
+
+						auto root_group = paged_hirachical_list->get_root_group_for_index(index_to_add_02);
+
+						//loop throuhg all the active nodes in a root group
+						std::for_each(paged_hirachical_list->get_active_nodes_in_group_start(root_group), paged_hirachical_list->get_active_nodes_in_group_end(root_group), [&](auto& x)
+							{
+								assert(x == root_group + index_to_add_02, "the value of the active roots was not correctly retrieved");
+							});
+					}
+
 					//remove the value inserted 
 					paged_hirachical_list->remove(index_to_add_02, static_cast<uint8>(item_to_add_02));
 
@@ -465,6 +506,19 @@ namespace ArrayUtilities
 						std::for_each(begin, end, [&](auto& x) {found_added_item = (x == item_to_add_02); });
 
 						assert(!found_added_item, "the value of x should have been removed");
+					}
+
+					//check if correctly added to active node lists
+					{
+						bool added_to_active_root_list;
+
+						auto root_group = paged_hirachical_list->get_root_group_for_index(item_to_add_02);
+
+						//loop throuhg all the active nodes in a root group
+						std::for_each(paged_hirachical_list->get_active_nodes_in_group_start(root_group), paged_hirachical_list->get_active_nodes_in_group_end(root_group), [&](auto& x)
+							{
+								assert(false, "at this point there should be no active nodes");
+							});
 					}
 				}
 
@@ -496,6 +550,21 @@ namespace ArrayUtilities
 							assert(found_added_item, "the value of x should have been found");
 						});
 
+
+					//check if correctly added to active node lists
+					{
+						bool added_to_active_root_list;
+
+						auto root_group = paged_hirachical_list->get_root_group_for_index(index_to_add_03);
+
+						//loop throuhg all the active nodes in a root group
+						std::for_each(paged_hirachical_list->get_active_nodes_in_group_start(root_group), paged_hirachical_list->get_active_nodes_in_group_end(root_group), [&](auto& x)
+							{
+								assert(x == root_group + index_to_add_03, "the value of the active roots was not correctly retrieved");
+							});
+					}
+
+
 					uint32 item_to_remove_03 = 4;
 
 					//remove a single item in the middle 
@@ -521,6 +590,21 @@ namespace ArrayUtilities
 							}
 						});
 
+					//check that the active root nodes still has the index_3 value 
+					{
+						bool added_to_active_root_list;
+
+						auto root_group = paged_hirachical_list->get_root_group_for_index(index_to_add_03);
+
+						//loop throuhg all the active nodes in a root group
+						std::for_each(paged_hirachical_list->get_active_nodes_in_group_start(root_group), paged_hirachical_list->get_active_nodes_in_group_end(root_group), [&](auto& x)
+							{
+								assert(x == root_group + index_to_add_03, "the value of the active roots was not correctly retrieved");
+							});
+					}
+
+
+
 					//remove all the remaining items 
 					std::for_each(items_to_add_03.begin(), items_to_add_03.end(), [&](auto& x)
 						{
@@ -545,6 +629,19 @@ namespace ArrayUtilities
 
 							assert(!found_added_item, "the value of x should have been removed");
 						});
+
+					//check if correctly added to active node lists
+					{
+						bool added_to_active_root_list;
+
+						auto root_group = paged_hirachical_list->get_root_group_for_index(index_to_add_03);
+
+						//loop throuhg all the active nodes in a root group
+						std::for_each(paged_hirachical_list->get_active_nodes_in_group_start(root_group), paged_hirachical_list->get_active_nodes_in_group_end(root_group), [&](auto& x)
+							{
+								assert(false, "at this point there should be no active nodes");
+							});
+					}
 				}
 
 				//run bulk add and remove test
