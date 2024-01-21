@@ -66,6 +66,12 @@
     <ClInclude Include="HandleSystem\handle_system.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tight_packed_paged_2d_array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="handle_tracked_2d_paged_array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="array_utilities.cpp">

@@ -33,7 +33,7 @@ namespace HandleSystem
 		std::array<Taddress_type, max_handle_count> handle_address_lookup;
 	public:
 
-		//get a handle from the syste
+		//get a handle from the system
 		handle_system_type::default_handle_type get_handle();
 
 		//remove a handle 

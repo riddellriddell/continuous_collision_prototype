@@ -33,8 +33,9 @@ namespace ArrayUtilities
 		//one is added so we can safely assume max value == invalid address 
 		using page_address_value_type = MiscUtilities::uint_s<Itotal_number_of_pages + 1>::int_type_t;
 
-		//the virtual address type 
-		using virtual_address_value_type = MiscUtilities::uint_s<Imax_number_of_pages_in_virtual_address_space * Ipage_size >::int_type_t;
+
+		//the virtual address number type needed to store all possible addess values in the available address space 
+		using virtual_address_value_type = MiscUtilities::uint_s<Imax_number_of_pages_in_virtual_address_space* Ipage_size >::int_type_t;
 
 		//the non virtual address type needed to actually access the memory 
 		using real_address_value_type = MiscUtilities::uint_s<Itotal_number_of_pages * Ipage_size >::int_type_t;
@@ -106,6 +107,11 @@ namespace ArrayUtilities
 		real_address_value_type convert_to_real_using_page_internal(virtual_address_value_type virtual_address, auto page_number) const;
 
 	public:
+
+		//what is the max virtual address possible 
+		static constexpr virtual_address_value_type max_virtual_address = Imax_number_of_pages_in_virtual_address_space * Ipage_size;
+
+
 		//constructor. all page handels need to be initialized as invalid
 		constexpr virtual_memory_map();
 
