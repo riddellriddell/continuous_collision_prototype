@@ -43,12 +43,20 @@ namespace ArrayUtilities
 
 		//take a data type that supports itterators and use them to move data from one address to another
 		//this is used to keep the array tightly packed 
-		void replace_remove_internal(auto& datatype_to_modifiy, real_address_type replace_from, real_address_type replace_to)const;
+		static void replace_remove_internal(auto& datatype_to_modifiy, real_address_type replace_from, real_address_type replace_to);
+
+		//this code will be for managing dynamic size data types, something not needed in this implementation
+
+		//get number of elements allocated 
+		//static real_address_type get_allocated_size(const auto& object_to_check_size);
+
+		//increase the size of the object by at least 1
+		//static void allocate_additional_space(auto& object_to_expand);
 
 	public:
 
 		//get a const version of the paged array for external access 
-		const paged_array_type& get_array_header() const {return paged_array_header};
+		const paged_array_type& get_array_header() const { return paged_array_header; };
 
 		//add an item to the paged array
 		address_return_type add_item_to_paged_array_unsafe(x_axis_type x_index_to_add_to);
@@ -78,6 +86,8 @@ namespace ArrayUtilities
 	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::address_return_type 
 		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::add_item_to_paged_array_unsafe(x_axis_type x_index_to_add_to)
 	{
+		//check that the underlying types have enough data allocated 
+
 		//we are doing nothing to the data so we can safely return it
 		return paged_array_header.push_back_and_return_address(x_index_to_add_to);
 	}
@@ -86,18 +96,18 @@ namespace ArrayUtilities
 	inline  tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::address_return_type 
 		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::remove_item_from_paged_array(x_axis_type x_index_to_remove_from, combined_virtual_address_type address_type)
 	{
-		//reduce the number of elelments in the list and get the address of the last entry
-		auto replacment_element_address = paged_array_header.pop_back_and_return_address(x_index_to_remove_from);
-
-		//convert replacement address 
-		auto remove_real_address = paged_array_header.find_address(address_type);
-
-		//loop through all the arrays and move the data 
-		std::apply(packed_datastd::apply([](auto& ...data) {(..., replace_remove_internal(data, replacment_element_address.address, remove_real_address.address)); }, the_tuple););
-
-		//return the address of the items moved 
-		//this is so other systems can update the index of tracked data
-		return remove_real_address;
+		////reduce the number of elelments in the list and get the address of the last entry
+		//auto replacment_element_address = paged_array_header.pop_back_and_return_address(x_index_to_remove_from);
+		//
+		////convert replacement address 
+		//auto remove_real_address = paged_array_header.find_address(address_type);
+		//
+		////loop through all the arrays and move the data 
+		//std::apply([&](auto& data...) {(replace_remove_internal(data, replacment_element_address.address, remove_real_address.address), ...); }, packed_data);
+		//
+		////return the address of the items moved 
+		////this is so other systems can update the index of tracked data
+		//return remove_real_address;
 	}
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename ...Tmanaged_array>

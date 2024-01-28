@@ -182,9 +182,37 @@ namespace ArrayUtilities
         }
     };
 
-    template<typename Treference_struct, std::size_t Iarray_size>
+
+
+
+    template<typename Ttuple_of_iterable_objects>
 	struct struct_of_arrays
 	{
+        //a tuple containting a bunch of array like data items that can be iterated over
+        Ttuple_of_iterable_objects tuple_of_arrays;
+
+       //struct random_iterator
+       //{
+       //    static constexpr apply_tuple_activity()
+       //    {
+       //
+       //    }
+       //
+       //
+       //    //convert from iterator to tuple ref of all items 
+       //    auto operator *() const
+       //    {
+       //
+       //    }
+       //
+       //
+       //};
+	};
+
+
+    template<typename Treference_struct, std::size_t Iarray_size>
+    struct struct_of_arrays_with_ref_struct
+    {
         //length of the arrays 
         static constexpr uint32_t num() { return Iarray_size; };
 
@@ -193,6 +221,8 @@ namespace ArrayUtilities
         using tuple_array_type = struct_of_arrays_helper<Treference_struct>::tuple_of_arrays_type<Iarray_size>;
 
         tuple_array_type tuple_of_arrays;
-	};
+    };
+
+
 
 }
