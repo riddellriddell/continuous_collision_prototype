@@ -48,6 +48,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //unit test struct of arrays helper data structure 
     ArrayUtilities::unit_test_manager::run_struct_of_arrays_test();
 
+    //test metaprograming utility for converting tuples to other types
+    ArrayUtilities::unit_test_manager::run_tuple_converter_test();
+
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_CONTINUOUSCOLLISIONPROTOTYPE, szWindowClass, MAX_LOADSTRING);

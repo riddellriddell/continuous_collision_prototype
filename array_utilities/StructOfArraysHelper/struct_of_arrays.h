@@ -20,6 +20,63 @@ namespace ArrayUtilities
         }
 	};
 
+
+    struct tuple_converter
+    {
+        template<typename Tconversion_type>
+        struct type_conversion_object
+        {       
+            using type = Tconversion_type;
+
+            type default_type;
+        };
+
+        template<std::size_t Iarray_size>
+        struct convert_to_array
+        {
+            template<typename Ttype_to_convert>
+            auto operator()(Ttype_to_convert& type_to_convert) const
+            {
+                //catch the case of us trying to make an array of references
+                return std::array<Ttype_to_convert, Iarray_size>{};
+
+            }
+        };
+
+        struct convert_from_container_to_ref
+        {
+            uint32_t index_to_reference;
+
+            template<typename Ttype_to_convert>
+            auto operator()(Ttype_to_convert& type_to_convert) const
+            {
+                //get iterator from container 
+                auto iterator = type_to_convert.begin();
+
+                //move to index we want
+                iterator += index_to_reference;
+
+                auto& ref_to_value = *iterator;
+
+                //catch the case of us trying to make an array of references
+                return std::ref(ref_to_value);
+            }
+        };
+
+        template < typename Ttuple_to_convert, typename Tconverstion_object,std::size_t... Indices>
+        static auto convert_internal(Ttuple_to_convert& target_to_convert, Tconverstion_object& conversion_function, std::index_sequence<Indices...>)
+        {
+            return std::make_tuple(conversion_function(std::get<Indices>(target_to_convert))...);
+        }
+
+        template<typename Ttuple_to_convert, typename Tconverstion_func>
+        static auto convert(Ttuple_to_convert& target_to_convert, Tconverstion_func& conversion_function )
+        {
+            return convert_internal(target_to_convert, conversion_function, std::make_index_sequence<std::tuple_size_v<std::remove_reference<Ttuple_to_convert>::type>>());
+        }
+    };
+
+
     template<typename Treference_struct>
     struct struct_of_arrays_helper
     {

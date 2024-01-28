@@ -18,6 +18,7 @@
 #include "array_utilities/SectorPackedArray/virtual_memory_map.h"
 #include "array_utilities/paged_wide_node_linked_list.h"
 #include "array_utilities/StructOfArraysHelper/struct_of_arrays.h"
+//#include "array_utilities/tight_packed_paged_2d_array.h"
 
 namespace ArrayUtilities
 {
@@ -753,5 +754,34 @@ namespace ArrayUtilities
 			assert(value_in_array_0 == val_to_set, "the ref struct did not correctly set the target value");
 		}
 
+
+		static void run_tuple_converter_test()
+		{
+			std::tuple<int, float, bool> from_tuple{};
+
+			tuple_converter::convert_to_array<100> to_array{};
+
+			auto converted_array = tuple_converter::convert(from_tuple, to_array);
+
+			tuple_converter::convert_from_container_to_ref convert_to_tuple_of_ref(0);
+
+			auto converted_ref_to_array = tuple_converter::convert(converted_array, convert_to_tuple_of_ref);
+
+			//check convert tupel work correctly
+			auto& int_ref = std::get<0>(converted_ref_to_array);
+
+			int val_to_set = 69;
+
+			int_ref = val_to_set;
+			
+			assert(std::get<0>(converted_array)[0] == val_to_set, "the ref struct did not correctly set the target value");
+		}
+
+
+
+		static void run_tight_packed_paged_2d_array_test()
+		{
+			//tight_packed_paged_2d_array_manager<255, 255, 255, 256, std::array<int, 256>> tight_packed_array;
+		}
 	};
 }
