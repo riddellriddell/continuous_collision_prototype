@@ -17,6 +17,7 @@
 #include "array_utilities/SectorPackedArray/paged_memory_header.h"
 #include "array_utilities/SectorPackedArray/virtual_memory_map.h"
 #include "array_utilities/paged_wide_node_linked_list.h"
+#include "array_utilities/StructOfArraysHelper/struct_of_arrays.h"
 
 namespace ArrayUtilities
 {
@@ -719,6 +720,37 @@ namespace ArrayUtilities
 				}
 
 			}
+		}
+
+		static void run_struct_of_arrays_test()
+		{
+			//make a test struct
+			struct test_struct
+			{
+				int* a;
+				float* b;
+				bool* c;
+
+				auto get_as_tuple()
+				{
+					return std::tie(a, b, c);
+				}
+			};
+
+			test_struct test_ref {};
+
+			struct_of_arrays_helper<test_struct>::tuple_of_arrays_type<2> tuple_of_arrays;
+
+			struct_of_arrays_helper< test_struct >::point_reference_struct_to_index(test_ref, tuple_of_arrays,1);
+
+			int val_to_set = 69;
+
+			//set the int value
+			*test_ref.a = val_to_set;
+
+			int value_in_array_0 = std::get<0>(tuple_of_arrays)[1];
+
+			assert(value_in_array_0 == val_to_set, "the ref struct did not correctly set the target value");
 		}
 
 	};

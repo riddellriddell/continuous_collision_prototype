@@ -45,7 +45,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     //ContinuousCollisionLibrary::overlap_tracking_unit_test::run_test();
 
-
+    //unit test struct of arrays helper data structure 
+    ArrayUtilities::unit_test_manager::run_struct_of_arrays_test();
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
