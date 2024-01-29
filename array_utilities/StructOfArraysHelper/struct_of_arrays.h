@@ -39,7 +39,6 @@ namespace ArrayUtilities
             {
                 //catch the case of us trying to make an array of references
                 return std::array<Ttype_to_convert, Iarray_size>{};
-
             }
         };
 
@@ -63,6 +62,23 @@ namespace ArrayUtilities
             }
         };
 
+        struct convert_from_container_to_value
+        {
+            uint32_t index_to_reference;
+
+            template<typename Ttype_to_convert>
+            auto operator()(Ttype_to_convert& type_to_convert) const
+            {
+                //get iterator from container 
+                auto iterator = type_to_convert.begin();
+
+                //move to index we want
+                iterator += index_to_reference;
+
+                return *iterator;
+            }
+        };
+        
         template < typename Ttuple_to_convert, typename Tconverstion_object,std::size_t... Indices>
         static auto convert_internal(Ttuple_to_convert& target_to_convert, Tconverstion_object& conversion_function, std::index_sequence<Indices...>)
         {
@@ -72,7 +88,7 @@ namespace ArrayUtilities
         template<typename Ttuple_to_convert, typename Tconverstion_func>
         static auto convert(Ttuple_to_convert& target_to_convert, Tconverstion_func& conversion_function )
         {
-            return convert_internal(target_to_convert, conversion_function, std::make_index_sequence<std::tuple_size_v<std::remove_reference<Ttuple_to_convert>::type>>());
+            return convert_internal(target_to_convert, conversion_function, std::make_index_sequence<std::tuple_size_v<typename std::remove_reference<Ttuple_to_convert>::type>>());
         }
     };
 
@@ -88,7 +104,7 @@ namespace ArrayUtilities
             static auto convert(std::index_sequence<Indices...>)
             {
                 return std::make_tuple(std::array<
-                    std::remove_pointer<
+                    typename std::remove_pointer<
                     typename std::remove_reference<
                     std::tuple_element_t<Indices, TupleType>>::type>::type
                     , N>{}...);
@@ -182,31 +198,65 @@ namespace ArrayUtilities
         }
     };
 
-
-
-
     template<typename Ttuple_of_iterable_objects>
 	struct struct_of_arrays
 	{
         //a tuple containting a bunch of array like data items that can be iterated over
         Ttuple_of_iterable_objects tuple_of_arrays;
 
-       //struct random_iterator
-       //{
-       //    static constexpr apply_tuple_activity()
-       //    {
-       //
-       //    }
-       //
-       //
-       //    //convert from iterator to tuple ref of all items 
-       //    auto operator *() const
-       //    {
-       //
-       //    }
-       //
-       //
-       //};
+        //iterator to manipulate data
+       struct random_iterator
+       {
+           //standard iterator implementation
+           using iterator_category = std::random_access_iterator_tag;
+           using difference_type = std::ptrdiff_t;
+           
+           //data to iterate over
+           Ttuple_of_iterable_objects& tuple_to_iterate;
+
+           //index of the current item
+           uint32_t index;
+
+           random_iterator(Ttuple_of_iterable_objects& tuple_to_iterate, uint32_t index) : tuple_to_iterate{ tuple_to_iterate }, index{ index } {};
+
+           //standard iterator implementation
+           random_iterator operator++() { ++index; return *this; }
+
+           random_iterator operator++(int) { random_iterator retval = *this; ++(*this); return retval; }
+
+           bool operator==(random_iterator other) const { return index == other.index; }
+
+           bool operator!=(random_iterator other) const { return !(*this == other); }
+
+           auto operator*() const
+           {
+               //create a tuple of values at the index we want to return
+                return tuple_converter::convert(tuple_to_iterate, tuple_converter::convert_from_container_to_value{ index });
+           }
+
+           auto operator->()
+           {
+               //create a tuple of references to the data we want to return
+               return tuple_converter::convert(tuple_to_iterate, tuple_converter::convert_from_container_to_ref{ index });
+           }
+
+           random_iterator operator+=(difference_type offset) { index += offset; return *this; }
+
+           random_iterator operator+(difference_type offset) const { random_iterator retval = *this; return retval += offset; }
+
+           friend random_iterator operator+(difference_type offset, random_iterator other) { return other + offset; }
+
+           random_iterator& operator-=(difference_type offset) { return *this += -offset; }
+
+           random_iterator operator-(difference_type offset) const { return *this + -offset; }
+
+           difference_type operator-(random_iterator other) const { return index - other.index; }
+
+           auto operator[](difference_type offset) const { return *(*this + offset); }
+
+           //same as above code but using the spaceship operator
+           auto operator<=>(random_iterator other) const { return index <=> other.index; }
+       };
 	};
 
 

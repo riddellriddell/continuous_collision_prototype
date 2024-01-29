@@ -173,7 +173,6 @@
     <ClInclude Include="SectorPackedArray\UnitTests\unit_test_paged_2d_array.h" />
     <ClInclude Include="small_list.h" />
     <ClInclude Include="StructOfArraysHelper\struct_of_arrays.h" />
-    <ClInclude Include="StructOfArraysHelper\struct_of_arrays_unit_test.h" />
     <ClInclude Include="tight_packed_paged_2d_array.h" />
     <ClInclude Include="UnitTests\unit_test_manager.h" />
     <ClInclude Include="SectorPackedArray\virtual_memory_map.h" />
