@@ -21,6 +21,7 @@ namespace ArrayUtilities
 	};
 
 
+    //take a tuple and use a function to process each element and return the result as a new tuple
     struct tuple_converter
     {
         template<typename Tconversion_type>
@@ -62,6 +63,7 @@ namespace ArrayUtilities
             }
         };
 
+
         struct convert_from_container_to_value
         {
             uint32_t index_to_reference;
@@ -92,6 +94,25 @@ namespace ArrayUtilities
         }
     };
 
+    struct tuple_transferer
+    {
+    private:
+        template <typename... Args, std::size_t... Is>
+        static constexpr void transfer_internal(const auto& source,auto& destination, std::index_sequence<Is...>) 
+        {
+            // Use fold expression to transfer references
+            ((std::get<Is>(destination) = std::get<Is>(source)), ...);
+        }
+
+    public:
+
+        template <typename... Args>
+        static constexpr void transfer(const auto& source, auto& destination)
+        {
+            constexpr std::size_t Size = sizeof...(Args);
+            transferReferencesImpl(source, destination, std::make_index_sequence<Size>());
+        }
+    };
 
     template<typename Treference_struct>
     struct struct_of_arrays_helper
@@ -204,6 +225,21 @@ namespace ArrayUtilities
         //a tuple containting a bunch of array like data items that can be iterated over
         Ttuple_of_iterable_objects tuple_of_arrays;
 
+        //a wrapper for a tuple that allows assignment opperators to work correctly
+        template <typename... Ttypes>
+        struct transferable_tuple: public std::tuple<Ttypes...>
+        {
+            //constructor
+            transferable_tuple(const std::tuple<Ttypes...>& tpl) : std::tuple<Ttypes...>(tpl) {}
+
+            //override the = operator to do a per element assignment 
+            void operator = (const auto& assign_from)
+            {
+                tuple_transferer(this, assign_from);
+            }
+        };
+
+        
         //iterator to manipulate data
        struct random_iterator
        {
@@ -231,13 +267,11 @@ namespace ArrayUtilities
            auto operator*() const
            {
                //create a tuple of values at the index we want to return
-                return tuple_converter::convert(tuple_to_iterate, tuple_converter::convert_from_container_to_value{ index });
-           }
+               //wrap the results in a transferable tuple so you do *iterator = *iterator
+               // return Ttuple_of_iterable_objects(tuple_converter::convert(tuple_to_iterate, tuple_converter::convert_from_container_to_ref{ index }));
+               tuple_converter::convert_from_container_to_ref converter{ index };
 
-           auto operator->()
-           {
-               //create a tuple of references to the data we want to return
-               return tuple_converter::convert(tuple_to_iterate, tuple_converter::convert_from_container_to_ref{ index });
+               return tuple_converter::convert(tuple_to_iterate, converter);
            }
 
            random_iterator operator+=(difference_type offset) { index += offset; return *this; }
@@ -257,7 +291,24 @@ namespace ArrayUtilities
            //same as above code but using the spaceship operator
            auto operator<=>(random_iterator other) const { return index <=> other.index; }
        };
-	};
+       
+	
+       uint32_t size()
+       {
+           return std::get<0>(tuple_of_arrays).size();
+       }
+
+       random_iterator begin()
+       {
+           return random_iterator(tuple_of_arrays, 0);
+       }
+       random_iterator end()
+       {
+           return random_iterator(tuple_of_arrays, size());
+       }
+    
+    
+    };
 
 
     template<typename Treference_struct, std::size_t Iarray_size>

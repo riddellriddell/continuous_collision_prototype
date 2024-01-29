@@ -775,6 +775,30 @@ namespace ArrayUtilities
 			int_ref = val_to_set;
 			
 			assert(std::get<0>(converted_array)[0] == val_to_set, "the ref struct did not correctly set the target value");
+
+
+			//create a struct of arrays data structure
+			struct_of_arrays<decltype(converted_array)> struct_of_arrays_01;
+
+			auto converted_ref_to_array_2 = tuple_converter::convert(struct_of_arrays_01.tuple_of_arrays, convert_to_tuple_of_ref);
+
+			//check convert tupel work correctly
+			auto& int_ref_2 = std::get<0>(converted_ref_to_array_2);
+
+			int_ref_2 = val_to_set;
+
+			assert(std::get<0>(struct_of_arrays_01.tuple_of_arrays)[0] == val_to_set, "the ref struct did not correctly set the target value");
+
+			//get iterator 
+			auto it_start = struct_of_arrays_01.begin();
+			auto it_next = it_start + 1;
+			
+			//assign a value to it_start
+			auto ref_at_start = std::get<0>(*it_start);
+
+			//transfer values
+			*it_next = *it_start;
+			assert(std::get<0>(struct_of_arrays_01.tuple_of_arrays)[1] == val_to_set, "the ref struct did not correctly set the target value");
 		}
 
 
