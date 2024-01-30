@@ -8,6 +8,14 @@
 
 namespace ArrayUtilities
 {
+    template< typename Tderived_type>
+    struct base_ref_type 
+    {
+       // do a check to make sure any type that inherits from this has a function called get tuple that 
+        // returns an object that is the same size as the struct 
+        //this it to make sure you never add a type without adding it to the tuple 
+    };
+
 	struct example_soa
 	{
 		int* x;
@@ -137,10 +145,9 @@ namespace ArrayUtilities
             }
         };
 
-        inline static Treference_struct ref_struct{};
     public:
         //the underlying tuple type
-        using ref_tuple_type = decltype(ref_struct.get_as_tuple());
+        using ref_tuple_type = decltype(std::declval<Treference_struct>().get_as_tuple());
 
         //the array of tuples type
         template<size_t Iarray_size> 
@@ -155,7 +162,7 @@ namespace ArrayUtilities
         }
 
         template <class Ttuple1, class Ttuple2, std::size_t... I>
-        static void point_reference_struct_to_index_impl(Ttuple1&& ref_tuple, Ttuple2&& tuple_of_arrays, auto index, std::index_sequence<I...>)
+        static void point_pointer_struct_to_index_impl(Ttuple1&& ref_tuple, Ttuple2&& tuple_of_arrays, auto index, std::index_sequence<I...>)
         {
             //do a fold over all items and transfer pointer values
              (
@@ -167,10 +174,11 @@ namespace ArrayUtilities
              );
         }
 
+
     public:
         //point an instance of the reference struct to all the array values of the tuple of arrays 
         template<typename TtupleOfArrays, typename Tindex_type>
-        static void point_reference_struct_to_index(Treference_struct& reference_struct, TtupleOfArrays& tuple_of_arrays, Tindex_type index)
+        static void point_pointer_struct_to_index(Treference_struct& reference_struct, TtupleOfArrays& tuple_of_arrays, Tindex_type index)
         {
           //get tuple that points to all the elements in the reference struct
           auto ref_tuple = reference_struct.get_as_tuple();
@@ -179,13 +187,32 @@ namespace ArrayUtilities
 
           static constexpr size_t tuple_size = std::tuple_size<ref_tuple_type>::value;
 
-          point_reference_struct_to_index_impl(
+          point_pointer_struct_to_index_impl(
               std::forward<ref_tuple_type&>(ref_tuple),
               std::forward<TtupleOfArrays&>(tuple_of_arrays),
               index,
               std::make_index_sequence<tuple_size>());
         }
    
+    private:
+        // Helper function template to create an instance of MyStruct from a tuple
+        template <typename... Args>
+        Treference_struct createMyStructFromTuple(const std::tuple<Args...>& tuple)
+        {
+            return { std::get<Args>(tuple)... };
+        }
+
+        static Treference_struct create_reference_struct_to_index_impl(TtupleOfArrays& tuple_of_arrays, Tindex_type index)
+        {
+            return createMyStructFromTuple
+        }
+
+    public:
+        static Treference_struct create_reference_struct_to_index(TtupleOfArrays& tuple_of_arrays, Tindex_type index)
+        {
+            return Treference_struct{}
+        }
+
     private:
         template<std::size_t... I>
         static void transfer_values_internal(ref_tuple_type& from, ref_tuple_type& to, auto index, std::index_sequence<I...>)

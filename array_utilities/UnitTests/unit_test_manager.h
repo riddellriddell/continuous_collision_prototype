@@ -742,7 +742,7 @@ namespace ArrayUtilities
 
 			struct_of_arrays_helper<test_struct>::tuple_of_arrays_type<2> tuple_of_arrays;
 
-			struct_of_arrays_helper< test_struct >::point_reference_struct_to_index(test_ref, tuple_of_arrays,1);
+			struct_of_arrays_helper< test_struct >::point_pointer_struct_to_index(test_ref, tuple_of_arrays,1);
 
 			int val_to_set = 69;
 
@@ -752,6 +752,23 @@ namespace ArrayUtilities
 			int value_in_array_0 = std::get<0>(tuple_of_arrays)[1];
 
 			assert(value_in_array_0 == val_to_set, "the ref struct did not correctly set the target value");
+
+
+
+			//make a reference struct 
+			struct test_ref_struct
+			{
+				int& a;
+				float& b;
+				bool& c;
+
+				auto get_as_tuple()
+				{
+					return std::tie(a, b, c);
+				}
+			};
+
+			struct_of_arrays_helper<test_ref_struct>::tuple_of_arrays_type<2> tuple_of_arrays_from_ref;
 		}
 
 
