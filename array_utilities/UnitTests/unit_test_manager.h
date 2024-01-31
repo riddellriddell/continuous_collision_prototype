@@ -18,7 +18,7 @@
 #include "array_utilities/SectorPackedArray/virtual_memory_map.h"
 #include "array_utilities/paged_wide_node_linked_list.h"
 #include "array_utilities/StructOfArraysHelper/struct_of_arrays.h"
-//#include "array_utilities/tight_packed_paged_2d_array.h"
+#include "array_utilities/tight_packed_paged_2d_array.h"
 
 namespace ArrayUtilities
 {
@@ -833,7 +833,7 @@ namespace ArrayUtilities
 
 		static void run_tight_packed_paged_2d_array_test()
 		{
-			//tight_packed_paged_2d_array_manager<255, 255, 255, 256, std::array<int, 256>> tight_packed_array;
+			tight_packed_paged_2d_array_manager<255, 255, 255, 256, std::array<int, 256>> tight_packed_array;
 		}
 	};
 }

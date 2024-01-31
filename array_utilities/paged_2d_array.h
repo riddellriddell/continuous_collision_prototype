@@ -19,6 +19,7 @@ namespace ArrayUtilities
 	{
 		size_t max_y_axis_pages = ((max_y_items - 1) / page_size) + 1;
 
+		//how many items do i need to add to a single page to require the max number of pages for that axis
 		size_t max_items_needed_for_max_y_pages = ((max_y_axis_pages - 1) * page_size) + 1;
 
 		//how many pages can be filled if we just put one item in each x axis entry 
@@ -26,13 +27,16 @@ namespace ArrayUtilities
 
 		size_t entries_remaining = max_total_y_items - wasted_on_partial_fill;
 
+		//after 1 item has been added  to a axis, how many extra items to get max pages on that axis
+		size_t additional_items_needed_to_get_max_pages = (max_items_needed_for_max_y_pages - 1);
+		
 		//number of y axises we can fill to max pages per axis 
 		//one is subtraceted as we already alocate one on the wasted on spread calc
-		size_t full_filled = entries_remaining / (max_items_needed_for_max_y_pages - 1);
+		size_t full_filled = (additional_items_needed_to_get_max_pages > 0) ? entries_remaining / additional_items_needed_to_get_max_pages : 0;
 
 		entries_remaining -= (full_filled * (max_items_needed_for_max_y_pages - 1));
 
-		//take the remaining entries and fill one y axis as much as possible 
+		//take the remaining entries and fill one y axis until max pages is allocated or as much as possible 
 		size_t last_axis_page_count = (((entries_remaining + 1) - 1) / page_size) + 1;
 
 		//the final number of pages is as follows

@@ -69,8 +69,8 @@ namespace ArrayUtilities
 
 	};
 	
-	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
-	inline void tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::replace_remove_internal(auto& datatype_to_modifiy, real_address_type replace_from, real_address_type replace_to) const
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size,typename Tcontainer>
+	void tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::replace_remove_internal(auto& datatype_to_modifiy, real_address_type replace_from, real_address_type replace_to)
 	{
 		//get iterator pointing to the read location
 		auto read_it = datatype_to_modifiy.begin() + replace_from;
@@ -96,18 +96,18 @@ namespace ArrayUtilities
 	inline  tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::address_return_type 
 		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::remove_item_from_paged_array(x_axis_type x_index_to_remove_from, combined_virtual_address_type address_type)
 	{
-		////reduce the number of elelments in the list and get the address of the last entry
-		//auto replacment_element_address = paged_array_header.pop_back_and_return_address(x_index_to_remove_from);
-		//
-		////convert replacement address 
-		//auto remove_real_address = paged_array_header.find_address(address_type);
-		//
-		////loop through all the arrays and move the data 
-		//std::apply([&](auto& data...) {(replace_remove_internal(data, replacment_element_address.address, remove_real_address.address), ...); }, packed_data);
-		//
-		////return the address of the items moved 
-		////this is so other systems can update the index of tracked data
-		//return remove_real_address;
+		//reduce the number of elelments in the list and get the address of the last entry
+		auto replacment_element_address = paged_array_header.pop_back_and_return_address(x_index_to_remove_from);
+		
+		//convert replacement address 
+		auto remove_real_address = paged_array_header.find_address(address_type);
+
+		//use iterators to get the last and first addresses
+		replace_remove_internal(packed_data, replacment_element_address, remove_real_address);
+		
+		//return the address of the items moved 
+		//this is so other systems can update the index of tracked data
+		return remove_real_address;
 	}
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
