@@ -18,7 +18,7 @@
 #include "array_utilities/SectorPackedArray/virtual_memory_map.h"
 #include "array_utilities/paged_wide_node_linked_list.h"
 #include "array_utilities/StructOfArraysHelper/struct_of_arrays.h"
-//#include "array_utilities/tight_packed_paged_2d_array.h"
+#include "array_utilities/tight_packed_paged_2d_array.h"
 
 namespace ArrayUtilities
 {

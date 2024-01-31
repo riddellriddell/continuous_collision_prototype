@@ -12,7 +12,7 @@
 
 namespace ArrayUtilities
 {
-	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename  ... Tmanaged_array >
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size,typename Tcontainer>
 	struct tight_packed_paged_2d_array_manager
 	{
 		//a tightly packed array
@@ -30,7 +30,7 @@ namespace ArrayUtilities
 		using address_return_type = paged_array_type::address_return_type;
 	
 		//the data structure used to house the different arrays 
-		using managed_data_type = std::tuple<Tmanaged_array ...>;
+		using container_type = Tcontainer;
 
 	private:
 
@@ -38,9 +38,9 @@ namespace ArrayUtilities
 		paged_array_type paged_array_header;
 	
 		//the data to keep tightly packed
-		managed_data_type packed_data;
-
-
+		//repacking is done using 
+		container_type packed_data;
+		
 		//take a data type that supports itterators and use them to move data from one address to another
 		//this is used to keep the array tightly packed 
 		static void replace_remove_internal(auto& datatype_to_modifiy, real_address_type replace_from, real_address_type replace_to);
@@ -69,8 +69,8 @@ namespace ArrayUtilities
 
 	};
 	
-	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename ...Tmanaged_array>
-	inline void tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::replace_remove_internal(auto& datatype_to_modifiy, real_address_type replace_from, real_address_type replace_to) const
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline void tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::replace_remove_internal(auto& datatype_to_modifiy, real_address_type replace_from, real_address_type replace_to) const
 	{
 		//get iterator pointing to the read location
 		auto read_it = datatype_to_modifiy.begin() + replace_from;
@@ -82,9 +82,9 @@ namespace ArrayUtilities
 		*write_it = *read_it;
 	}
 
-	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename ...Tmanaged_array>
-	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::address_return_type 
-		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::add_item_to_paged_array_unsafe(x_axis_type x_index_to_add_to)
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::address_return_type 
+		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::add_item_to_paged_array_unsafe(x_axis_type x_index_to_add_to)
 	{
 		//check that the underlying types have enough data allocated 
 
@@ -92,9 +92,9 @@ namespace ArrayUtilities
 		return paged_array_header.push_back_and_return_address(x_index_to_add_to);
 	}
 
-	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename ...Tmanaged_array>
-	inline  tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::address_return_type 
-		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::remove_item_from_paged_array(x_axis_type x_index_to_remove_from, combined_virtual_address_type address_type)
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline  tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::address_return_type 
+		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::remove_item_from_paged_array(x_axis_type x_index_to_remove_from, combined_virtual_address_type address_type)
 	{
 		////reduce the number of elelments in the list and get the address of the last entry
 		//auto replacment_element_address = paged_array_header.pop_back_and_return_address(x_index_to_remove_from);
@@ -110,9 +110,9 @@ namespace ArrayUtilities
 		//return remove_real_address;
 	}
 
-	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename ...Tmanaged_array>
-	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::real_address_type 
-		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tmanaged_array...>::resolve_address(auto... args) const
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::real_address_type 
+		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::resolve_address(auto... args) const
 	{
 		//forward args to paged array header 
 		return paged_array_header.find_address(args);
