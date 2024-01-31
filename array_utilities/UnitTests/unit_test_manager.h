@@ -18,7 +18,7 @@
 #include "array_utilities/SectorPackedArray/virtual_memory_map.h"
 #include "array_utilities/paged_wide_node_linked_list.h"
 #include "array_utilities/StructOfArraysHelper/struct_of_arrays.h"
-#include "array_utilities/tight_packed_paged_2d_array.h"
+//#include "array_utilities/tight_packed_paged_2d_array.h"
 
 namespace ArrayUtilities
 {
@@ -769,6 +769,17 @@ namespace ArrayUtilities
 			};
 
 			struct_of_arrays_helper<test_ref_struct>::tuple_of_arrays_type<2> tuple_of_arrays_from_ref;
+
+			uint32 index = 1;
+			
+			auto ref_struct_01 = struct_of_arrays_helper<test_ref_struct>::create_reference_struct_to_index( tuple_of_arrays_from_ref,index);
+
+			ref_struct_01.a = val_to_set;
+
+			int value_in_array_for_ref_0 = std::get<0>(tuple_of_arrays_from_ref)[1];
+			
+			assert(value_in_array_for_ref_0 == val_to_set, "the ref struct did not correctly set the target value");
+
 		}
 
 

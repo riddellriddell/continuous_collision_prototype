@@ -90,15 +90,15 @@ namespace ArrayUtilities
         };
         
         template < typename Ttuple_to_convert, typename Tconverstion_object,std::size_t... Indices>
-        static auto convert_internal(Ttuple_to_convert& target_to_convert, Tconverstion_object& conversion_function, std::index_sequence<Indices...>)
+        static auto convert_internal(Ttuple_to_convert& target_to_convert, Tconverstion_object&& conversion_function, std::index_sequence<Indices...>)
         {
             return std::make_tuple(conversion_function(std::get<Indices>(target_to_convert))...);
         }
 
         template<typename Ttuple_to_convert, typename Tconverstion_func>
-        static auto convert(Ttuple_to_convert& target_to_convert, Tconverstion_func& conversion_function )
+        static auto convert(Ttuple_to_convert& target_to_convert, Tconverstion_func&& conversion_function )
         {
-            return convert_internal(target_to_convert, conversion_function, std::make_index_sequence<std::tuple_size_v<typename std::remove_reference<Ttuple_to_convert>::type>>());
+            return convert_internal(target_to_convert, std::forward<Tconverstion_func&>(conversion_function), std::make_index_sequence<std::tuple_size_v<typename std::remove_reference<Ttuple_to_convert>::type>>());
         }
     };
 
@@ -197,20 +197,27 @@ namespace ArrayUtilities
     private:
         // Helper function template to create an instance of MyStruct from a tuple
         template <typename... Args>
-        Treference_struct createMyStructFromTuple(const std::tuple<Args...>& tuple)
+        static Treference_struct create_ref_struct_from_tuple(const std::tuple<Args...>& tuple)
         {
             return { std::get<Args>(tuple)... };
         }
 
-        static Treference_struct create_reference_struct_to_index_impl(TtupleOfArrays& tuple_of_arrays, Tindex_type index)
-        {
-            return createMyStructFromTuple
-        }
+        //template<typename TtupleOfArrays, typename Tindex_type, std::size_t... I>
+        //static Treference_struct create_reference_struct_to_index_impl(TtupleOfArrays& tuple_of_arrays, Tindex_type index,std::index_sequence<I...>)
+        //{
+        //    return create_ref_struct_from_tuple (tuple_converter::convert(tuple_of_arrays, tuple_converter::convert_from_container_to_ref{ index }));
+        //}
 
     public:
+
+        template<typename TtupleOfArrays, typename Tindex_type>
         static Treference_struct create_reference_struct_to_index(TtupleOfArrays& tuple_of_arrays, Tindex_type index)
         {
-            return Treference_struct{}
+            //create a tuple of references to the index in the tuple of arrays we want to return
+            auto ref_tuple = tuple_converter::convert(tuple_of_arrays, tuple_converter::convert_from_container_to_ref{index});
+
+            //convert the tuple to a reference struct by converting it to a value pack and passing it to the constructor
+            return create_ref_struct_from_tuple(ref_tuple);
         }
 
     private:
