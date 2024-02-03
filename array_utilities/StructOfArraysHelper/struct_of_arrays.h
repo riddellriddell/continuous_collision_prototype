@@ -340,8 +340,7 @@ namespace ArrayUtilities
        {
            return random_iterator(tuple_of_arrays, size());
        }
-    
-    
+   
     };
 
 

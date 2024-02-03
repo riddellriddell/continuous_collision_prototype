@@ -833,7 +833,36 @@ namespace ArrayUtilities
 
 		static void run_tight_packed_paged_2d_array_test()
 		{
-			tight_packed_paged_2d_array_manager<255, 255, 255, 256, std::array<int, 256>> tight_packed_array;
+			using tight_packed_array_type = tight_packed_paged_2d_array_manager<255, 255, 255, 256, std::array<int, 256>>;
+
+			auto tight_packed_array = std::make_unique<tight_packed_array_type>();
+
+			//add an item
+			auto address = tight_packed_array->add_item_to_paged_array_unsafe(0);
+
+			//write a value to the real address
+			auto& ref_to_data_01 = tight_packed_array->get_reference_to_address(std::get<0>(address));
+
+			int val_to_set = 69;
+
+			ref_to_data_01 = val_to_set;
+
+			//get reference to address at index one
+			tight_packed_array_type::real_address_type real_from_xy = tight_packed_array->resolve_address(0, tight_packed_array_type::virtual_y_axis_node_adderss_type(0));
+
+			//write a value to the real address
+			auto& ref_to_data_02 = tight_packed_array->get_reference_to_address(std::get<0>(address));
+
+			assert(ref_to_data_02 == val_to_set, "the address does not have the expected value, should be the same as val_to_set");
+
+			//remove the one item added 
+			auto remove_address_01 = tight_packed_array->remove_item_from_paged_array(std::get<1>(address));
+
+			//get the leftover data at the address
+			auto& ref_to_data_03 = tight_packed_array->get_reference_to_address(remove_address_01);
+
+			//we still expect this to be the old data 
+			assert(ref_to_data_02 == val_to_set, "the address does not have the expected value, should be the same as val_to_set");
 		}
 	};
 }

@@ -35,7 +35,7 @@ namespace ArrayUtilities
 		using tight_packed_array_type = tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, address_to_handle_type, Tmanaged_array...>;
 
 		//the address type we use
-		using combined_virtual_address_type = tight_packed_array_type::combined_virtual_address_type;
+		using virtual_combined_node_adderss_type = tight_packed_array_type::virtual_combined_node_adderss_type;
 
 		//the real address type
 		using real_address_type = tight_packed_array_type::real_address_type;
@@ -44,7 +44,7 @@ namespace ArrayUtilities
 		using x_axis_type = paged_array_type::x_axis_count_type;
 
 		//the type for finding the address of the data that belongs to a handle 
-		using handle_to_address_type = std::array<combined_virtual_address_type, Imax_total_y_items>;
+		using handle_to_address_type = std::array<virtual_combined_node_adderss_type, Imax_total_y_items>;
 
 		//constructor 
 		handle_tracked_2d_paged_array(const Tmanaged_array&& ...arrays_to_manage);

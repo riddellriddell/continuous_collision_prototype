@@ -23,7 +23,7 @@ namespace ArrayUtilities
 		size_t max_items_needed_for_max_y_pages = ((max_y_axis_pages - 1) * page_size) + 1;
 
 		//how many pages can be filled if we just put one item in each x axis entry 
-		size_t wasted_on_partial_fill = max_total_y_items - (std::min(max_total_y_items, (number_of_x_axis_items)));
+		size_t wasted_on_partial_fill = (std::min(max_total_y_items, (number_of_x_axis_items)));
 
 		size_t entries_remaining = max_total_y_items - wasted_on_partial_fill;
 
@@ -45,12 +45,23 @@ namespace ArrayUtilities
 		//plus the pages we can create with the remaining itmes 
 		size_t total_pages_needed = wasted_on_partial_fill + (full_filled * (max_y_axis_pages - 1)) + (last_axis_page_count - 1);
 
+		//assert((total_pages_needed > 0) || max_total_y_items == 0);
+
 		return total_pages_needed;
 	}
 
 	template<size_t Inumber_of_x_axis_items,size_t Imax_y_items,size_t Imax_total_y_items, size_t Ipage_size>
 	struct paged_2d_array_header
 	{
+
+		//total amount of data that needs to be alocated 
+		//the worst case is one item in every x axis cell and then one cell with all the remaining items 
+		static constexpr size_t max_pages = calculate_number_of_pages_needed(Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size);
+		static constexpr size_t max_y_axis_pages = ((Imax_y_items - 1) / Ipage_size) + 1;
+
+		//sanity check that we are alocating at leas one page if we have more than 0 items to store
+		static_assert((max_pages > 0) || Imax_total_y_items == 0);
+
 		//the type we use to track how full the y axises are full
 		using y_axis_count_type = MiscUtilities::uint_s<Imax_total_y_items + 1>::int_type_t;
 		using x_axis_count_type = MiscUtilities::uint_s<Inumber_of_x_axis_items + 1>::int_type_t;
@@ -59,9 +70,13 @@ namespace ArrayUtilities
 		//to support this there are 2 sets of virtual memory maps mapped to the same memory 
 		//the correct one is accessed using type punning 
 		//these 2 usings are used to define the 2 different map types 
-		using y_axis_virtual_memory_map_type = virtual_memory_map<Ipage_size, Imax_y_items, Imax_total_y_items>;
+		using y_axis_virtual_memory_map_type = virtual_memory_map<Ipage_size, max_y_axis_pages, max_pages>;
 		
-		using combined_address_virtual_memory_map_type = virtual_memory_map<Ipage_size, Imax_y_items * Inumber_of_x_axis_items, Imax_total_y_items>;
+		using combined_address_virtual_memory_map_type = virtual_memory_map<Ipage_size, max_y_axis_pages* Inumber_of_x_axis_items, max_pages>;
+
+		//make sure both combined and single are using the same representation for page handles
+		static_assert(std::is_same<y_axis_virtual_memory_map_type::page_handle_type, combined_address_virtual_memory_map_type::page_handle_type>::value);
+
 
 		//the address type returned when pulling from the mem map
 		using real_node_address_type = y_axis_virtual_memory_map_type::real_node_address_type;
@@ -83,7 +98,7 @@ namespace ArrayUtilities
 		virtual_y_axis_node_adderss_type get_virtual_end_address_for_x_axis(x_axis_count_type x_axis_index);
 
 		//if a memory page is not allocated for an address one is allocated then the real address is resolved and returned
-		real_node_address_type allocate_page_for_address_and_return_real_address(combined_address_virtual_memory_map_type virtual_address);
+		real_node_address_type allocate_page_for_address_and_return_real_address(virtual_combined_node_adderss_type virtual_address);
 
 		//adds an item to the back of the array and if required alocates new memory pagex 
 		real_node_address_type push_back(x_axis_count_type x_axis_index);
@@ -102,10 +117,6 @@ namespace ArrayUtilities
 		real_node_address_type find_address(x_axis_count_type x_axis_index, virtual_y_axis_node_adderss_type virtual_address) const;
 		real_node_address_type find_address(virtual_combined_node_adderss_type virtual_address) const;
 
-		//total amount of data that needs to be alocated 
-		//the worst case is one item in every x axis cell and then one cell with all the remaining items 
-		static constexpr size_t max_pages = calculate_number_of_pages_needed(Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size);
-		static constexpr size_t max_y_axis_pages = ((Imax_y_items - 1) / Ipage_size) + 1;
 		
 		//the maximum number of items neede for all pages 
 		static constexpr size_t max_total_entries = max_pages * Ipage_size;
@@ -113,16 +124,21 @@ namespace ArrayUtilities
 		//page tracker that tracks what pages are available
 		paged_memory_header<max_pages> paged_memory_tracker;
 
+		//make the page tracker is creating handles the same as the type expected by the virtual memory system 
+		static_assert(std::is_same<paged_memory_header<max_pages>::page_handle_type, combined_address_virtual_memory_map_type::page_handle_type>::value);
+
 		//the number of items in the y axis for each x axis 
 		std::array<y_axis_count_type, Inumber_of_x_axis_items> y_axis_count = {};
 
 		const std::array<y_axis_virtual_memory_map_type, Inumber_of_x_axis_items>& get_y_axis_memory_map() const;
 	private:
-		combined_address_virtual_memory_map_type& get_all_axis_memory_map_internal() const;
+		combined_address_virtual_memory_map_type& get_all_axis_memory_map_internal();
 	public:
 		const combined_address_virtual_memory_map_type& get_all_axis_memory_map() const;
 
 		static constexpr virtual_combined_node_adderss_type convert_from_y_axis_to_combined_virtual_address(x_axis_count_type x_axis_index, virtual_y_axis_node_adderss_type y_axis_virtual_address);
+		
+		static constexpr x_axis_count_type convert_from_combined_virtual_address_to_x(virtual_combined_node_adderss_type combined_address);
 
 	private:
 		//array of all the address mappings 
@@ -142,7 +158,7 @@ namespace ArrayUtilities
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
 	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::real_node_address_type 
-		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::allocate_page_for_address_and_return_real_address(combined_address_virtual_memory_map_type virtual_address)
+		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::allocate_page_for_address_and_return_real_address(virtual_combined_node_adderss_type virtual_address)
 	{
 		//check we have not exceeded the y axis count limit
 		assert(virtual_address.address < combined_address_virtual_memory_map_type::max_virtual_address, "address is outside virtual address space");
@@ -213,7 +229,7 @@ namespace ArrayUtilities
 		++y_axis_count[x_axis_index];
 
 		//convert to combined 
-		auto combined_address_to_push_to = convert_from_y_axis_to_combined_virtual_address(y_address_to_push_to);
+		auto combined_address_to_push_to = convert_from_y_axis_to_combined_virtual_address(x_axis_index, y_address_to_push_to);
 		
 		//resolve the virtual address to a real one 
 		auto real_address = allocate_page_for_address_and_return_real_address(combined_address_to_push_to);
@@ -252,7 +268,7 @@ namespace ArrayUtilities
 		auto virtual_page_index = y_axis_virtual_memory_map_type::extract_page_number_from_virtual_address(y_virtual_address_to_pop);
 
 		//convert from y axis to combined 
-		auto combined_virtual_address = convert_from_y_axis_to_combined_virtual_address(y_virtual_address_to_pop);
+		auto combined_virtual_address = convert_from_y_axis_to_combined_virtual_address(x_axis_index, y_virtual_address_to_pop);
 
 		//we need the address so we can move data around it arrays 
 		auto real_address = virtual_memory_lookup[x_axis_index].resolve_address_using_virtual_page_offset(y_virtual_address_to_pop, virtual_page_index);
@@ -288,23 +304,41 @@ namespace ArrayUtilities
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
 	inline typename paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::combined_address_virtual_memory_map_type& 
-		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::get_all_axis_memory_map_internal() const
+		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::get_all_axis_memory_map_internal() 
 	{
-		return std::bit_cast<const combined_address_virtual_memory_map_type>(virtual_memory_lookup);
+		//i don't like this code but have not found a clean way to treat an array of arrays the same as a flat array 
+
+		auto reinterpreted_virtual_memory_map = reinterpret_cast<combined_address_virtual_memory_map_type*>(virtual_memory_lookup.data());
+
+		static_assert(std::is_same< decltype(reinterpreted_virtual_memory_map), combined_address_virtual_memory_map_type*>::value);
+
+		return *std::launder(reinterpreted_virtual_memory_map);
 	}
 	
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
 	inline const typename paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::combined_address_virtual_memory_map_type& 
 		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::get_all_axis_memory_map() const
 	{
-		return get_all_axis_memory_map_internal();
+		auto reinterpreted_virtual_memory_map = reinterpret_cast< const combined_address_virtual_memory_map_type*>(virtual_memory_lookup.data());
+
+		static_assert(std::is_same< decltype(reinterpreted_virtual_memory_map), const combined_address_virtual_memory_map_type*>::value);
+
+		return *std::launder(reinterpreted_virtual_memory_map);
 	}
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
 	inline constexpr paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::virtual_combined_node_adderss_type 
 		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::convert_from_y_axis_to_combined_virtual_address(x_axis_count_type x_axis_index, virtual_y_axis_node_adderss_type y_axis_virtual_address)
 	{
-		return combined_address_virtual_memory_map_type{ (y_axis_virtual_address.address + (x_axis_index * (Imax_y_items << y_axis_virtual_memory_map_type::local_address_bits))) };
+		return virtual_combined_node_adderss_type{ (y_axis_virtual_address.address + (x_axis_index * (max_y_axis_pages << y_axis_virtual_memory_map_type::local_address_bits))) };
+	}
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline constexpr paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::x_axis_count_type 
+		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::convert_from_combined_virtual_address_to_x(virtual_combined_node_adderss_type combined_address)
+	{
+		//convert from combined to pages then from pages to x index 
+		//this would be a lot faster if max_y_axis_pages was a power of 2 
+		return (combined_address.address >> combined_address_virtual_memory_map_type::local_address_bits) / max_y_axis_pages;
 	}
 }
 

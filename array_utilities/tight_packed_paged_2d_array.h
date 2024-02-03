@@ -24,7 +24,9 @@ namespace ArrayUtilities
 		//the address to look up items in the array 
 		using real_address_type = paged_array_type::real_node_address_type;
 	
-		using combined_virtual_address_type = paged_array_type::combined_address_virtual_memory_map_type;
+		using virtual_y_axis_node_adderss_type = paged_array_type::virtual_y_axis_node_adderss_type;
+
+		using virtual_combined_node_adderss_type = paged_array_type::virtual_combined_node_adderss_type;
 
 		//address details type 
 		using address_return_type = paged_array_type::address_return_type;
@@ -61,22 +63,30 @@ namespace ArrayUtilities
 		//add an item to the paged array
 		address_return_type add_item_to_paged_array_unsafe(x_axis_type x_index_to_add_to);
 	
+		//remove an element only using a combined address
+		real_address_type remove_item_from_paged_array(virtual_combined_node_adderss_type address_to_remove);
+
 		//removes element and returns address of data that was replaced
-		address_return_type remove_item_from_paged_array(x_axis_type x_index_to_remove_from, combined_virtual_address_type address_to_remove);
+		real_address_type remove_item_from_paged_array(x_axis_type x_index_to_remove_from, virtual_combined_node_adderss_type address_to_remove);
 
 		//find the data at the given address 
 		real_address_type resolve_address(auto... args) const;
 
+		//get a iterator to the data at an address
+		auto get_iterator_address(auto address);
+
+		//get a reference to the data at an address 
+		auto& get_reference_to_address(auto address);
 	};
 	
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size,typename Tcontainer>
 	void tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::replace_remove_internal(auto& datatype_to_modifiy, real_address_type replace_from, real_address_type replace_to)
 	{
 		//get iterator pointing to the read location
-		auto read_it = datatype_to_modifiy.begin() + replace_from;
+		auto read_it = datatype_to_modifiy.begin() + replace_from.address;
 		
 		//itterator opinting to write address
-		auto write_it = datatype_to_modifiy.begin() + replace_to;
+		auto write_it = datatype_to_modifiy.begin() + replace_to.address;
 
 		//copy the values across
 		*write_it = *read_it;
@@ -93,17 +103,31 @@ namespace ArrayUtilities
 	}
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
-	inline  tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::address_return_type 
-		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::remove_item_from_paged_array(x_axis_type x_index_to_remove_from, combined_virtual_address_type address_type)
+	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::real_address_type
+		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::remove_item_from_paged_array(virtual_combined_node_adderss_type address_to_remove)
 	{
-		//reduce the number of elelments in the list and get the address of the last entry
-		auto replacment_element_address = paged_array_header.pop_back_and_return_address(x_index_to_remove_from);
-		
+		//calculate x address using combined address
+		x_axis_type x_address = paged_array_type::convert_from_combined_virtual_address_to_x(address_to_remove);
+
+		return remove_item_from_paged_array(x_address, address_to_remove);
+	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline  tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::real_address_type
+		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::remove_item_from_paged_array(x_axis_type x_index_to_remove_from, virtual_combined_node_adderss_type address_type)
+	{
+
 		//convert replacement address 
+		//do this first as if this address is the same as the address to remove the 
+		//next line will invalidate the page handle it is on
 		auto remove_real_address = paged_array_header.find_address(address_type);
 
+
+		//reduce the number of elelments in the list and get the address of the last entry
+		auto replacment_element_address = paged_array_header.pop_back_and_return_address(x_index_to_remove_from);
+
 		//use iterators to get the last and first addresses
-		replace_remove_internal(packed_data, replacment_element_address, remove_real_address);
+		replace_remove_internal(packed_data, std::get<0>(replacment_element_address), remove_real_address);
 		
 		//return the address of the items moved 
 		//this is so other systems can update the index of tracked data
@@ -115,7 +139,43 @@ namespace ArrayUtilities
 		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::resolve_address(auto... args) const
 	{
 		//forward args to paged array header 
-		return paged_array_header.find_address(args);
+		return paged_array_header.find_address(args...);
+	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline auto tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::get_iterator_address(auto address)
+	{
+		static_assert(std::is_same<real_address_type, decltype(address)>::value || std::is_same<virtual_combined_node_adderss_type, decltype(address)>::value);
+
+		real_address_type real_address;
+
+		//convert from virtual to real
+		if constexpr (std::is_same<real_address_type, decltype(address)>::value)
+		{
+			//get the iterator to the target and apply the offset
+			return packed_data.begin() + address.address;
+		}
+		else if constexpr (std::is_same<virtual_combined_node_adderss_type, decltype(address)>::value)
+		{
+			real_address = paged_array_header.find_address(address);
+
+			return packed_data.begin() + real_address.address;
+
+		}
+		else
+		{	
+
+			//this code is only compiled if the address is of the wrong type
+			static_assert(false);
+		}
+
+	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline auto& tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::get_reference_to_address(auto address)
+	{
+		// TODO: insert return statement here
+		return *get_iterator_address(address);
 	}
 
 	

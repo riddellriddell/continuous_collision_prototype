@@ -12,6 +12,9 @@ namespace ArrayUtilities
 	template<size_t Inumber_of_pages>
 	struct paged_memory_header
 	{
+		//sanity check that this page header will have a valid number of pages
+		static_assert(Inumber_of_pages > 0);
+
 		//the number type needed to index all the pages
 		using page_index_type = MiscUtilities::uint_s<Inumber_of_pages + 1>::int_type_t;
 		using page_handle_type = page_handle<page_index_type>;

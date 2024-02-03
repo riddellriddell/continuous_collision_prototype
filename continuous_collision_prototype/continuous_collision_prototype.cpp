@@ -51,6 +51,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //test metaprograming utility for converting tuples to other types
     ArrayUtilities::unit_test_manager::run_tuple_converter_test();
 
+    //test the tight packed array system
+    ArrayUtilities::unit_test_manager::run_tight_packed_paged_2d_array_test();
+
+
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_CONTINUOUSCOLLISIONPROTOTYPE, szWindowClass, MAX_LOADSTRING);
