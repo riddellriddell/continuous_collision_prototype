@@ -60,7 +60,7 @@ namespace ArrayUtilities
 		std::array<virtual_combined_node_adderss_type, Imax_total_y_items> handle_to_data_lookup;
 
 		//data structure holding all the data including the poiter to the handle each bit of data belongs to 
-		tight_packed_array_type tight_packed_data;
+		tight_packed_array_type		;
 
 		address_return_type allocate(Thandle_type handle, x_axis_type x_index_to_add_to);
 
