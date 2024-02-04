@@ -75,7 +75,7 @@
     <ClInclude Include="StructOfArraysHelper\struct_of_arrays.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="StructOfArraysHelper\struct_of_arrays_unit_test.h">
+    <ClInclude Include="fixed_free_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

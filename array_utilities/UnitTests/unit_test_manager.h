@@ -830,7 +830,6 @@ namespace ArrayUtilities
 		}
 
 
-
 		static void run_tight_packed_paged_2d_array_test()
 		{
 			using tight_packed_array_type = tight_packed_paged_2d_array_manager<255, 255, 255, 256, std::array<int, 256>>;

@@ -77,6 +77,9 @@ namespace ArrayUtilities
 
 		//get a reference to the data at an address 
 		auto& get_reference_to_address(auto address);
+
+		//move data from one x address to another 
+		address_return_type move(x_axis_type x_index_move_to, auto address);
 	};
 	
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size,typename Tcontainer>
@@ -176,6 +179,25 @@ namespace ArrayUtilities
 	{
 		// TODO: insert return statement here
 		return *get_iterator_address(address);
+	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::address_return_type
+		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::move(x_axis_type x_index_move_to, auto address)
+	{
+		//get ref to the current data 
+		auto current_data_itr = get_iterator_address(address_to_move_from);
+
+		//alocate new data to move to 
+		address_return_type address_of_new_data = tight_packed_data.add_item_to_paged_array_unsafe(x_index_to_add_to);
+
+		//get reference to the new data 
+		auto new_data_itr = get_iterator_address(std::get<0>(address_to_move_from));
+
+		//transfer the data 
+		*new_data_ref = *current_data_ref;
+
+		return address_of_new_data;
 	}
 
 	
