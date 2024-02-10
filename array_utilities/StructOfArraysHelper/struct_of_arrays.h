@@ -193,8 +193,7 @@ namespace ArrayUtilities
               index,
               std::make_index_sequence<tuple_size>());
         }
-   
-    private:
+
         // Helper function template to create an instance of MyStruct from a tuple
         template <typename... Args>
         static Treference_struct create_ref_struct_from_tuple(const std::tuple<Args...>& tuple)
@@ -263,6 +262,8 @@ namespace ArrayUtilities
         template <typename... Ttypes>
         struct transferable_tuple: public std::tuple<Ttypes...>
         {
+            using base_type = std::tuple<Ttypes...>;
+
             //constructor
             transferable_tuple(const std::tuple<Ttypes...>& tpl) : std::tuple<Ttypes...>(tpl) {}
 
@@ -271,6 +272,9 @@ namespace ArrayUtilities
             {
                 tuple_transferer(this, assign_from);
             }
+
+            //return as base type
+            base_type& to_base() { return static_cast<base_type>(*this); }
         };
 
         
@@ -305,7 +309,11 @@ namespace ArrayUtilities
                // return Ttuple_of_iterable_objects(tuple_converter::convert(tuple_to_iterate, tuple_converter::convert_from_container_to_ref{ index }));
                tuple_converter::convert_from_container_to_ref converter{ index };
 
-               return tuple_converter::convert(tuple_to_iterate, converter);
+               //wrap the tuple in a type to make it transferable 
+               auto ref_tuple = transferable_tuple(tuple_converter::convert(tuple_to_iterate, converter));
+
+               //return the new tuple that supports per element transfer using =
+               return ref_tuple;
            }
 
            random_iterator operator+=(difference_type offset) { index += offset; return *this; }
@@ -353,6 +361,9 @@ namespace ArrayUtilities
         using ref_tuple_type = struct_of_arrays_helper<Treference_struct>::ref_tuple_type;
 
         using tuple_array_type = struct_of_arrays_helper<Treference_struct>::tuple_of_arrays_type<Iarray_size>;
+
+        //an extended tuple that adds an iterator that can be used to transfer values
+        using tuple_array_transferable_type = struct_of_arrays<tuple_array_type>;
 
         tuple_array_type tuple_of_arrays;
     };

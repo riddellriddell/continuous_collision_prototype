@@ -19,6 +19,7 @@
 #include "array_utilities/paged_wide_node_linked_list.h"
 #include "array_utilities/StructOfArraysHelper/struct_of_arrays.h"
 #include "array_utilities/tight_packed_paged_2d_array.h"
+#include <array_utilities/handle_tracked_2d_paged_array.h>
 
 namespace ArrayUtilities
 {
@@ -862,6 +863,45 @@ namespace ArrayUtilities
 
 			//we still expect this to be the old data 
 			assert(ref_to_data_02 == val_to_set, "the address does not have the expected value, should be the same as val_to_set");
+		}
+	
+
+		static void run_handle_mapped_array_test()
+		{
+			//make a reference struct 
+			struct test_ref_struct
+			{
+				int& a;
+				float& b;
+				bool& c;
+
+				auto get_as_tuple()
+				{
+					return std::tie(a, b, c);
+				}
+			};
+
+			using handle_type = HandleSystem::default_handle_type<std::numeric_limits<uint16>::max() - 1>;
+
+			//crate handle
+			handle_type handle(0);
+
+			using handle_tracked_array_type = handle_tracked_2d_paged_array<handle_type, 255, 255, 255, 256, test_ref_struct>;
+
+			handle_tracked_array_type handle_tracked_array;
+
+			//add handle 
+			auto address = handle_tracked_array.insert(handle, 0);
+
+			//get reference to address
+			auto ref_struct = handle_tracked_array.get(std::get<0>(address));
+
+			int val_to_set = 69;
+
+			//set the int value
+			ref_struct.a = val_to_set;
+
+			assert(ref_struct.a == val_to_set, "the address does not have the expected value, should be the same as val_to_set");
 		}
 	};
 }

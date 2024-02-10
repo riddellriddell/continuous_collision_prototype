@@ -11,7 +11,7 @@ namespace HandleSystem
 	struct default_handle_type
 	{
 	public:
-		using handle_index_type = MiscUtilities::uint_s< Imax_valid_handle_count>::uint_t;
+		using handle_index_type = MiscUtilities::uint_s< Imax_valid_handle_count>::int_type_t;
 
 		static constexpr handle_index_type max_handle_count = Imax_valid_handle_count;
 		static constexpr handle_index_type max_handle_value = Imax_valid_handle_count -1;
@@ -48,9 +48,9 @@ namespace HandleSystem
 
 		default_handle_type(handle_index_type handle_start_index):value(handle_start_index){};
 
-		default_handle_type(free_handle_type free_handle_data_to_build_from) :value(free_handle_data_to_build_from.value) {};
+		default_handle_type(free_handle_type free_handle_data_to_build_from):value(free_handle_data_to_build_from.value) {};
 
-		convert_to_free_handle() 
+		free_handle_type convert_to_free_handle()
 		{
 			return free_handle_type(value);
 		}
@@ -80,7 +80,7 @@ namespace HandleSystem
 		using handle_count_type = Thandle_type::handle_index_type;
 
 		//list of all the free handles
-		std::array<Thandle_type::free_handle_type, Thandle_type::max_handle_value> free_handles;
+		std::array<typename Thandle_type::free_handle_type, Thandle_type::max_handle_value> free_handles;
 		handle_count_type free_handle_count;
 
 	public:
@@ -116,7 +116,7 @@ namespace HandleSystem
 	inline void handle_system<Thandle_type>::return_handle(handle_count_type handle_index_to_return)
 	{
 		//check handle is in expected ranges
-		assert(handle_index_to_return < Thandle_type::max_handle_value));
+		assert(handle_index_to_return < Thandle_type::max_handle_value);
 
 		//check that we have not over returned values
 		assert(free_handle_count < Thandle_type::max_handle_value);

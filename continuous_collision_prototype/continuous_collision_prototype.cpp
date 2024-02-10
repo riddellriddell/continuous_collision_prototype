@@ -54,6 +54,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //test the tight packed array system
     ArrayUtilities::unit_test_manager::run_tight_packed_paged_2d_array_test();
 
+    //test the handle tracked packed data 
+    ArrayUtilities::unit_test_manager::run_handle_mapped_array_test();
+
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);

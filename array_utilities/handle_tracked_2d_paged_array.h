@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <type_traits>
+#include <iostream>
 
 #include "tight_packed_paged_2d_array.h"
 #include "HandleSystem/handle_system.h"
@@ -29,9 +31,11 @@ namespace ArrayUtilities
 
 			auto get_as_tuple()
 			{
-				return std::tuple_cat(std::tie(value), Treference_struct::get_as_tuple());
+				return std::tuple_cat(Treference_struct::get_as_tuple(), std::tie(handle));
 			}
 		};
+
+		using reference_tuple_type = decltype(std::declval<handle_reference_wrapper>().get_as_tuple());
 
 		//forward declare the headerr so we can get the max number of elements we need
 		using paged_array_type = paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>;
@@ -43,7 +47,7 @@ namespace ArrayUtilities
 		static constexpr size_t max_total_entries = paged_array_type::max_total_entries;
 
 		// the tuple of arrays type that holds all the data
-		using container_type = struct_of_arrays< struct_of_arrays_helper<handle_reference_wrapper>::tuple_of_arrays_type<max_total_entries>>;
+		using container_type = struct_of_arrays_with_ref_struct<handle_reference_wrapper, max_total_entries>::tuple_array_transferable_type;
 
 		//the array manager we are wrapping and addeing handle tracking to 
 		using tight_packed_array_type = tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, container_type>;
@@ -60,37 +64,45 @@ namespace ArrayUtilities
 		std::array<virtual_combined_node_adderss_type, Imax_total_y_items> handle_to_data_lookup;
 
 		//data structure holding all the data including the poiter to the handle each bit of data belongs to 
-		tight_packed_array_type		;
+		tight_packed_array_type	tight_packed_data;
 
-		address_return_type allocate(Thandle_type handle, x_axis_type x_index_to_add_to);
+		address_return_type insert(Thandle_type handle, x_axis_type x_index_to_add_to);
 
 		address_return_type move(x_axis_type x_index_to_add_to, auto address_to_move_from);
 
 		void remove(Thandle_type handle);
 
-		Treference_struct& get(Thandle_type handle);
+		reference_tuple_type get_ref_tuple(auto address);
+
+		handle_reference_wrapper get(auto address);
+
 	};
+
 
 	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>
 	inline handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::address_return_type 
-		handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::allocate(Thandle_type handle, x_axis_type x_index_to_add_to)
+		handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::insert(Thandle_type handle, x_axis_type x_index_to_add_to)
 	{
 		//allocate 
 		address_return_type return_address = tight_packed_data.add_item_to_paged_array_unsafe(x_index_to_add_to);
 
-		//use the real address to get a ref to the data 
-		Treference_struct& ref_to_new_data = tight_packed_data.get_reference_to_address(std::get<0>(return_address));
+		auto ref_tuple = tight_packed_data.get_reference_to_address(std::get<0>(return_address));
 
+		static_assert(std::is_same<decltype(std::declval<handle_reference_wrapper>().get_as_tuple()), decltype(ref_tuple)::base_type>::value);
+
+		//use the real address to get a ref to the data 
+		handle_reference_wrapper ref_to_new_data = struct_of_arrays_helper<handle_reference_wrapper>::create_ref_struct_from_tuple(ref_tuple);
+		
 		//set the handle this data belongs to 
 		ref_to_new_data.handle = handle;
-
+		
 		//get the index of the handle 
 		handle_index_type handle_index = handle.get_index();
-
+		
 		//set the address of data 
 		handle_to_data_lookup[handle_index] = std::get<1>(return_address);
 
-		return address_return_type();
+		return return_address;
 	}
 
 	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>
@@ -113,7 +125,7 @@ namespace ArrayUtilities
 		real_address_type address_of_removed_item = tight_packed_data.remove_item_from_paged_array(virtual_address);
 
 		//get the data that was used to replace the item removed
-		Treference_struct ref_to_new_data = tight_packed_data.get_reference_to_address(std::get<0>(return_address));
+		Treference_struct ref_to_new_data = tight_packed_data.get_reference_to_address(std::get<0>(address_of_removed_item));
 
 		//get the handle of the replacement item
 		Thandle_type replacement_handle = ref_to_new_data.handle;
@@ -126,16 +138,30 @@ namespace ArrayUtilities
 	}
 
 	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>
-	inline Treference_struct& handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::get(Thandle_type handle)
+	inline handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::reference_tuple_type 
+		handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::get_ref_tuple(auto address)
 	{
-		// get the handle index
-		handle_index_type handle_index = handle.get_index();
+		if constexpr (std::is_same<decltype(address), Thandle_type>::value)
+		{
+			// get the handle index
+			handle_index_type handle_index = address.get_index();
 
-		//lookup the address of the data
-		virtual_combined_node_adderss_type virtual_address = handle_to_data_lookup[handle_index];
+			//lookup the address of the data
+			virtual_combined_node_adderss_type virtual_address = handle_to_data_lookup[handle_index];
 
-		//use the handel to get the data 
-		return tight_packed_data.get_reference_to_address(virtual_address);
+			return tight_packed_data.get_reference_to_address(virtual_address);
+		}
+		else
+		{
+			return tight_packed_data.get_reference_to_address(address);
+		}
+	}
+
+	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>
+	inline  handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::handle_reference_wrapper 
+		handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::get(auto address)
+	{
+		return  struct_of_arrays_helper<handle_reference_wrapper>::create_ref_struct_from_tuple(get_ref_tuple(address));
 	}
 
 }

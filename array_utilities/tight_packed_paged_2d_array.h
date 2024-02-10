@@ -2,6 +2,7 @@
 
 #include <tuple>
 #include <iterator>
+#include <functional>
 
 #include "paged_2d_array.h"
 
@@ -76,7 +77,7 @@ namespace ArrayUtilities
 		auto get_iterator_address(auto address);
 
 		//get a reference to the data at an address 
-		auto& get_reference_to_address(auto address);
+		decltype(auto) get_reference_to_address(auto address);
 
 		//move data from one x address to another 
 		address_return_type move(x_axis_type x_index_move_to, auto address);
@@ -175,7 +176,7 @@ namespace ArrayUtilities
 	}
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
-	inline auto& tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::get_reference_to_address(auto address)
+	inline decltype(auto) tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::get_reference_to_address(auto address)
 	{
 		// TODO: insert return statement here
 		return *get_iterator_address(address);
