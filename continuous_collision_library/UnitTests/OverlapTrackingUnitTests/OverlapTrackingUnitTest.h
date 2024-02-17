@@ -181,8 +181,8 @@ namespace ContinuousCollisionLibrary
 				auto index_01 = overlap_grid->grid_helper.from_xy<math_2d_util::ivec2d>(target_tile_1);
 				auto index_02 = overlap_grid->grid_helper.from_xy<math_2d_util::ivec2d>(target_tile_2);
 
-				auto target_01_overlap_start = overlap_grid->overlap_pairs[index_01.components.sector_index].get_root_node_start(index_01.components.sector_sub_tile_index);
-				auto target_01_overlap_end = overlap_grid->overlap_pairs[index_01.components.sector_index].end();
+				auto target_01_overlap_start = overlap_grid->overlap_pairs[overlap_grid->grid_helper.to_sector_index(index_01)].get_root_node_start(overlap_grid->grid_helper.to_sub_sector_index(index_01));
+				auto target_01_overlap_end = overlap_grid->overlap_pairs[overlap_grid->grid_helper.to_sector_index(index_01)].end();
 				
 				std::for_each(target_01_overlap_start, target_01_overlap_end, [&](auto& target_offset) 
 					{
@@ -195,8 +195,8 @@ namespace ContinuousCollisionLibrary
 					
 					});
 				
-				auto target_02_overlap_start = overlap_grid->overlap_pairs[index_02.components.sector_index].get_root_node_start(index_02.components.sector_sub_tile_index);
-				auto target_02_overlap_end = overlap_grid->overlap_pairs[index_02.components.sector_index].end();
+				auto target_02_overlap_start = overlap_grid->overlap_pairs[overlap_grid->grid_helper.to_sector_index(index_02)].get_root_node_start(overlap_grid->grid_helper.to_sub_sector_index(index_02));
+				auto target_02_overlap_end = overlap_grid->overlap_pairs[overlap_grid->grid_helper.to_sector_index(index_02)].end();
 				
 				std::for_each(target_02_overlap_start, target_02_overlap_end, [&](auto& target_offset)
 					{
@@ -335,8 +335,8 @@ namespace ContinuousCollisionLibrary
 				auto index_01 = overlap_grid->grid_helper.from_xy(target_tile_1);
 				auto index_02 = overlap_grid->grid_helper.from_xy(target_tile_2);
 
-				auto target_01_overlap_start = overlap_grid->overlap_pairs[index_01.components.sector_index].get_root_node_start(index_01.components.sector_sub_tile_index);
-				auto target_01_overlap_end = overlap_grid->overlap_pairs[index_01.components.sector_index].end();
+				auto target_01_overlap_start = overlap_grid->overlap_pairs[overlap_grid->grid_helper.to_sector_index(index_01)].get_root_node_start(overlap_grid->grid_helper.to_sub_sector_index(index_01));
+				auto target_01_overlap_end = overlap_grid->overlap_pairs[overlap_grid->grid_helper.to_sector_index(index_01)].end();
 
 				std::for_each(target_01_overlap_start, target_01_overlap_end, [&](auto& target_offset)
 					{
@@ -349,8 +349,8 @@ namespace ContinuousCollisionLibrary
 
 					});
 
-				auto target_02_overlap_start = overlap_grid->overlap_pairs[index_02.components.sector_index].get_root_node_start(index_02.components.sector_sub_tile_index);
-				auto target_02_overlap_end = overlap_grid->overlap_pairs[index_02.components.sector_index].end();
+				auto target_02_overlap_start = overlap_grid->overlap_pairs[overlap_grid->grid_helper.to_sector_index(index_02)].get_root_node_start(overlap_grid->grid_helper.to_sub_sector_index(index_02));
+				auto target_02_overlap_end = overlap_grid->overlap_pairs[overlap_grid->grid_helper.to_sector_index(index_02)].end();
 
 				std::for_each(target_02_overlap_start, target_02_overlap_end, [&](auto& target_offset)
 					{

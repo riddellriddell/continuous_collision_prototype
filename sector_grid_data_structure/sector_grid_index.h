@@ -21,21 +21,8 @@ namespace SectorGrid
 		static constexpr size_t max_possible_tile_index = std::numeric_limits<tile_t>::max() * std::numeric_limits<sector_t>::max();
 
 		typedef  MiscUtilities::uint_s<max_possible_tile_index>::int_type_t combined_index; //type needed to hold combined types 
-
-#pragma pack(push,1)
-		struct index_components
-		{
-			tile_t  sector_sub_tile_index;
-			sector_t sector_index;
-		};
-#pragma pack(pop)
-
-		union
-		{
-			combined_index index;
-			index_components components;
-		};
-
+ 
+		combined_index index;
 	};
 	
 }

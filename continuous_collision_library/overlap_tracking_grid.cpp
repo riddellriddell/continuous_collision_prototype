@@ -295,9 +295,9 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 		}
 	}
 
-	auto source_sector = source_world_tile.components.sector_index;
+	auto source_sector = grid_helper.to_sector_index(source_world_tile);
 
-	auto source_sub_tile = source_world_tile.components.sector_sub_tile_index;
+	auto source_sub_tile = grid_helper.to_sub_sector_index(source_world_tile);
 
 	auto& source_overlap_sector = overlap_pairs[source_sector];
 
@@ -313,8 +313,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 		auto overlap_index = new_overlaps[i];
 	
 		//get the sector list
-		uint32 target_overlap_sector = overlap_index.components.sector_index;
-		uint32 target_overlap_sub_tile = overlap_index.components.sector_sub_tile_index;
+		uint32 target_overlap_sector = grid_helper.to_sector_index(overlap_index);
+		uint32 target_overlap_sub_tile = grid_helper.to_sub_sector_index(overlap_index);
 	
 		//get the overlap tracking data structure for the sector
 		auto& target_sector_overlap_list = overlap_pairs[target_overlap_sector];
@@ -451,9 +451,9 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(c
 		}
 	}
 
-	auto source_sector = source_world_tile.components.sector_index;
+	auto source_sector = grid_helper.to_sector_index(source_world_tile);
 
-	auto source_sub_tile = source_world_tile.components.sector_sub_tile_index;
+	auto source_sub_tile = grid_helper.to_sub_sector_index(source_world_tile);
 
 	auto& source_overlap_sector = overlap_pairs[source_sector];
 
@@ -469,8 +469,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(c
 		auto overlap_index = new_overlaps[i];
 
 		//get the sector list
-		uint32 target_overlap_sector = overlap_index.components.sector_index;
-		uint32 target_overlap_sub_tile = overlap_index.components.sector_sub_tile_index;
+		uint32 target_overlap_sector = grid_helper.to_sector_index(overlap_index);
+		uint32 target_overlap_sub_tile = grid_helper.to_sub_sector_index(overlap_index);
 
 		//get the overlap tracking data structure for the sector
 		auto& target_sector_overlap_list = overlap_pairs[target_overlap_sector];

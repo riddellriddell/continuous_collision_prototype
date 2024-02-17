@@ -16,6 +16,10 @@ namespace SectorGrid
 	{
 		using combined_index = sector_tile_index<TSectorGridDimensions>::combined_index;
 
+		static constexpr combined_index sub_sector_bits = std::bit_width((TSectorGridDimensions::sector_w * TSectorGridDimensions::sector_w) -1);
+		static constexpr combined_index sector_mask = (~0 << sub_sector_bits);
+		static constexpr combined_index sub_sector_mask = ~sector_mask;
+
 		static constexpr combined_index sub_tile_bits_per_axis = std::bit_width(TSectorGridDimensions::sector_w - 1);
 		static constexpr combined_index sector_bits_per_axis = std::bit_width(TSectorGridDimensions::sectors_grid_w - 1);
 
@@ -44,12 +48,23 @@ namespace SectorGrid
 		static constexpr combined_index x_sector_mask = (~(~0 << sector_bits_per_axis)) << (sub_tile_bits_per_axis * 2);
 		static constexpr combined_index y_sector_mask = x_sector_mask << sector_bits_per_axis;
 
+		using sector_tile_index_type = sector_tile_index<TSectorGridDimensions>;
+
+
 		//helper function to convert index to xy co ordinate 
 		template<typename Treturn_type = math_2d_util::uivec2d>
 		Treturn_type to_xy(const sector_tile_index<TSectorGridDimensions>& index) const;
 
 		template<typename Tcord_type = math_2d_util::uivec2d>
-		sector_tile_index<TSectorGridDimensions> from_xy(const Tcord_type& xy) const;
+		sector_tile_index_type from_xy(const Tcord_type& xy) const;
+
+		uint32 to_sector_index(const sector_tile_index<TSectorGridDimensions>& index) const;
+
+		template<typename Tcord_type = math_2d_util::uivec2d>
+		uint32 to_sector_index(const Tcord_type& xy) const;
+
+		uint32 to_sub_sector_index(const sector_tile_index<TSectorGridDimensions>& index) const;
+
 
 	};
 
@@ -155,5 +170,36 @@ namespace SectorGrid
 		return out_index;
 	}
 
+	template<sector_grid_dimension_concept TSectorGridDimensions>
+	inline uint32 sector_grid_helper<TSectorGridDimensions>::to_sector_index(const sector_tile_index<TSectorGridDimensions>& index) const
+	{
+		return static_cast<uint32>(index.index >> sub_sector_bits);
+	}
+
+	template<sector_grid_dimension_concept TSectorGridDimensions>
+	template<typename Tcord_type>
+	inline uint32 sector_grid_helper<TSectorGridDimensions>::to_sector_index(const Tcord_type& xy) const
+	{
+		//make sure no negative numbers are passed in as that will break the calculations of the index 
+		assert(xy.x >= 0 && xy.y >= 0);
+
+		//extract the sector component 
+		const uint32 x_sector_component = xy.x & (axis_sector_mask);
+		const uint32 y_sector_component = xy.y & (axis_sector_mask);
+
+		//offset the y component 
+		y_sector_component = y_sector_component << sector_bits_per_axis;
+
+		//combine the components 
+		uint32 combined = y_sector_component | x_sector_component;
+
+		return combined;
+	}
+
+	template<sector_grid_dimension_concept TSectorGridDimensions>
+	inline uint32 sector_grid_helper<TSectorGridDimensions>::to_sub_sector_index(const sector_tile_index<TSectorGridDimensions>& index) const
+	{
+		return static_cast<uint32>(index.index & sub_sector_mask);
+	}
 }
 
