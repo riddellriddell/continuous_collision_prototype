@@ -51,6 +51,9 @@
     <ClInclude Include="2d_physics_main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UnitTests\PhysicsMain\phyisics_2d_main_unit_test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="continuous_collision_library.cpp">

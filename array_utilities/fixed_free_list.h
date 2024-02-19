@@ -10,7 +10,7 @@ namespace ArrayUtilities
 	struct fixed_free_list
 	{
 		//one is added to make sure that we have space for an invalid value type
-		using index_type = MiscUtilities::uint_s<Icount + 1>::uint_t;
+		using index_type = MiscUtilities::uint_s<Icount + 1>::int_type_t;
 
 		static constexpr index_type  invalid_value = std::numeric_limits< index_type>::max();
 
@@ -33,7 +33,7 @@ namespace ArrayUtilities
 			std::iota(data.begin(), data.end(), static_cast<index_type>(1));
 
 			// mark the last element with an invalid value 
-			(*data.back()) = index_type = invalid_value;
+			data.back() = invalid_value;
 		}
 
 		// Accessor for operator[]

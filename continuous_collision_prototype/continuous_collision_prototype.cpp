@@ -6,6 +6,7 @@
 #include "array_utilities/WideNodeLinkedList/UnitTests/wide_node_linked_list_unit_tests.h"
 #include "array_utilities/UnitTests/unit_test_manager.h"
 #include "continuous_collision_library/UnitTests/OverlapTrackingUnitTests/OverlapTrackingUnitTest.h"
+#include "continuous_collision_library/UnitTests/PhysicsMain/phyisics_2d_main_unit_test.h"
 
 #define MAX_LOADSTRING 100
 
@@ -38,24 +39,29 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //ArrayUtilities::unit_test_manager::run_virtual_memory_header_test();
 
     //unit test the paged 2d array
-    ArrayUtilities::unit_test_manager::run_paged_2d_array_test();
+    //ArrayUtilities::unit_test_manager::run_paged_2d_array_test();
 
     //unit test paged hirachical linked list
-    ArrayUtilities::unit_test_manager::run_paged_wide_node_linked_list_unit_test();
+    //ArrayUtilities::unit_test_manager::run_paged_wide_node_linked_list_unit_test();
 
-    //ContinuousCollisionLibrary::overlap_tracking_unit_test::run_test();
 
     //unit test struct of arrays helper data structure 
-    ArrayUtilities::unit_test_manager::run_struct_of_arrays_test();
+    //ArrayUtilities::unit_test_manager::run_struct_of_arrays_test();
 
     //test metaprograming utility for converting tuples to other types
-    ArrayUtilities::unit_test_manager::run_tuple_converter_test();
+    //ArrayUtilities::unit_test_manager::run_tuple_converter_test();
 
     //test the tight packed array system
-    ArrayUtilities::unit_test_manager::run_tight_packed_paged_2d_array_test();
+   //ArrayUtilities::unit_test_manager::run_tight_packed_paged_2d_array_test();
 
     //test the handle tracked packed data 
     ArrayUtilities::unit_test_manager::run_handle_mapped_array_test();
+
+    //overlap tracking test
+    //ContinuousCollisionLibrary::overlap_tracking_unit_test::run_test();
+
+    //test the physics system
+   // ContinuousCollisionLibrary::phyisics_2d_main_unit_test::run_test();
 
 
     // Initialize global strings

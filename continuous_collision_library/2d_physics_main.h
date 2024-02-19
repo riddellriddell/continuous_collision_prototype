@@ -3,8 +3,10 @@
 #include <algorithm>
 
 #include "base_types_definition.h"
+
 #include "misc_utilities/int_type_selection.h"
 #include "misc_utilities/bits_needed_for_unsigned_int.h"
+
 #include "continuous_collision_library/overlap_tracking_grid.h"
 #include "array_utilities/fixed_free_list.h"
 #include "array_utilities/paged_2d_array.h"
@@ -21,6 +23,7 @@ namespace ContinuousCollisionLibrary
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	class phyisics_2d_main
 	{
+		
 		//definition of the target dimensions of the grid system
 		using grid_dimension_type = SectorGrid::sector_grid_dimensions<Iworld_sector_x_count, 16>;
 
@@ -36,7 +39,7 @@ namespace ContinuousCollisionLibrary
 
 		static constexpr size_t max_sectors_internal = grid_dimension_type::sector_grid_count_max;
 
-		using sector_count_type = MiscUtilities::uint_s<max_sectors_internal>::uint_t;
+		using sector_count_type = MiscUtilities::uint_s<max_sectors_internal>::int_type_t;
 
 		static constexpr sector_count_type sector_count = max_sectors_internal;
 
@@ -45,10 +48,10 @@ namespace ContinuousCollisionLibrary
 		//temp handle type definition
 		using handle_type = HandleSystem::default_handle_type<Imax_objects>;
 
-		using handle_data_lookup_system_type = ArrayUtilities::fixed_free_list<Imax_objects, handle_type>;
+		//using handle_data_lookup_system_type = ArrayUtilities::fixed_free_list<Imax_objects, handle_type>;
 
 		//the system to manage all the handles and data lookup addresses 
-		handle_data_lookup_system_type handle_manager;
+		//handle_data_lookup_system_type handle_manager;
 
 		struct collision_data_ref
 		{
@@ -73,6 +76,8 @@ namespace ContinuousCollisionLibrary
 		//data for all the items in the grid
 		collision_data_container_type collision_data_container;
 
+		/*
+
 		//buffer for new data to add to the grid
 		struct new_collider_data
 		{
@@ -95,12 +100,12 @@ namespace ContinuousCollisionLibrary
 
 
 		//buffer to hold all data being added to the grid 
-		using new_collider_header = ArrayUtilities::paged_2d_array_header < sector_count, Imax_objects, Imax_objects, page_size_for_collider_data>;
+		using new_collider_header_type = ArrayUtilities::paged_2d_array_header < sector_count, Imax_objects, Imax_objects, page_size_for_collider_data>;
 
-		using new_collider_data = std::array<new_collider_data, new_collider_header::max_total_entries>;
+		using new_collider_data_containter_type = std::array<new_collider_data, new_collider_header_type::max_total_entries>;
 
-		new_collider_header collider_to_add_header;
-		new_collider_data colliders_to_add_data;
+		new_collider_header_type collider_to_add_header;
+		new_collider_data_containter_type colliders_to_add_data;
 		
 		//which sectors have items queued to be added into the game
 		ArrayUtilities::fixed_size_vector_array<sector_count_type, max_sectors_internal> sectors_with_queued_items;
@@ -119,15 +124,18 @@ namespace ContinuousCollisionLibrary
 
 		//add queued items 
 		void update_physics();
+
+		*/
 	};
 
 
+	/*
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::handle_type 
 		phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::try_queue_item_to_add(new_collider_data&& data_for_new_collider)
 	{
 		//try and get a free handle 
-		handle_data_lookup_system_type::index_type index = handle_manager.get_free_element();
+		typename handle_data_lookup_system_type::index_type index = handle_manager.get_free_element();
 
 		//check that index is valid 
 		if (!handle_data_lookup_system_type::is_valid_index(index))
@@ -188,7 +196,7 @@ namespace ContinuousCollisionLibrary
 				data_ref.velocity_y = existing_data.velocity.y;
 
 				data_ref.radius = existing_data.radius;
-			};
+			});
 	}
 
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
@@ -229,6 +237,6 @@ namespace ContinuousCollisionLibrary
 		//apply force to agent 
 		
 	}
-
+	*/
 
 }

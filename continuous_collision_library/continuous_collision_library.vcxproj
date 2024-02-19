@@ -170,6 +170,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="loose_grid_node.h" />
     <ClInclude Include="UnitTests\OverlapTrackingUnitTests\OverlapTrackingUnitTest.h" />
+    <ClInclude Include="UnitTests\PhysicsMain\phyisics_2d_main_unit_test.h" />
     <ClInclude Include="unit_test_manager.h" />
   </ItemGroup>
   <ItemGroup>
