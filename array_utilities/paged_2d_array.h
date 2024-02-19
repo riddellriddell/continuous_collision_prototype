@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <iterator>
 //#include <math.h>
 #include <algorithm>
 #include <array>
@@ -59,12 +60,16 @@ namespace ArrayUtilities
 		static constexpr size_t max_pages = calculate_number_of_pages_needed(Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size);
 		static constexpr size_t max_y_axis_pages = ((Imax_y_items - 1) / Ipage_size) + 1;
 
+
 		//sanity check that we are alocating at leas one page if we have more than 0 items to store
 		static_assert((max_pages > 0) || Imax_total_y_items == 0);
 
 		//the type we use to track how full the y axises are full
 		using y_axis_count_type = MiscUtilities::uint_s<Imax_total_y_items + 1>::int_type_t;
 		using x_axis_count_type = MiscUtilities::uint_s<Inumber_of_x_axis_items + 1>::int_type_t;
+
+
+		static constexpr y_axis_count_type max_y_items = Imax_y_items;
 
 		//this array header supports accessing arrays using an x,y address or a combined index  
 		//to support this there are 2 sets of virtual memory maps mapped to the same memory 
@@ -76,7 +81,6 @@ namespace ArrayUtilities
 
 		//make sure both combined and single are using the same representation for page handles
 		static_assert(std::is_same<y_axis_virtual_memory_map_type::page_handle_type, combined_address_virtual_memory_map_type::page_handle_type>::value);
-
 
 		//the address type returned when pulling from the mem map
 		using real_node_address_type = y_axis_virtual_memory_map_type::real_node_address_type;
@@ -134,6 +138,8 @@ namespace ArrayUtilities
 	private:
 		combined_address_virtual_memory_map_type& get_all_axis_memory_map_internal();
 	public:
+		y_axis_count_type num() const;
+
 		const combined_address_virtual_memory_map_type& get_all_axis_memory_map() const;
 
 		static constexpr virtual_combined_node_adderss_type convert_from_y_axis_to_combined_virtual_address(x_axis_count_type x_axis_index, virtual_y_axis_node_adderss_type y_axis_virtual_address);
@@ -146,6 +152,122 @@ namespace ArrayUtilities
 
 		//make sure the per y axis memory lookup array is the same size as the all axis memeory lookup
 		static_assert(sizeof(std::array<y_axis_virtual_memory_map_type, Inumber_of_x_axis_items>) == sizeof(combined_address_virtual_memory_map_type));
+	
+	public:
+
+#pragma region Validation
+
+		//is virtual address valid
+		bool is_address_valid(virtual_combined_node_adderss_type address) const;
+
+		bool is_address_valid(x_axis_count_type x_axis_index, virtual_y_axis_node_adderss_type y_axis_virtual_address) const;
+
+#pragma endregion 
+
+
+#pragma region Iterator
+
+		//this iterator is for iterating over all the real addresses in a single y axis
+		class y_real_address_iterator
+		{
+		public:
+			using iterator_category = std::forward_iterator_tag;
+			using value_type = real_node_address_type;
+			using difference_type = std::ptrdiff_t;
+			using reference = real_node_address_type&;
+			using parent_type = paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>;
+
+			x_axis_count_type axis_to_iterate_over;
+			virtual_y_axis_node_adderss_type virtual_index;
+			real_node_address_type real_index;
+			parent_type& parent_ref;
+
+			explicit y_real_address_iterator(parent_type& parent, x_axis_count_type x_axis, virtual_y_axis_node_adderss_type y_virtual_address = virtual_y_axis_node_adderss_type(0)) : parent_ref(parent), axis_to_iterate_over(x_axis), virtual_index(y_virtual_address)
+			{
+				
+			}
+
+			void setup_first_value()
+			{
+				//get real address
+				real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
+			}
+
+		private:
+			void next()
+			{
+				//go to the next index
+				++virtual_index;
+				
+
+				//check if we have moved to the next page
+				if (y_axis_virtual_memory_map_type::is_first_item_in_real_page(virtual_index))
+				{
+					//get new real address
+					real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
+				}
+				else
+				{
+					//we can safely go to the next address
+					++real_index;
+				}				
+			}
+		public:
+
+
+			real_node_address_type& operator*()
+			{
+				//do some extra checks to make sure we are accessing a valid address
+				assert(parent_ref.is_address_valid(axis_to_iterate_over, virtual_index));
+
+				return real_index;
+			}
+
+			y_real_address_iterator& operator++() {
+				next();
+				return *this;
+			}
+
+			y_real_address_iterator operator++(int) {
+				y_real_address_iterator tmp = *this;
+				next();
+				return tmp;
+			}
+
+			y_real_address_iterator operator+(uint32_t n) const 
+			{
+				return y_real_address_iterator(parent_ref, axis_to_iterate_over, virtual_index + n);
+			}
+
+			y_real_address_iterator& operator+=(uint32_t n)
+			{
+				//offset the address
+				virtual_index += n;
+				
+				//get new real address
+				real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
+
+				return *this;
+			}
+
+			friend bool operator==(const y_real_address_iterator& lhs, const y_real_address_iterator& rhs)
+			{
+				return lhs.virtual_index == rhs.virtual_index;
+			}
+
+			friend bool operator!=(const y_real_address_iterator& lhs, const y_real_address_iterator& rhs) {
+				return !(lhs == rhs);
+			}
+
+		private:
+
+		};
+
+
+		y_real_address_iterator begin(x_axis_count_type x_index);
+		y_real_address_iterator end(x_axis_count_type x_index);
+
+#pragma endregion 
 
 	};
 
@@ -284,6 +406,7 @@ namespace ArrayUtilities
 	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::real_node_address_type
 		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::find_address(x_axis_count_type x_axis_index, virtual_y_axis_node_adderss_type virtual_address) const
 	{
+		assert(virtual_address.address < y_axis_count[x_axis_index]);
 		return get_y_axis_memory_map()[x_axis_index].resolve_address(virtual_address);
 	}
 
@@ -314,6 +437,13 @@ namespace ArrayUtilities
 
 		return *std::launder(reinterpreted_virtual_memory_map);
 	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline  paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::y_axis_count_type 
+		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::num() const
+	{
+		return std::accumulate(y_axis_count.begin(), y_axis_count.end(), 0);
+	}
 	
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
 	inline const typename paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::combined_address_virtual_memory_map_type& 
@@ -339,6 +469,34 @@ namespace ArrayUtilities
 		//convert from combined to pages then from pages to x index 
 		//this would be a lot faster if max_y_axis_pages was a power of 2 
 		return (combined_address.address >> combined_address_virtual_memory_map_type::local_address_bits) / max_y_axis_pages;
+	}
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline bool paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::is_address_valid(virtual_combined_node_adderss_type address) const
+	{
+		//get axis this address belongs to 
+		auto x_axis_index = convert_from_combined_virtual_address_to_x(address);
+
+
+		return address < (y_axis_count[x_axis_index] + (x_axis_index * y_axis_virtual_memory_map_type::max_virtual_address));
+	}
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline bool paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::is_address_valid(x_axis_count_type x_axis_index, virtual_y_axis_node_adderss_type y_axis_virtual_address) const
+	{
+		return y_axis_virtual_address < virtual_y_axis_node_adderss_type((y_axis_count[x_axis_index]));
+	}
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::y_real_address_iterator 
+		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::end(x_axis_count_type x_index)
+	{
+		return y_real_address_iterator(*this, x_index, virtual_y_axis_node_adderss_type(y_axis_count[x_index]));
+	}
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::y_real_address_iterator 
+		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::begin(x_axis_count_type x_index)
+	{
+		auto iterator = y_real_address_iterator(*this, x_index);
+		iterator.setup_first_value();
+		return iterator;
 	}
 }
 

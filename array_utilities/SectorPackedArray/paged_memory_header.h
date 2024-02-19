@@ -72,7 +72,7 @@ namespace ArrayUtilities
 	inline paged_memory_header<Inumber_of_pages>::page_handle_type paged_memory_header<Inumber_of_pages>::branchless_allocate(bool do_allocation)
 	{
 		//check that there are still pages to create 
-		assert(free_page_count != 0);
+		assert(free_page_count != 0 || !do_allocation);
 
 		//optionally decrement the number of free pages 
 		free_page_count -= do_allocation;

@@ -207,7 +207,7 @@ namespace ArrayUtilities
 
 		static void run_paged_2d_array_test()
 		{
-			using header_type = paged_2d_array_header<8, std::numeric_limits<uint8_t>::max() -1, std::numeric_limits<uint8_t>::max() - 1, (std::numeric_limits<uint8_t>::max() + 1) /2>;
+			using header_type = paged_2d_array_header<16 * 16, std::numeric_limits<uint16_t>::max() - 1, std::numeric_limits<uint16_t>::max() - 1, (std::numeric_limits<uint8_t>::max() + 1) /2>;
 			
 			header_type array_header;
 
@@ -276,7 +276,50 @@ namespace ArrayUtilities
 
 				//check if we have already recieved this handle
 				assert(insert_result.second);
+
 			}
+
+			//loop through all axis and check the per axis iterator
+			for (int i = 0; i < array_header.y_axis_count.size(); ++i)
+			{
+				int index = 0;
+
+				//test the paged item iterator 
+				std::for_each(array_header.begin(i), array_header.end(i), [&](auto& real_y_address)
+					{
+						//check that the value we get from the iterrator is the same as from a normal for lookup
+						assert(real_y_address == array_header.find_address(i, header_type::virtual_y_axis_node_adderss_type(index)));
+
+						//increment
+						++index;
+					});
+			}
+
+			uint32 index_to_add_to = 0;
+
+			//fill on sector to multiple pages
+			for (int i = array_header.num(); i < header_type::max_y_items; ++i)
+			{
+				//add the item 
+				array_header.push_back(index_to_add_to);
+			}
+
+			//loop through all axis and check the per axis iterator
+			for (int i = 0; i < array_header.y_axis_count.size(); ++i)
+			{
+				int index = 0;
+
+				//test the paged item iterator 
+				std::for_each(array_header.begin(i), array_header.end(i), [&](auto& real_y_address)
+					{
+						//check that the value we get from the iterrator is the same as from a normal for lookup
+						assert(real_y_address == array_header.find_address(i, header_type::virtual_y_axis_node_adderss_type(index)));
+
+						//increment
+						++index;
+					});
+			}
+
 		}		
 	
 		static void run_paged_wide_node_linked_list_unit_test()

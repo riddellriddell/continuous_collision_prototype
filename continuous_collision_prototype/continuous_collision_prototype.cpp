@@ -38,7 +38,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //ArrayUtilities::unit_test_manager::run_virtual_memory_header_test();
 
     //unit test the paged 2d array
-    //ArrayUtilities::unit_test_manager::run_paged_2d_array_test();
+    ArrayUtilities::unit_test_manager::run_paged_2d_array_test();
 
     //unit test paged hirachical linked list
     ArrayUtilities::unit_test_manager::run_paged_wide_node_linked_list_unit_test();

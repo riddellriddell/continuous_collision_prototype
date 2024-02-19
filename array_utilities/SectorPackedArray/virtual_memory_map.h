@@ -16,6 +16,39 @@ namespace ArrayUtilities
 		static constexpr real_address_value_type  page_bits_mask = (1 << local_address_bits) - 1;
 	public:
 
+		// Increment operator ++
+		real_address& operator++() 
+		{
+			++address;
+			return *this;
+		}
+
+		// Post-increment operator i++
+		real_address operator++(int) 
+		{
+			real_address temp(*this);
+			++(*this);
+			return temp;
+		}
+
+		// Decrement operator --
+		real_address& operator--() 
+		{
+			--address;
+			return *this;
+		}
+
+		// Post-increment operator i++
+		real_address operator--(int) 
+		{
+			real_address temp(*this);
+			--(*this);
+			return temp;
+		}
+
+		//setup comparitor
+		auto operator<=>(const real_address&) const = default;
+
 		using address_value_type = real_address_value_type;
 
 		real_address_value_type address;
@@ -86,6 +119,8 @@ namespace ArrayUtilities
 
 				return temp;
 			}
+
+			auto operator<=>(const virtual_address& other) const = default;
 		};
 
 
