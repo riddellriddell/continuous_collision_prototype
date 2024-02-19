@@ -1,6 +1,6 @@
 #pragma once
 #include <array>
-
+#include <algorithm>
 
 #include "base_types_definition.h"
 #include "misc_utilities/int_type_selection.h"
@@ -10,6 +10,7 @@
 #include "array_utilities/paged_2d_array.h"
 #include "array_utilities/handle_tracked_2d_paged_array.h"
 #include "array_utilities/HandleSystem/handle_system.h"
+#include "array_utilities/fixed_size_vector.h"
 
 #include "sector_grid_data_structure/sector_grid_dimensions.h"
 #include "sector_grid_data_structure/sector_grid_index.h"
@@ -17,11 +18,11 @@
 
 namespace ContinuousCollisionLibrary
 {
-	template<size_t Imax_objects, size_t Iworld_sector_x_count, size_t Iworld_sector_y_count>
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	class phyisics_2d_main
 	{
 		//definition of the target dimensions of the grid system
-		using grid_dimension_type = SectorGrid::sector_grid_dimensions<16, 16>;
+		using grid_dimension_type = SectorGrid::sector_grid_dimensions<Iworld_sector_x_count, 16>;
 
 		using tile_coordinate_type = SectorGrid::sector_tile_index<grid_dimension_type>;
 
@@ -33,7 +34,7 @@ namespace ContinuousCollisionLibrary
 
 		static constexpr size_t page_size_for_collider_data = 1024;
 
-		static constexpr size_t max_sectors_internal = Iworld_sector_x_count * Iworld_sector_y_count;
+		static constexpr size_t max_sectors_internal = grid_dimension_type::sector_grid_count_max;
 
 		using sector_count_type = MiscUtilities::uint_s<max_sectors_internal>::uint_t;
 
@@ -100,22 +101,31 @@ namespace ContinuousCollisionLibrary
 
 		new_collider_header collider_to_add_header;
 		new_collider_data colliders_to_add_data;
+		
+		//which sectors have items queued to be added into the game
+		ArrayUtilities::fixed_size_vector_array<sector_count_type, max_sectors_internal> sectors_with_queued_items;
+
+		sector_count_type number_of_active_sectors;
+		std::array<sector_count_type, max_sectors_internal> active_sectors;
 
 		//grid tracking collisions 
 		overlap_tracking_grid overlap_grid;
 
 		//try add a handle to the simulation
-		handle_type try_add_item_to_simulation( new_collider_data&& data_for_new_collider);
+		handle_type try_queue_item_to_add( new_collider_data&& data_for_new_collider);
 
+		//add all the queued items for a sector into the physics system 
+		void add_items_from_sector(sector_count_type sector_index);
+
+		//add queued items 
 		void update_physics();
 	};
 
 
-	template<size_t Imax_objects, size_t Iworld_sector_x_count, size_t Iworld_sector_y_count>
-	inline phyisics_2d_main<Imax_objects, Iworld_sector_x_count, Iworld_sector_y_count>::handle_type 
-		phyisics_2d_main<Imax_objects, Iworld_sector_x_count, Iworld_sector_y_count>::try_add_item_to_simulation(new_collider_data&& data_for_new_collider)
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::handle_type 
+		phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::try_queue_item_to_add(new_collider_data&& data_for_new_collider)
 	{
-
 		//try and get a free handle 
 		handle_data_lookup_system_type::index_type index = handle_manager.get_free_element();
 
@@ -137,8 +147,14 @@ namespace ContinuousCollisionLibrary
 		//use grid helper to get sector
 		uint32 sector_index = grid_helper.to_sector_index(tile_xy);
 
+		//check if this is the first item in this sector
+		bool is_first_in_sector = !collider_to_add_header.y_axis_count[sector_index];
+
+		//if this is the first in the sector add to the active sector list
+		sectors_with_queued_items.push_back(sector_index, is_first_in_sector);
+
 		//alocate space in the in buffer for the data 
-		auto address_to_add_item_at = new_collider_header.push_back(sector_index);
+		auto address_to_add_item_at = collider_to_add_header.push_back(sector_index);
 
 		//store the data about the new item to add 
 		colliders_to_add_data[address_to_add_item_at] = std::move(data_for_new_collider);
@@ -149,8 +165,34 @@ namespace ContinuousCollisionLibrary
 		return handle;
 	}
 
-	template<size_t Imax_objects, size_t Iworld_sector_x_count, size_t Iworld_sector_y_count>
-	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count, Iworld_sector_y_count>::update_physics()
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::add_items_from_sector(sector_count_type sector_index)
+	{
+		//get index iterator from the item add header 
+		std::for_each(collider_to_add_header.begin(sector_index), collider_to_add_header.end(sector_index), [](auto real_address_to_add)
+			{
+				//get a ref struct to the existing data
+				new_collider_data& existing_data = &colliders_to_add_data[real_address_to_add.address];
+
+				//add to the target sector 
+				auto [destination__real_address, _, _]  = collision_data_container.insert(existing_data.owner, sector_index);
+
+				//get the ref struct to the data we are writing to
+				collision_data_ref data_ref = collision_data_container.get_ref_tuple(destination__real_address);
+
+				//copy across the values (could maybe make a meta function for this)
+				data_ref.x = existing_data.position.x;
+				data_ref.y = existing_data.position.y;
+
+				data_ref.velocity_x = existing_data.velocity.x;
+				data_ref.velocity_y = existing_data.velocity.y;
+
+				data_ref.radius = existing_data.radius;
+			};
+	}
+
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_physics()
 	{
 		//add any new items to the simulation 
 
