@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClInclude Include="base_types_definition.h" />
     <ClInclude Include="fixed_free_list.h" />
+    <ClInclude Include="fixed_size_vector.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="free_list.h" />
     <ClInclude Include="HandleSystem\handle_data_lookup_system.h" />

@@ -78,6 +78,9 @@
     <ClInclude Include="fixed_free_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fixed_size_vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="array_utilities.cpp">
