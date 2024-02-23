@@ -5,6 +5,7 @@
 #include <functional>
 
 #include "paged_2d_array.h"
+#include "misc_utilities/type_static_assert_helper.h"
 
 //this class serves as an array of arrays where the first axis is meant to represent "groups" and the 2nd axis the data for members of those groups with an upper limit on the
 // total number of members in any group. the 2nd axis of elements act as if they are in contigious areas of memeory but are actually split across memory pages 
@@ -168,9 +169,9 @@ namespace ArrayUtilities
 		}
 		else
 		{	
-
+			MiscUtilities::debug_error_type<real_address_type> type_error0;
 			//this code is only compiled if the address is of the wrong type
-			static_assert(false);
+			//static_assert(false);
 		}
 
 	}

@@ -25,6 +25,7 @@ namespace ArrayUtilities
 {
 	class unit_test_manager
 	{
+		
 	public:
 		
 		static void run_small_and_free_list_test()
@@ -917,27 +918,49 @@ namespace ArrayUtilities
 				int& a;
 				float& b;
 				bool& c;
-
+				float& d;
+				float& e;
+				float& f;
+				float& g;
+				float& h;
+				float& i;
+				float& j;
+				float& k;
+				float& l;
+				float& m;
+			
 				auto get_as_tuple()
 				{
-					return std::tie(a, b, c);
+					return std::tie(a, b, c,d,e,f,g,h,i,j,k,l,m);
 				}
 			};
+
+			//tiny test struct for compiler heap issues
+			//struct test_ref_struct
+			//{
+			//	int& a;
+			//
+			//	auto get_as_tuple()
+			//	{
+			//		return std::tie(a);
+			//	}
+			//};
 
 			using handle_type = HandleSystem::default_handle_type<std::numeric_limits<uint16>::max() - 1>;
 
 			//crate handle
 			handle_type handle(0);
 
-			using handle_tracked_array_type = handle_tracked_2d_paged_array<handle_type, 255, 255, 255, 256, test_ref_struct>;
+			using handle_tracked_array_type = handle_tracked_2d_paged_array<handle_type, 16 * 16, std::numeric_limits<uint16>::max() - 1, std::numeric_limits<uint16>::max() - 1, 512, test_ref_struct>;
 
-			handle_tracked_array_type handle_tracked_array;
+			auto  handle_tracked_array = std::make_unique < handle_tracked_array_type>();
 
+			
 			//add handle 
-			auto address = handle_tracked_array.insert(handle, 0);
+			auto address = handle_tracked_array->insert(handle, 0);
 
 			//get reference to address
-			auto ref_struct = handle_tracked_array.get(std::get<0>(address));
+			auto ref_struct = handle_tracked_array->get(std::get<0>(address));
 
 			int val_to_set = 69;
 
@@ -945,6 +968,8 @@ namespace ArrayUtilities
 			ref_struct.a = val_to_set;
 
 			assert(ref_struct.a == val_to_set, "the address does not have the expected value, should be the same as val_to_set");
+			
 		}
+		
 	};
-}
+};

@@ -185,7 +185,7 @@ namespace SectorGrid
 
 		//extract the sector component 
 		const uint32 x_sector_component = xy.x & (axis_sector_mask);
-		const uint32 y_sector_component = xy.y & (axis_sector_mask);
+		uint32 y_sector_component = xy.y & (axis_sector_mask);
 
 		//offset the y component 
 		y_sector_component = y_sector_component << sector_bits_per_axis;
@@ -193,7 +193,7 @@ namespace SectorGrid
 		//combine the components 
 		uint32 combined = y_sector_component | x_sector_component;
 
-		return combined;
+		return combined >> sector_bits_per_axis;
 	}
 
 	template<sector_grid_dimension_concept TSectorGridDimensions>

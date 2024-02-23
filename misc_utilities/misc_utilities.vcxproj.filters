@@ -45,6 +45,9 @@
     <ClInclude Include="bits_needed_for_unsigned_int.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="type_static_assert_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="misc_utilities.cpp">

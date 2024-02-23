@@ -16,6 +16,7 @@ namespace MiscUtilities
     };
 
     template<int bits> struct SelectInteger_ {};
+    template<> struct SelectInteger_<0> { typedef uint8_t  int_type_t; };
     template<> struct SelectInteger_<8>  { typedef uint8_t  int_type_t; };
     template<> struct SelectInteger_<16> { typedef uint16_t int_type_t; };
     template<> struct SelectInteger_<32> { typedef uint32_t int_type_t; };

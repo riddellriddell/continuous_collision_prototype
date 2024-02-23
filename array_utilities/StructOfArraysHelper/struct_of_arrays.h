@@ -174,7 +174,6 @@ namespace ArrayUtilities
              );
         }
 
-
     public:
         //point an instance of the reference struct to all the array values of the tuple of arrays 
         template<typename TtupleOfArrays, typename Tindex_type>
@@ -194,18 +193,20 @@ namespace ArrayUtilities
               std::make_index_sequence<tuple_size>());
         }
 
+
         // Helper function template to create an instance of MyStruct from a tuple
+        template <typename... Args, std::size_t... Is>
+        static Treference_struct create_ref_struct_from_tuple(const std::tuple<Args...>& tuple, std::index_sequence<Is...>)
+        {
+            return { std::get<Is>(tuple)... };
+        }
+
+        // Wrapper function with a convenient interface
         template <typename... Args>
         static Treference_struct create_ref_struct_from_tuple(const std::tuple<Args...>& tuple)
         {
-            return { std::get<Args>(tuple)... };
+            return create_ref_struct_from_tuple(tuple, std::index_sequence_for<Args...>{});
         }
-
-        //template<typename TtupleOfArrays, typename Tindex_type, std::size_t... I>
-        //static Treference_struct create_reference_struct_to_index_impl(TtupleOfArrays& tuple_of_arrays, Tindex_type index,std::index_sequence<I...>)
-        //{
-        //    return create_ref_struct_from_tuple (tuple_converter::convert(tuple_of_arrays, tuple_converter::convert_from_container_to_ref{ index }));
-        //}
 
     public:
 

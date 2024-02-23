@@ -19,21 +19,25 @@ namespace ArrayUtilities
 
 		union list_type
 		{
-			index_type next;
+			index_type next = 0;
 			Thandle_type element;
 		};
 
-		std::array<Thandle_type, Icount> data;
+		std::array<list_type, Icount> data;
 		index_type free_start;
 
 
 		fixed_free_list(): free_start(0)
 		{
+			auto next_index = static_cast<index_type>(0);
 			// Fill data using std::iota
-			std::iota(data.begin(), data.end(), static_cast<index_type>(1));
+			std::for_each(data.begin(), data.end(), [&](auto& entry)
+				{
+					entry.next = ++next_index;
+				});
 
 			// mark the last element with an invalid value 
-			data.back() = invalid_value;
+			data.back().next = invalid_value;
 		}
 
 		// Accessor for operator[]

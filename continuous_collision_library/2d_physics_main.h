@@ -23,6 +23,7 @@ namespace ContinuousCollisionLibrary
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	class phyisics_2d_main
 	{
+		using phyisics_2d_main_type = phyisics_2d_main<Imax_objects, Iworld_sector_x_count>;
 		
 		//definition of the target dimensions of the grid system
 		using grid_dimension_type = SectorGrid::sector_grid_dimensions<Iworld_sector_x_count, 16>;
@@ -45,19 +46,22 @@ namespace ContinuousCollisionLibrary
 
 		static constexpr size_t bits_needed_to_store_handle_count = MiscUtilities::bits_needed_to_represent_number(Imax_objects);
 
+	public:
 		//temp handle type definition
 		using handle_type = HandleSystem::default_handle_type<Imax_objects>;
 
-		//using handle_data_lookup_system_type = ArrayUtilities::fixed_free_list<Imax_objects, handle_type>;
+	private:
+
+		using handle_data_lookup_system_type = ArrayUtilities::fixed_free_list<Imax_objects, handle_type>;
 
 		//the system to manage all the handles and data lookup addresses 
-		//handle_data_lookup_system_type handle_manager;
+		handle_data_lookup_system_type handle_manager;
 
 		struct collision_data_ref
 		{
 			float& x;
 			float& y;
-
+			
 			float& velocity_x;
 			float& velocity_y;
 						
@@ -68,7 +72,16 @@ namespace ContinuousCollisionLibrary
 			{
 				return std::tie(x, y, velocity_x, velocity_y, radius);
 			}
+
+			//auto get_as_tuple()
+			//{
+			//	return std::tie(x);
+			//}
 		};
+
+		//static_assert(sector_count == 256);
+		//static_assert(Imax_objects == 254);
+		//static_assert(page_size_for_collider_data == 1024);
 
 		//data for all the colliders that is tied to / tracked with unique handle id's from the handle manager
 		using collision_data_container_type = ArrayUtilities::handle_tracked_2d_paged_array<handle_type, sector_count, Imax_objects, Imax_objects, page_size_for_collider_data, collision_data_ref>;
@@ -76,11 +89,13 @@ namespace ContinuousCollisionLibrary
 		//data for all the items in the grid
 		collision_data_container_type collision_data_container;
 
-		/*
+	public:
 
 		//buffer for new data to add to the grid
 		struct new_collider_data
 		{
+			friend class phyisics_2d_main_type;
+
 		private:
 
 			//this value is set on add to the add buffer 
@@ -98,6 +113,8 @@ namespace ContinuousCollisionLibrary
 			}
 		};
 
+	private:
+
 
 		//buffer to hold all data being added to the grid 
 		using new_collider_header_type = ArrayUtilities::paged_2d_array_header < sector_count, Imax_objects, Imax_objects, page_size_for_collider_data>;
@@ -110,26 +127,33 @@ namespace ContinuousCollisionLibrary
 		//which sectors have items queued to be added into the game
 		ArrayUtilities::fixed_size_vector_array<sector_count_type, max_sectors_internal> sectors_with_queued_items;
 
-		sector_count_type number_of_active_sectors;
-		std::array<sector_count_type, max_sectors_internal> active_sectors;
+		//sector_count_type number_of_active_sectors;
+		//std::array<sector_count_type, max_sectors_internal> active_sectors;
 
 		//grid tracking collisions 
 		overlap_tracking_grid overlap_grid;
 
+		public:
+
 		//try add a handle to the simulation
 		handle_type try_queue_item_to_add( new_collider_data&& data_for_new_collider);
+
+		private:
 
 		//add all the queued items for a sector into the physics system 
 		void add_items_from_sector(sector_count_type sector_index);
 
+		//add all the new items 
+		void add_items_from_all_sectors();
+
+		public:
 		//add queued items 
 		void update_physics();
 
-		*/
 	};
 
 
-	/*
+	
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::handle_type 
 		phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::try_queue_item_to_add(new_collider_data&& data_for_new_collider)
@@ -141,7 +165,7 @@ namespace ContinuousCollisionLibrary
 		if (!handle_data_lookup_system_type::is_valid_index(index))
 		{
 			//if the handle is invalid dont queue data and just return an invalid handle
-			return handle_type::invalid_handle_value;
+			return handle_type::get_invalid_index();
 		}
 
 		//create the handle 
@@ -165,10 +189,10 @@ namespace ContinuousCollisionLibrary
 		auto address_to_add_item_at = collider_to_add_header.push_back(sector_index);
 
 		//store the data about the new item to add 
-		colliders_to_add_data[address_to_add_item_at] = std::move(data_for_new_collider);
+		colliders_to_add_data[address_to_add_item_at.address] = std::move(data_for_new_collider);
 
 		//update the handle 
-		colliders_to_add_data[address_to_add_item_at].handle = handle;
+		colliders_to_add_data[address_to_add_item_at.address].owner = handle;
 
 		return handle;
 	}
@@ -177,16 +201,16 @@ namespace ContinuousCollisionLibrary
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::add_items_from_sector(sector_count_type sector_index)
 	{
 		//get index iterator from the item add header 
-		std::for_each(collider_to_add_header.begin(sector_index), collider_to_add_header.end(sector_index), [](auto real_address_to_add)
+		std::for_each(collider_to_add_header.begin(sector_index), collider_to_add_header.end(sector_index), [&](auto real_address_to_add)
 			{
 				//get a ref struct to the existing data
-				new_collider_data& existing_data = &colliders_to_add_data[real_address_to_add.address];
+				new_collider_data& existing_data = colliders_to_add_data[real_address_to_add.address];
 
 				//add to the target sector 
-				auto [destination__real_address, _, _]  = collision_data_container.insert(existing_data.owner, sector_index);
+				auto [destination__real_address, _, __]  = collision_data_container.insert(existing_data.owner, sector_index);
 
 				//get the ref struct to the data we are writing to
-				collision_data_ref data_ref = collision_data_container.get_ref_tuple(destination__real_address);
+				auto data_ref = collision_data_container.get(destination__real_address);
 
 				//copy across the values (could maybe make a meta function for this)
 				data_ref.x = existing_data.position.x;
@@ -200,9 +224,21 @@ namespace ContinuousCollisionLibrary
 	}
 
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::add_items_from_all_sectors()
+	{
+		//single threaded version.
+		//loop through all sectors and add their items into the simulation
+		std::for_each(sectors_with_queued_items.begin(), sectors_with_queued_items.end(), [&](auto sector_index)
+			{
+				add_items_from_sector(sector_index);
+			});
+	}
+
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_physics()
 	{
 		//add any new items to the simulation 
+		add_items_from_all_sectors();
 
 		//object ask the physics system for a handle to a phys object
 		
@@ -237,6 +273,5 @@ namespace ContinuousCollisionLibrary
 		//apply force to agent 
 		
 	}
-	*/
-
+	
 }

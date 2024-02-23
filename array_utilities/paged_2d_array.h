@@ -46,7 +46,11 @@ namespace ArrayUtilities
 		//plus the pages we can create with the remaining itmes 
 		size_t total_pages_needed = wasted_on_partial_fill + (full_filled * (max_y_axis_pages - 1)) + (last_axis_page_count - 1);
 
-		//assert((total_pages_needed > 0) || max_total_y_items == 0);
+		//make sure sizes are sane
+		assert((total_pages_needed > 0) || max_total_y_items == 0);
+
+		//the worst case is we add one agent to every sector and add all the agents to a singel sector plus one
+		assert(total_pages_needed < (max_total_y_items / max_y_axis_pages) + 1 + number_of_x_axis_items);
 
 		return total_pages_needed;
 	}
@@ -59,6 +63,8 @@ namespace ArrayUtilities
 		//the worst case is one item in every x axis cell and then one cell with all the remaining items 
 		static constexpr size_t max_pages = calculate_number_of_pages_needed(Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size);
 		static constexpr size_t max_y_axis_pages = ((Imax_y_items - 1) / Ipage_size) + 1;
+
+		static_assert(max_pages < ((Imax_total_y_items / Ipage_size) + 1 + Inumber_of_x_axis_items));
 
 
 		//sanity check that we are alocating at leas one page if we have more than 0 items to store
