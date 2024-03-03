@@ -21,10 +21,10 @@ namespace ContinuousCollisionLibrary
 
 			physics_main_type::new_collider_data colider_to_add01;
 
-			colider_to_add01.position = math_2d_util::fvec2d(0.0f);
+			colider_to_add01.position = math_2d_util::fvec2d(0.9f);
 			colider_to_add01.velocity = math_2d_util::fvec2d(0.0f);
 
-			colider_to_add01.radius = 1.0f;
+			colider_to_add01.radius = 0.5f;
 			
 			physics_main_type::new_collider_data colider_to_add02;
 

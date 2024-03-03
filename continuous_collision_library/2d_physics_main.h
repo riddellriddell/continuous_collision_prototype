@@ -2,6 +2,9 @@
 #include <array>
 #include <algorithm>
 
+#include "vector_2d_math_utils/rect_types.h"
+#include "vector_2d_math_utils/vector_types.h"
+
 #include "base_types_definition.h"
 
 #include "misc_utilities/int_type_selection.h"
@@ -13,7 +16,9 @@
 #include "array_utilities/handle_tracked_2d_paged_array.h"
 #include "array_utilities/HandleSystem/handle_system.h"
 #include "array_utilities/fixed_size_vector.h"
+#include "array_utilities/paged_wide_node_linked_list.h"
 
+#include "sector_grid_data_structure/sector_grid.h"
 #include "sector_grid_data_structure/sector_grid_dimensions.h"
 #include "sector_grid_data_structure/sector_grid_index.h"
 
@@ -133,6 +138,18 @@ namespace ContinuousCollisionLibrary
 		//grid tracking collisions 
 		overlap_tracking_grid overlap_grid;
 
+		//assuming average tile will have at max 6? 
+		static constexpr size_t node_width = 8;
+
+		//assuming half of the tiles in each sector are full on average
+		static constexpr size_t page_size = (grid_dimension_type::sector_tile_count / 2) ;
+
+		//list of all the agents in each tile in each sector
+		using per_tile_collider_list_type = ArrayUtilities::paged_wide_node_linked_list<handle_type, grid_dimension_type::tile_count, node_width, Imax_objects, Imax_objects, Imax_objects, page_size, grid_dimension_type::sector_tile_count>;
+
+		//agent lookup
+		per_tile_collider_list_type colliders_in_tile_tracker;
+
 		public:
 
 		//try add a handle to the simulation
@@ -145,6 +162,15 @@ namespace ContinuousCollisionLibrary
 
 		//add all the new items 
 		void add_items_from_all_sectors();
+
+		//update the grid overlap system
+		void update_bounds_in_sector(sector_count_type sector_index);
+
+		//update the bounds in all sectors 
+		void update_bounds_in_all_sectors();
+
+		//move all objects 
+		void update_positions_in_sector(sector_count_type sector_index);
 
 		public:
 		//add queued items 
@@ -221,7 +247,28 @@ namespace ContinuousCollisionLibrary
 
 				data_ref.radius = existing_data.radius;
 			});
+
+		//inject the handle into the per tile trakcer
+		std::for_each(collider_to_add_header.begin(sector_index), collider_to_add_header.end(sector_index), [&](auto real_address_to_add)
+			{
+				//get a ref struct to the existing data
+				new_collider_data& existing_data = colliders_to_add_data[real_address_to_add.address];
+
+				//get the handle 
+				auto handle = existing_data.owner;
+
+				//convert to tile
+				math_2d_util::ivec2d tile_xy = static_cast<math_2d_util::ivec2d>(existing_data.position);
+
+				//use grid helper to get sector
+				auto sector_index = grid_helper.from_xy(tile_xy);
+
+				//inject the handle into the grid structure 
+				colliders_in_tile_tracker.add(sector_index.index, handle);
+			});
 	}
+
+
 
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::add_items_from_all_sectors()
@@ -235,10 +282,87 @@ namespace ContinuousCollisionLibrary
 	}
 
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_bounds_in_sector(sector_count_type sector_index)
+	{
+		//get the iterators for the sector
+		auto begin_itr = colliders_in_tile_tracker.get_active_nodes_in_group_start(sector_index);
+		auto end_itr = colliders_in_tile_tracker.get_active_nodes_in_group_end(sector_index);
+
+		//sector offset 
+		auto tile_offset = sector_index * grid_dimension_type::sector_tile_count;
+
+		//loop through all active nodes in the sector
+		std::for_each(begin_itr, end_itr, [&](auto root_index)
+			{
+				//convert from subtile to global tile 
+				auto world_tile = root_index + tile_offset;
+
+				//get the iterator for the tile
+				auto tile_start = colliders_in_tile_tracker.get_root_node_start(world_tile);
+				auto tile_end = colliders_in_tile_tracker.end();
+
+				//the rect for the tile
+				math_2d_util::irect new_bounds = math_2d_util::irect::inverse_max_size_rect();
+
+				using sector_type_type = typename sector_grid_helper_type::sector_tile_index_type;
+
+				//convert to a tile type
+				sector_type_type tile = sector_type_type{ world_tile };
+
+				//get the tils coordinate
+				math_2d_util::ivec2d tile_coordinate = grid_helper.to_xy<math_2d_util::ivec2d>(tile);
+
+				//calculate the bounds for each agent
+				std::for_each(tile_start, tile_end,
+					[&](auto handle)
+					{
+						//get ref struct 
+						typename collision_data_container_type::handle_reference_wrapper ref_struct = collision_data_container.get(handle);
+
+						//calcualte x min max
+						float x_min = ref_struct.x - ref_struct.radius;
+						float x_max = ref_struct.x + ref_struct.radius;
+
+						//calculate y min max 
+						float y_min = ref_struct.y - ref_struct.radius;
+						float y_max = ref_struct.y + ref_struct.radius;
+
+						new_bounds.min.x = std::min(new_bounds.min.x, static_cast<int32>(x_min));
+						new_bounds.max.x = std::max(new_bounds.max.x, static_cast<int32>(x_max));
+
+						new_bounds.min.y = std::min(new_bounds.min.y, static_cast<int32>(y_min));
+						new_bounds.max.y = std::max(new_bounds.max.y, static_cast<int32>(y_max));
+
+					});
+
+				//update the bounds of the tile
+				overlap_grid.update_bounds(tile_coordinate, tile, new_bounds);
+
+			});
+	}
+
+
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_bounds_in_all_sectors()
+	{
+		//single threaded version.
+		//loop through all sectors and add their items into the simulation
+		std::for_each(sectors_with_queued_items.begin(), sectors_with_queued_items.end(), [&](auto sector_index)
+			{
+				update_bounds_in_sector(sector_index);
+			});
+	}
+
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_physics()
 	{
 		//add any new items to the simulation 
 		add_items_from_all_sectors();
+
+
+		//update the tile boundry overlaps 
+		update_bounds_in_all_sectors();
+
 
 		//object ask the physics system for a handle to a phys object
 		
@@ -257,6 +381,7 @@ namespace ContinuousCollisionLibrary
 		//for each agent in the tile
 
 		//check if agent overlaps with the bounds of the other overlap
+
 		
 		//gather all the agent id's inside the tile
 		
@@ -274,4 +399,11 @@ namespace ContinuousCollisionLibrary
 		
 	}
 	
+	//move all objects 
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_positions_in_sector(sector_count_type sector_index)
+	{
+		//loop through all objects in sector and apply 
+		//std::for_each(collision_data_container.begin())
+	}
 }
