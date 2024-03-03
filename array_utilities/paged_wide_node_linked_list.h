@@ -1048,8 +1048,12 @@ namespace ArrayUtilities
 	inline paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::root_entry_group_address_type 
 		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::get_root_group_for_index(root_entry_address_type root_node_index)
 	{
-		assert(root_node_index < number_of_root_groups);
-		return root_node_index / Iroot_node_group_size;
+
+		auto root_group = root_node_index / Iroot_node_group_size;
+
+		assert(root_group < number_of_root_groups);
+
+		return  root_group;
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>

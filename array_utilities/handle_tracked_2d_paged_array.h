@@ -21,6 +21,8 @@ namespace ArrayUtilities
 	struct handle_tracked_2d_paged_array
 	{
 
+		using handle_type = Thandle_type;
+
 		//this index type for the handle 
 		using handle_index_type = Thandle_type::handle_index_type;
 

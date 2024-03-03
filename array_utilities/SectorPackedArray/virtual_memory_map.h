@@ -150,11 +150,17 @@ namespace ArrayUtilities
 		//constructor. all page handels need to be initialized as invalid
 		constexpr virtual_memory_map();
 
+		//get the index in a page of a virtual address
+		static virtual_address_value_type get_sub_page_index(virtual_address_type virtual_address);
+
 		real_node_address_type resolve_address(virtual_address_type address) const;
 
 		real_node_address_type resolve_address_using_virtual_page_offset(virtual_address_type address, auto virtual_page_number) const;
 
 		page_handle_type resolve_virtual_address_to_page_handle(virtual_address_type address) const;
+
+		//turn a page number to the real address at the start of the page
+		real_address_value_type resolve_page_number_to_real_address(auto page_number) const;
 
 		//check that the address given has an alocated page file 
 		bool does_address_have_page(virtual_address_type address) const;
@@ -189,7 +195,7 @@ namespace ArrayUtilities
 
 		auto page_val = pages_in_space[page_number];
 
-		real_address_value_type out_address = virtual_address & local_address_mask;
+		real_address_value_type out_address = real_address_value_type(get_sub_page_index(virtual_address_type(virtual_address)));
 
 		out_address |= page_val.get_page() << local_address_bits;
 
@@ -201,6 +207,14 @@ namespace ArrayUtilities
 	{
 		//need to loop over all the elements in the page handle array and init them
 	}
+
+	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
+	inline virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::virtual_address_value_type 
+		virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::get_sub_page_index(virtual_address_type virtual_address)
+	{
+		return virtual_address_value_type(virtual_address.address & local_address_mask);
+	}
+
 
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_node_address_type virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::resolve_address(virtual_address_type address) const
@@ -226,6 +240,18 @@ namespace ArrayUtilities
 
 		return pages_in_space[virtual_page_number];
 	}
+
+	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
+	inline virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_address_value_type 
+		virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::resolve_page_number_to_real_address(auto page_number) const
+	{
+		//make sure page is valid 
+		assert(does_address_have_page(page_number << local_address_bits));
+
+		//convert page to real address
+		return pages_in_space[page_number].get_page() << local_address_bits;
+	}
+
 	
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	inline bool virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::does_address_have_page(virtual_address_type address) const
@@ -254,7 +280,7 @@ namespace ArrayUtilities
 	inline bool virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::is_first_item_in_real_page(virtual_address_type address)
 	{
 		//get the page offset component of the virtual address
-		auto page_offset = address.address & local_address_mask;
+		auto page_offset = get_sub_page_index(address);
 
 		//first item in a page should have an offset of 0, doing a boolean invert should return the correct val
 		return !page_offset;
