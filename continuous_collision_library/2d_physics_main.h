@@ -169,8 +169,11 @@ namespace ContinuousCollisionLibrary
 		//update the bounds in all sectors 
 		void update_bounds_in_all_sectors();
 
-		//move all objects 
+		//move all objects in sector 
 		void update_positions_in_sector(sector_count_type sector_index);
+
+		//move all objects in the world
+		void update_all_positions();
 
 		public:
 		//add queued items 
@@ -354,11 +357,24 @@ namespace ContinuousCollisionLibrary
 	}
 
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_all_positions()
+	{
+		//single threaded version.
+		//loop through all sectors and add their items into the simulation
+		std::for_each(sectors_with_queued_items.begin(), sectors_with_queued_items.end(), [&](auto sector_index)
+			{
+				update_positions_in_sector(sector_index);
+			});
+	}
+
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_physics()
 	{
 		//add any new items to the simulation 
 		add_items_from_all_sectors();
 
+		//move all objects 
+		update_all_positions();
 
 		//update the tile boundry overlaps 
 		update_bounds_in_all_sectors();
@@ -381,7 +397,6 @@ namespace ContinuousCollisionLibrary
 		//for each agent in the tile
 
 		//check if agent overlaps with the bounds of the other overlap
-
 		
 		//gather all the agent id's inside the tile
 		
@@ -403,7 +418,69 @@ namespace ContinuousCollisionLibrary
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_positions_in_sector(sector_count_type sector_index)
 	{
-		//loop through all objects in sector and apply 
-		//std::for_each(collision_data_container.begin())
+		//get the page data iterators
+		auto page_begin_itr = collision_data_container.get_tight_packed_data().get_array_header().page_begin(sector_index);
+		auto page_end_itr = collision_data_container.get_tight_packed_data().get_array_header().page_end(sector_index);
+
+		//loop through all the pages that a sectors data is in
+		std::for_each(page_begin_itr, page_end_itr, [&](auto& page_address_and_count)
+			{
+
+				//flip velocity if it will take the agent off the map
+				for (auto real_address = page_address_and_count.page_start_address; real_address < page_address_and_count.page_start_address + page_address_and_count.items_in_page; ++real_address)
+				{
+					//get ref struct 
+					collision_data_ref ref_struct = collision_data_container.get(real_address);
+
+					float new_max_edge = (ref_struct.x + ref_struct.radius) + ref_struct.velocity_x;
+
+					float new_min_edge = (ref_struct.x - ref_struct.radius) + ref_struct.velocity_x;
+
+					//check if this will take the object off the bottom of the map
+					bool will_take_off_map = new_max_edge > grid_dimension_type::tile_w || new_min_edge < 0;
+
+					//flip the x velocity 
+					ref_struct.velocity_x = will_take_off_map ? -ref_struct.velocity_x : ref_struct.velocity_x;
+				}
+
+				for (auto real_address = page_address_and_count.page_start_address; real_address < page_address_and_count.page_start_address + page_address_and_count.items_in_page; ++real_address)
+				{
+					//get ref struct 
+					collision_data_ref ref_struct = collision_data_container.get(real_address);
+
+					float new_max_edge = (ref_struct.y + ref_struct.radius) + ref_struct.velocity_y;
+
+					float new_min_edge = (ref_struct.y - ref_struct.radius) + ref_struct.velocity_y;
+
+					//check if this will take the object off the bottom of the map
+					bool will_take_off_map = new_max_edge > grid_dimension_type::tile_w || new_min_edge < 0;
+
+					//flip the x velocity 
+					ref_struct.velocity_y = will_take_off_map ? -ref_struct.velocity_y : ref_struct.velocity_y;
+				}
+
+
+				//cant be bothered writing anothre iterator 
+				//apply x movement
+				for (auto real_address = page_address_and_count.page_start_address; real_address < page_address_and_count.page_start_address + page_address_and_count.items_in_page; ++real_address)
+				{
+					//get ref struct 
+					collision_data_ref ref_struct = collision_data_container.get(real_address);
+
+					//apply the x velocity to the x position 
+					ref_struct.x += ref_struct.velocity_x;
+				}
+
+				//apply y movement 
+				for (auto real_address = page_address_and_count.page_start_address; real_address < page_address_and_count.page_start_address + page_address_and_count.items_in_page; ++real_address)
+				{
+					//get ref struct 
+					collision_data_ref ref_struct = collision_data_container.get(real_address);
+
+					//apply the x velocity to the x position 
+					ref_struct.y += ref_struct.velocity_y;
+				}
+
+			});
 	}
 }

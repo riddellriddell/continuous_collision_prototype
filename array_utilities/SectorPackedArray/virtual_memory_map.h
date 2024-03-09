@@ -46,6 +46,16 @@ namespace ArrayUtilities
 			return temp;
 		}
 
+		real_address operator+(real_address_value_type offset)
+		{
+			return real_address(address + offset);
+		}
+
+		real_address operator-(real_address_value_type offset)
+		{
+			return real_address(address - offset);
+		}
+
 		//setup comparitor
 		auto operator<=>(const real_address&) const = default;
 
@@ -160,7 +170,7 @@ namespace ArrayUtilities
 		page_handle_type resolve_virtual_address_to_page_handle(virtual_address_type address) const;
 
 		//turn a page number to the real address at the start of the page
-		real_address_value_type resolve_page_number_to_real_address(auto page_number) const;
+		real_node_address_type resolve_page_number_to_real_address(auto page_number) const;
 
 		//check that the address given has an alocated page file 
 		bool does_address_have_page(virtual_address_type address) const;
@@ -242,14 +252,14 @@ namespace ArrayUtilities
 	}
 
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
-	inline virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_address_value_type 
+	inline virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_node_address_type
 		virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::resolve_page_number_to_real_address(auto page_number) const
 	{
 		//make sure page is valid 
-		assert(does_address_have_page(page_number << local_address_bits));
+		assert(does_address_have_page( virtual_address_type(page_number << local_address_bits)));
 
 		//convert page to real address
-		return pages_in_space[page_number].get_page() << local_address_bits;
+		return real_node_address_type( pages_in_space[page_number].get_page() << local_address_bits);
 	}
 
 	

@@ -68,6 +68,8 @@ namespace ArrayUtilities
 		//data structure holding all the data including the poiter to the handle each bit of data belongs to 
 		tight_packed_array_type	tight_packed_data;
 
+		const tight_packed_array_type& get_tight_packed_data() const { return tight_packed_data; };
+
 		address_return_type insert(Thandle_type handle, x_axis_type x_index_to_add_to);
 
 		address_return_type move(x_axis_type x_index_to_add_to, auto address_to_move_from);
@@ -77,6 +79,11 @@ namespace ArrayUtilities
 		reference_tuple_type get_ref_tuple(auto address);
 
 		handle_reference_wrapper get(auto address);
+
+#pragma region Iterators
+
+#pragma endregion
+
 
 	};
 

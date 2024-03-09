@@ -59,6 +59,14 @@ namespace ArrayUtilities
 
 	public:
 
+		//iterator 
+#pragma region Iterator
+
+
+
+#pragma endregion
+
+
 		//get a const version of the paged array for external access 
 		const paged_array_type& get_array_header() const { return paged_array_header; };
 
@@ -82,6 +90,7 @@ namespace ArrayUtilities
 
 		//move data from one x address to another 
 		address_return_type move(x_axis_type x_index_move_to, auto address);
+
 	};
 	
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size,typename Tcontainer>
