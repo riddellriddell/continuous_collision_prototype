@@ -21,6 +21,7 @@
 #include "sector_grid_data_structure/sector_grid.h"
 #include "sector_grid_data_structure/sector_grid_dimensions.h"
 #include "sector_grid_data_structure/sector_grid_index.h"
+#include "DebugWindowsDrawHelper/debug_draw_interface.h"
 
 
 namespace ContinuousCollisionLibrary
@@ -178,6 +179,9 @@ namespace ContinuousCollisionLibrary
 		public:
 		//add queued items 
 		void update_physics();
+
+		//debug draw tool
+		void draw_debug(debug_draw_interface& draw_interface);
 
 	};
 
@@ -482,5 +486,12 @@ namespace ContinuousCollisionLibrary
 				}
 
 			});
+	}
+
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::draw_debug(debug_draw_interface& draw_interface)
+	{
+		//draw a grid for all the sectors 
+		//draw_interface
 	}
 }

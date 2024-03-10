@@ -6,8 +6,6 @@
 
 namespace math_2d_util
 {
-
-
 	template<typename T>
 	struct template_vector_2d
 	{
@@ -40,6 +38,7 @@ namespace math_2d_util
 			return template_vector_2d<T>(center_extent, center_extent);
 		}
 
+	
 		//math operations
 		template_vector_2d<T> operator-(const template_vector_2d<T>& other) const
 		{
@@ -87,6 +86,12 @@ namespace math_2d_util
 		////conversion overlaods 
 		template<typename TConvertTo>
 		explicit operator TConvertTo() const;
+
+		constexpr  T lenght_sqr()
+		{
+			return (x * x) + (y * y);
+		}
+
 	};
 	
 	template<typename T>

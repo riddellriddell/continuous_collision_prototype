@@ -2,6 +2,9 @@
 //
 
 #include "framework.h"
+
+#include "DebugWindowsDrawHelper/debug_draw_interface.h"
+
 #include "continuous_collision_prototype.h"
 //#include "array_utilities/WideNodeLinkedList/UnitTests/wide_node_linked_list_unit_tests.h"
 //#include "array_utilities/UnitTests/unit_test_manager.h"
@@ -14,6 +17,8 @@
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+
+debug_draw_interface draw_interface;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -137,6 +142,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
+  //draw_interface.resize(CW_USEDEFAULT, CW_USEDEFAULT);
+  //draw_interface.clear_to(RGB(255, 255, 255));
+
    if (!hWnd)
    {
       return FALSE;
@@ -181,23 +189,77 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_PAINT:
         {
+            //PAINTSTRUCT ps;
+            //HDC hdc = BeginPaint(hWnd, &ps);
+            //
+            //// Draw a rectangle (box)
+            //RECT rect = { 100, 100, 300, 200 };
+            //HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 255)); // Blue color
+            //FillRect(hdc, &rect, hBrush);
+            //DeleteObject(hBrush);
+            //
+            //
+            //
+            //EndPaint(hWnd, &ps);
+
+
+
+        draw_interface.draw_screen_space_box(math_2d_util::ivec2d(0, 0), math_2d_util::ivec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), RGB(0, 255, 0));
+
+        draw_interface.draw_screen_space_circle(math_2d_util::ivec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), draw_interface.get_height() / 4, RGB(255, 255, 0));
+
+        draw_interface.draw_sceen_space_circle_outline(math_2d_util::ivec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), draw_interface.get_height() / 3, RGB(255, 255, 0));
+
+        draw_interface.draw_screen_space_line(math_2d_util::ivec2d(0, 0), math_2d_util::ivec2d(draw_interface.get_width(), draw_interface.get_height()), RGB(0, 0, 255));
+
+        draw_interface.draw_dotted_screen_space_line(math_2d_util::ivec2d(0, draw_interface.get_height()), math_2d_util::ivec2d(draw_interface.get_width(),0), RGB(255, 0, 0));
+
+      
+
+
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            
-            // Draw a rectangle (box)
-            RECT rect = { 100, 100, 300, 200 };
-            HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 255)); // Blue color
-            FillRect(hdc, &rect, hBrush);
-            DeleteObject(hBrush);
-            
 
+            BITMAPINFO bmi;
+            ZeroMemory(&bmi, sizeof(BITMAPINFO));
+            bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+            bmi.bmiHeader.biWidth = draw_interface.get_width();
+            bmi.bmiHeader.biHeight = -static_cast<int32_t>(draw_interface.get_height()); // Negative height to ensure top-down DIB
+            bmi.bmiHeader.biPlanes = 1;
+            bmi.bmiHeader.biBitCount = 32;
+            bmi.bmiHeader.biCompression = BI_RGB;
+
+            SetDIBitsToDevice(
+                hdc,
+                0, 0, draw_interface.get_width(), draw_interface.get_height(),
+                0, 0, 0, draw_interface.get_height(),
+                draw_interface.get_data_ptr(),
+                &bmi,
+                DIB_RGB_COLORS
+            );
 
             EndPaint(hWnd, &ps);
+            draw_interface.clear_to(RGB(255, 255, 255));
         }
         break;
     case WM_DESTROY:
+    {
         PostQuitMessage(0);
+    }
         break;
+    
+    case WM_SIZE:
+    {
+        // Handle window resizing here
+        // The new width and height are in the LOWORD and HIWORD of lParam
+        auto window_width = LOWORD(lParam);
+        auto window_height = HIWORD(lParam);
+
+        //resize the window structure
+        draw_interface.resize(window_width, window_height);
+    }
+        break;
+
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
