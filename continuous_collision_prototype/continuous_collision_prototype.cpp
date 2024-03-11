@@ -21,6 +21,9 @@
 
 #define MAX_LOADSTRING 100
 
+const char WINDOW_WIDTH = 400;
+const char WINDOW_HEIGHT = 400;
+
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
@@ -204,9 +207,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // Store instance handle in our global variable
 
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+      CW_USEDEFAULT, WINDOW_WIDTH, CW_USEDEFAULT, WINDOW_HEIGHT, nullptr, nullptr, hInstance, nullptr);
 
-  //draw_interface.resize(CW_USEDEFAULT, CW_USEDEFAULT);
+  //draw_interface.resize(WINDOW_WIDTH, WINDOW_HEIGHT);
+  
+  draw_interface.add_offset(math_2d_util::fvec2d( 255 / 2, 255 / 2));
+  draw_interface.add_zoom(5);
+  
   //draw_interface.clear_to(RGB(255, 255, 255));
 
    if (!hWnd)
@@ -218,7 +225,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    UpdateWindow(hWnd);
 
    // Set up a timer to fire every 60th of a second (16 milliseconds)
-   SetTimer(hWnd, 1, 16, NULL);
+   SetTimer(hWnd, 1, 100, NULL);
 
    return TRUE;
 }
@@ -263,9 +270,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
         float dt = delta_time_tracker.update_delta_time();
 
-        float view_pan_speed = 10.0f;
+        float view_pan_speed = 60.0f;
 
-        float zoom_change_speed = 0.1f;
+        float zoom_change_speed = 0.5f;
 
         //scale up pan speed with more zoom out
         view_pan_speed *= (1.0f / draw_interface.get_zoom());
@@ -305,17 +312,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 
 
-        draw_interface.draw_screen_space_box(math_2d_util::ivec2d(0, 0), math_2d_util::ivec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), RGB(0, 255, 0));
-
-        draw_interface.draw_screen_space_circle(math_2d_util::ivec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), draw_interface.get_height() / 4, RGB(255, 255, 0));
-
-        draw_interface.draw_sceen_space_circle_outline(math_2d_util::ivec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), draw_interface.get_height() / 3, RGB(255, 255, 0));
-
-        draw_interface.draw_screen_space_line(math_2d_util::ivec2d(0, 0), math_2d_util::ivec2d(draw_interface.get_width(), draw_interface.get_height()), RGB(0, 0, 255));
-
-        draw_interface.draw_dotted_screen_space_line(math_2d_util::ivec2d(0, draw_interface.get_height()), math_2d_util::ivec2d(draw_interface.get_width(),0), RGB(255, 0, 0));
-
-        draw_interface.draw_circle(math_2d_util::fvec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), draw_interface.get_height() / 4, RGB(100, 100, 100));
+       // draw_interface.draw_screen_space_box(math_2d_util::ivec2d(0, 0), math_2d_util::ivec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), RGB(0, 255, 0));
+       //
+       // draw_interface.draw_screen_space_circle(math_2d_util::ivec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), draw_interface.get_height() / 4, RGB(255, 255, 0));
+       //
+       // draw_interface.draw_sceen_space_circle_outline(math_2d_util::ivec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), draw_interface.get_height() / 3, RGB(255, 255, 0));
+       //
+       // draw_interface.draw_screen_space_line(math_2d_util::ivec2d(0, 0), math_2d_util::ivec2d(draw_interface.get_width(), draw_interface.get_height()), RGB(0, 0, 255));
+       //
+       // draw_interface.draw_dotted_screen_space_line(math_2d_util::ivec2d(0, draw_interface.get_height()), math_2d_util::ivec2d(draw_interface.get_width(),0), RGB(255, 0, 0));
+       //
+       // draw_interface.draw_circle(math_2d_util::fvec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), draw_interface.get_height() / 4, RGB(100, 100, 100));
       
 
         //debug draw all physics main

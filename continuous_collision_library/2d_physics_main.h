@@ -51,6 +51,8 @@ namespace ContinuousCollisionLibrary
 		static constexpr sector_count_type sector_count = max_sectors_internal;
 
 		static constexpr size_t bits_needed_to_store_handle_count = MiscUtilities::bits_needed_to_represent_number(Imax_objects);
+		
+		float time_step = 1.0f / 60.0f;
 
 	public:
 		//temp handle type definition
@@ -273,6 +275,9 @@ namespace ContinuousCollisionLibrary
 				//inject the handle into the grid structure 
 				colliders_in_tile_tracker.add(sector_index.index, handle);
 			});
+
+		//clear all queued items for sector
+		collider_to_add_header.clear_axis(sector_index);
 	}
 
 
@@ -286,6 +291,8 @@ namespace ContinuousCollisionLibrary
 			{
 				add_items_from_sector(sector_index);
 			});
+
+		sectors_with_queued_items.clear();
 	}
 
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
@@ -472,7 +479,7 @@ namespace ContinuousCollisionLibrary
 					collision_data_ref ref_struct = collision_data_container.get(real_address);
 
 					//apply the x velocity to the x position 
-					ref_struct.x += ref_struct.velocity_x;
+					ref_struct.x += ref_struct.velocity_x * time_step;
 				}
 
 				//apply y movement 
@@ -482,7 +489,7 @@ namespace ContinuousCollisionLibrary
 					collision_data_ref ref_struct = collision_data_container.get(real_address);
 
 					//apply the x velocity to the x position 
-					ref_struct.y += ref_struct.velocity_y;
+					ref_struct.y += ref_struct.velocity_y * time_step;
 				}
 
 			});
@@ -495,7 +502,7 @@ namespace ContinuousCollisionLibrary
 		draw_interface.draw_grid(math_2d_util::fvec2d(0, 0), math_2d_util::ivec2d(grid_dimensions::tile_w, grid_dimensions::tile_w), 1.0f, debug_draw_interface::to_colour(200, 200, 200));
 
 		//draw the grid for all the sectors
-		draw_interface.draw_grid(math_2d_util::fvec2d(0, 0), math_2d_util::ivec2d(grid_dimensions::tile_w, grid_dimensions::tile_w), grid_dimensions::sectors_grid_w, debug_draw_interface::to_colour(150, 150, 150));
+		draw_interface.draw_grid(math_2d_util::fvec2d(0, 0), math_2d_util::ivec2d(grid_dimensions::sectors_grid_w, grid_dimensions::sectors_grid_w), grid_dimensions::sectors_grid_w, debug_draw_interface::to_colour(150, 150, 150));
 
 
 		//draw all the objects 

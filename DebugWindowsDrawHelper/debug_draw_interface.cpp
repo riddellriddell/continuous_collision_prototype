@@ -16,11 +16,17 @@ void debug_draw_interface::add_zoom(float zoom)
 
 void debug_draw_interface::resize(uint32_t new_width, uint32_t new_height)
 {
+
 	//check if screen already that size
 	if (screen_width == new_width && screen_height == new_height)
 	{
 		return;
 	}
+
+    //get the difference amount
+    math_2d_util::fvec2d dif(new_width - screen_width, new_height - screen_height);
+
+    view_offset -= (dif * 0.5f);
 
 	screen_pixles.resize(new_width * new_height);
 
@@ -52,7 +58,7 @@ void debug_draw_interface::draw_circle(math_2d_util::fvec2d center, float radius
 
 void debug_draw_interface::draw_grid(math_2d_util::fvec2d min, math_2d_util::ivec2d axis_count, float cell_size, colour_type colour)
 {
-    draw_sceen_space_grid_outline_internal(static_cast<math_2d_util::ivec2d>(apply_view_offset(min)), axis_count, cell_size, colour, [&](auto min, auto max, auto colour) { draw_screen_space_line(min, max, colour); });
+    draw_sceen_space_grid_outline_internal(static_cast<math_2d_util::ivec2d>(apply_view_offset(min)), axis_count, cell_size * view_zoom , colour, [&](auto min, auto max, auto colour) { draw_screen_space_line(min, max, colour); });
 }
 
 void debug_draw_interface::draw_screen_space_line(math_2d_util::ivec2d from, math_2d_util::ivec2d to, colour_type colour)
@@ -319,8 +325,8 @@ void debug_draw_interface::draw_sceen_space_grid_outline_internal(math_2d_util::
 
     for (uint32_t iy = 0; iy < axis_count.y + 1; ++iy)
     {
-        math_2d_util::fvec2d start_horizontal(static_cast<int32_t>(min.x, min.y + (iy * cell_size)));
-        math_2d_util::fvec2d end_horizontal(static_cast<int32_t>(min.x + (axis_count.x * cell_size), min.y +  (iy * cell_size)));
+        math_2d_util::fvec2d start_horizontal(min.x, min.y + (iy * cell_size));
+        math_2d_util::fvec2d end_horizontal(min.x + (axis_count.x * cell_size), min.y +  (iy * cell_size));
 
         line_draw_func(static_cast<math_2d_util::ivec2d>(start_horizontal), static_cast<math_2d_util::ivec2d>(end_horizontal), colour);
     }

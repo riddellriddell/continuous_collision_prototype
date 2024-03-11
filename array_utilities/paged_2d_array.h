@@ -127,6 +127,12 @@ namespace ArrayUtilities
 		real_node_address_type find_address(x_axis_count_type x_axis_index, virtual_y_axis_node_adderss_type virtual_address) const;
 		real_node_address_type find_address(virtual_combined_node_adderss_type virtual_address) const;
 
+		//clear all items in an axis
+		void clear_axis(x_axis_count_type axis_index);
+
+
+		//clear all items in the entire array
+		void clear_all_axis();
 		
 		//the maximum number of items neede for all pages 
 		static constexpr size_t max_total_entries = max_pages * Ipage_size;
@@ -394,47 +400,41 @@ namespace ArrayUtilities
 
 			void setup_first_value()
 			{
-				//if next axis is 0 go to next one
-				while (axis_to_iterate_over < parent_ref.y_axis_count.size() && parent_ref.y_axis_count[axis_to_iterate_over] == 0)
-				{
-					axis_to_iterate_over++;
-				}
 
-				if (parent_ref.y_axis_count[axis_to_iterate_over] > 0)
+				for (; axis_to_iterate_over < parent_ref.y_axis_count.size(); ++axis_to_iterate_over)
 				{
-					//get real address
-					real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
+					if (parent_ref.y_axis_count[axis_to_iterate_over] > 0)
+					{
+						//get real address
+						real_index = parent_ref.find_address(axis_to_iterate_over, virtual_y_axis_node_adderss_type(0));
+						return;
+					}
 				}
 			}
 
 		private:
-
-			void next_y_index()
-			{
-				//go to next axis
-				axis_to_iterate_over++;
-
-				//if next axis is 0 go to next one
-				while (axis_to_iterate_over < parent_ref.y_axis_count.size() && parent_ref.y_axis_count[axis_to_iterate_over] == 0)
-				{
-					axis_to_iterate_over++;
-				}
-
-			}
 
 			void next()
 			{
 				//go to the next index
 				++virtual_index;
 
-				if (virtual_index.address >= parent_ref.y_axis_count[axis_to_iterate_over])//check if last in page 
+				while (virtual_index.address >= parent_ref.y_axis_count[axis_to_iterate_over])
 				{
-					next_y_index();
 					virtual_index = virtual_y_axis_node_adderss_type(0);
+
+					++axis_to_iterate_over;
+
+					//check if off end of array
+					if (axis_to_iterate_over >= parent_ref.y_axis_count.size())
+					{
+						//at end of array
+						return;
+					}
 				}
 
 				//check if we have moved to the next page
-				if (axis_to_iterate_over < parent_ref.y_axis_count.size() && y_axis_virtual_memory_map_type::is_first_item_in_real_page(virtual_index))
+				if ( y_axis_virtual_memory_map_type::is_first_item_in_real_page(virtual_index))
 				{
 					//get new real address
 					real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
@@ -653,6 +653,37 @@ namespace ArrayUtilities
 	{
 		return get_all_axis_memory_map().resolve_address(virtual_address);
 	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline void paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::clear_axis(typename x_axis_count_type axis_index)
+	{
+		virtual_y_axis_node_adderss_type last_possible_entry(y_axis_count[axis_index] + y_axis_virtual_memory_map_type::number_of_items_per_page - 1);
+
+		//get the last active page
+		auto last_page = y_axis_virtual_memory_map_type::extract_page_number_from_virtual_address(last_possible_entry);
+		
+		for (uint32_t i = 0; i < last_page; i++)
+		{
+			//get the page to return
+			auto& handle_to_return =  virtual_memory_lookup[axis_index].get_page_handle_to_return(i);
+			
+			//reutrn the page 
+			paged_memory_tracker.free(handle_to_return);
+		
+		}
+
+		y_axis_count[axis_index] = 0;
+	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline void paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::clear_all_axis()
+	{
+		for (x_axis_count_type ix = 0; ix < y_axis_count.size(); ++ix)
+		{
+			clear_axis(ix);
+		}
+	}
+
 	
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
 	inline const std::array<typename paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::y_axis_virtual_memory_map_type, Inumber_of_x_axis_items>& 
