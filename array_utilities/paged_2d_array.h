@@ -371,11 +371,138 @@ namespace ArrayUtilities
 		private:
 		};
 
+		class all_real_address_iterator
+		{
+		public:
+			using iterator_category = std::forward_iterator_tag;
+			using value_type = real_node_address_type;
+			using difference_type = std::ptrdiff_t;
+			using reference = real_node_address_type&;
+			using parent_type = paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>;
+
+			x_axis_count_type axis_to_iterate_over;
+			virtual_y_axis_node_adderss_type virtual_index;
+			real_node_address_type real_index;
+			const parent_type& parent_ref;
+
+			//an array of all the real addresses in the 
+
+			explicit all_real_address_iterator(const parent_type& parent, x_axis_count_type x_axis = 0) : parent_ref(parent), axis_to_iterate_over(x_axis), virtual_index(0)
+			{
+
+			}
+
+			void setup_first_value()
+			{
+				//if next axis is 0 go to next one
+				while (axis_to_iterate_over < parent_ref.y_axis_count.size() && parent_ref.y_axis_count[axis_to_iterate_over] == 0)
+				{
+					axis_to_iterate_over++;
+				}
+
+				if (parent_ref.y_axis_count[axis_to_iterate_over] > 0)
+				{
+					//get real address
+					real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
+				}
+			}
+
+		private:
+
+			void next_y_index()
+			{
+				//go to next axis
+				axis_to_iterate_over++;
+
+				//if next axis is 0 go to next one
+				while (axis_to_iterate_over < parent_ref.y_axis_count.size() && parent_ref.y_axis_count[axis_to_iterate_over] == 0)
+				{
+					axis_to_iterate_over++;
+				}
+
+			}
+
+			void next()
+			{
+				//go to the next index
+				++virtual_index;
+
+				if (virtual_index.address >= parent_ref.y_axis_count[axis_to_iterate_over])//check if last in page 
+				{
+					next_y_index();
+					virtual_index = virtual_y_axis_node_adderss_type(0);
+				}
+
+				//check if we have moved to the next page
+				if (axis_to_iterate_over < parent_ref.y_axis_count.size() && y_axis_virtual_memory_map_type::is_first_item_in_real_page(virtual_index))
+				{
+					//get new real address
+					real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
+				}
+				else
+				{
+					//we can safely go to the next address
+					++real_index;
+				}
+			}
+		public:
+
+
+			real_node_address_type& operator*()
+			{
+				//do some extra checks to make sure we are accessing a valid address
+				assert(parent_ref.is_address_valid(axis_to_iterate_over, virtual_index));
+
+				return real_index;
+			}
+
+			all_real_address_iterator& operator++() {
+				next();
+				return *this;
+			}
+
+			all_real_address_iterator operator++(int) {
+				all_real_address_iterator tmp = *this;
+				next();
+				return tmp;
+			}
+
+			all_real_address_iterator operator+(uint32_t n) const
+			{
+				return all_real_address_iterator(parent_ref, axis_to_iterate_over, virtual_index + n);
+			}
+
+			all_real_address_iterator& operator+=(uint32_t n)
+			{
+				//offset the address
+				virtual_index += n;
+
+				//get new real address
+				real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
+
+				return *this;
+			}
+
+			friend bool operator==(const all_real_address_iterator& lhs, const all_real_address_iterator& rhs)
+			{
+				return (lhs.axis_to_iterate_over == rhs.axis_to_iterate_over);
+			}
+
+			friend bool operator!=(const all_real_address_iterator& lhs, const all_real_address_iterator& rhs) {
+				return !(lhs == rhs);
+			}
+
+		private:
+		};
+
 		y_real_address_iterator begin(x_axis_count_type x_index) const;
 		y_real_address_iterator end(x_axis_count_type x_index) const;
 
 		y_real_page_address_iterator page_begin(x_axis_count_type x_index) const;
 		y_real_page_address_iterator page_end(x_axis_count_type x_index) const;
+
+		all_real_address_iterator begin() const;
+		all_real_address_iterator end() const;
 
 #pragma endregion 
 
@@ -627,6 +754,22 @@ namespace ArrayUtilities
 		auto iterator = y_real_page_address_iterator(*this, x_index);
 		iterator.setup_end_value();
 		return iterator;
+	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::all_real_address_iterator
+		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::begin() const
+	{
+		auto iterator = all_real_address_iterator(*this);
+		iterator.setup_first_value();
+		return iterator;
+	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline  paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::all_real_address_iterator 
+		paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::end() const
+	{
+		return all_real_address_iterator(*this,y_axis_count.size());
 	}
 }
 

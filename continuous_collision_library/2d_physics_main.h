@@ -491,7 +491,23 @@ namespace ContinuousCollisionLibrary
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::draw_debug(debug_draw_interface& draw_interface)
 	{
-		//draw a grid for all the sectors 
-		//draw_interface
+		//draw a grid for all the tiles
+		draw_interface.draw_grid(math_2d_util::fvec2d(0, 0), math_2d_util::ivec2d(grid_dimensions::tile_w, grid_dimensions::tile_w), 1.0f, debug_draw_interface::to_colour(200, 200, 200));
+
+		//draw the grid for all the sectors
+		draw_interface.draw_grid(math_2d_util::fvec2d(0, 0), math_2d_util::ivec2d(grid_dimensions::tile_w, grid_dimensions::tile_w), grid_dimensions::sectors_grid_w, debug_draw_interface::to_colour(150, 150, 150));
+
+
+		//draw all the objects 
+		auto itr_start = collision_data_container.get_tight_packed_data().get_array_header().begin();
+		auto itr_end = collision_data_container.get_tight_packed_data().get_array_header().end();
+
+		std::for_each(itr_start, itr_end, [&](auto& real_address)
+			{
+				collision_data_ref ref_struct = collision_data_container.get(real_address);
+
+				draw_interface.draw_circle(math_2d_util::fvec2d(ref_struct.x, ref_struct.y), ref_struct.radius, debug_draw_interface::to_colour(255, 0, 0));
+			});
+
 	}
 }

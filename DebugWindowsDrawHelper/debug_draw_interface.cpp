@@ -4,6 +4,16 @@
 #include <algorithm>
 #include <array>
 
+void debug_draw_interface::add_offset(math_2d_util::fvec2d offset)
+{
+    view_offset += offset;
+}
+
+void debug_draw_interface::add_zoom(float zoom)
+{
+    view_zoom *= zoom;
+}
+
 void debug_draw_interface::resize(uint32_t new_width, uint32_t new_height)
 {
 	//check if screen already that size
@@ -23,6 +33,27 @@ void debug_draw_interface::clear_to(colour_type colour)
 	std::for_each(screen_pixles.begin(), screen_pixles.end(), [&](auto& pixel_colour) {pixel_colour = colour; });
 }
 
+
+void debug_draw_interface::draw_line_from_to(math_2d_util::fvec2d from, math_2d_util::fvec2d to, colour_type colour)
+{
+
+    draw_screen_space_line(static_cast<math_2d_util::ivec2d>(apply_view_offset(from)), static_cast<math_2d_util::ivec2d>(apply_view_offset(to)), colour);
+}
+
+void debug_draw_interface::draw_box(math_2d_util::fvec2d min, math_2d_util::fvec2d max, colour_type colour)
+{
+    draw_screen_space_box(static_cast<math_2d_util::ivec2d>(apply_view_offset(min)), static_cast<math_2d_util::ivec2d>(apply_view_offset(max)), colour);
+}
+
+void debug_draw_interface::draw_circle(math_2d_util::fvec2d center, float radius, colour_type colour)
+{
+    draw_screen_space_circle(static_cast<math_2d_util::ivec2d>(apply_view_offset(center)), static_cast<int32_t>(radius * view_zoom), colour);
+}
+
+void debug_draw_interface::draw_grid(math_2d_util::fvec2d min, math_2d_util::ivec2d axis_count, float cell_size, colour_type colour)
+{
+    draw_sceen_space_grid_outline_internal(static_cast<math_2d_util::ivec2d>(apply_view_offset(min)), axis_count, cell_size, colour, [&](auto min, auto max, auto colour) { draw_screen_space_line(min, max, colour); });
+}
 
 void debug_draw_interface::draw_screen_space_line(math_2d_util::ivec2d from, math_2d_util::ivec2d to, colour_type colour)
 {
@@ -142,7 +173,6 @@ void debug_draw_interface::draw_dotted_screen_space_line(math_2d_util::ivec2d fr
     }
 }
 
-
 void debug_draw_interface::draw_screen_space_box(math_2d_util::ivec2d min, math_2d_util::ivec2d max, colour_type colour)
 {
     max.x += 1;
@@ -244,6 +274,26 @@ void debug_draw_interface::draw_sceen_space_circle_outline(math_2d_util::ivec2d 
     }
 }
 
+math_2d_util::fvec2d debug_draw_interface::apply_view_offset(math_2d_util::fvec2d point)
+{
+    //get relatve to view window
+    point -= view_offset;
+
+    //screen size offset
+    math_2d_util::fvec2d screen_centering_offset(screen_width / 2, screen_height / 2);
+
+    //get relative to screen center
+    point -= screen_centering_offset;
+
+    //apply scaling
+    point *= view_zoom;
+
+    // convert back to view window
+    point += screen_centering_offset;
+
+    return point;
+}
+
 void debug_draw_interface::draw_screen_space_box_outline_internal(math_2d_util::ivec2d min, math_2d_util::ivec2d max, colour_type colour, std::function<void(math_2d_util::ivec2d, math_2d_util::ivec2d, colour_type colour)> line_draw_func)
 {
     //draw top
@@ -252,5 +302,27 @@ void debug_draw_interface::draw_screen_space_box_outline_internal(math_2d_util::
 
     line_draw_func(math_2d_util::ivec2d(min.x, min.y), math_2d_util::ivec2d(min.x, max.y), colour);
     line_draw_func(math_2d_util::ivec2d(max.x, min.y), math_2d_util::ivec2d(max.x, max.y), colour);
+}
+
+void debug_draw_interface::draw_sceen_space_grid_outline_internal(math_2d_util::ivec2d min, math_2d_util::ivec2d axis_count, float cell_size, colour_type colour, std::function<void(math_2d_util::ivec2d, math_2d_util::ivec2d, colour_type colour)> line_draw_func)
+{
+    float x_offset = 0;
+    float y_offset = 0;
+
+    for (uint32_t ix = 0; ix < axis_count.x + 1; ++ix)
+    {
+        math_2d_util::fvec2d start_vertical(static_cast<int32_t>(min.x + (ix * cell_size)), min.y);
+        math_2d_util::fvec2d end_vertical(static_cast<int32_t>(min.x + (ix * cell_size)), min.y + (axis_count.y * cell_size));
+
+        line_draw_func(static_cast<math_2d_util::ivec2d>( start_vertical), static_cast<math_2d_util::ivec2d>(end_vertical), colour);
+    }
+
+    for (uint32_t iy = 0; iy < axis_count.y + 1; ++iy)
+    {
+        math_2d_util::fvec2d start_horizontal(static_cast<int32_t>(min.x, min.y + (iy * cell_size)));
+        math_2d_util::fvec2d end_horizontal(static_cast<int32_t>(min.x + (axis_count.x * cell_size), min.y +  (iy * cell_size)));
+
+        line_draw_func(static_cast<math_2d_util::ivec2d>(start_horizontal), static_cast<math_2d_util::ivec2d>(end_horizontal), colour);
+    }
 }
 

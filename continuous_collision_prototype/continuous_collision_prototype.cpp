@@ -1,14 +1,22 @@
 // continuous_collision_prototype.cpp : Defines the entry point for the application.
 //
 
+
+#include <memory>
+
 #include "framework.h"
 
 #include "DebugWindowsDrawHelper/debug_draw_interface.h"
+#include "misc_utilities/delata_time_util.h"
 
 #include "continuous_collision_prototype.h"
 //#include "array_utilities/WideNodeLinkedList/UnitTests/wide_node_linked_list_unit_tests.h"
 //#include "array_utilities/UnitTests/unit_test_manager.h"
 //#include "continuous_collision_library/UnitTests/OverlapTrackingUnitTests/OverlapTrackingUnitTest.h"
+
+
+#include "continuous_collision_library/2d_physics_main.h"
+
 #include "continuous_collision_library/UnitTests/PhysicsMain/phyisics_2d_main_unit_test.h"
 
 #define MAX_LOADSTRING 100
@@ -19,6 +27,53 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
 debug_draw_interface draw_interface;
+delata_time_util delta_time_tracker;
+
+using physics_main_type = ContinuousCollisionLibrary::phyisics_2d_main<std::numeric_limits<ContinuousCollisionLibrary::uint16>::max() - 1, 16>;
+//using physics_main_type = phyisics_2d_main<254, 16>;
+
+std::unique_ptr<physics_main_type> physics_main = std::make_unique<physics_main_type>();
+
+enum class KEY_PRESS : uint8_t
+{
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+    ZOOM_IN,
+    ZOOM_OUT,
+    KEY_COUNT
+};
+
+std::array<bool, static_cast<uint32_t>(KEY_PRESS::KEY_COUNT)> key_down_array{};
+
+
+void setup_physics_main()
+{
+
+    physics_main_type::new_collider_data colider_to_add01;
+
+    colider_to_add01.position = math_2d_util::fvec2d(0.9f);
+    colider_to_add01.velocity = math_2d_util::fvec2d(0.0f);
+
+    colider_to_add01.radius = 0.5f;
+
+    physics_main_type::new_collider_data colider_to_add02;
+
+
+    colider_to_add02.position = math_2d_util::fvec2d(69.0f);
+    colider_to_add02.velocity = math_2d_util::fvec2d(69.0f);
+
+    colider_to_add02.radius = 1.0f;
+
+    //queue up a new item 
+    auto colider_handle01 = physics_main->try_queue_item_to_add(std::move(colider_to_add01));
+    auto colider_handle02 = physics_main->try_queue_item_to_add(std::move(colider_to_add02));
+
+}
+
+
+
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -69,6 +124,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     ContinuousCollisionLibrary::phyisics_2d_main_unit_test::run_test();
 
 
+    //setup the physics library 
+    setup_physics_main();
+
+
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_CONTINUOUSCOLLISIONPROTOTYPE, szWindowClass, MAX_LOADSTRING);
@@ -84,6 +143,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 
+   
+
     // Main message loop:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
@@ -93,6 +154,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
     }
+
+  
+
 
     return (int) msg.wParam;
 }
@@ -153,6 +217,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
+   // Set up a timer to fire every 60th of a second (16 milliseconds)
+   SetTimer(hWnd, 1, 16, NULL);
+
    return TRUE;
 }
 
@@ -187,8 +254,42 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+
+    case WM_ERASEBKGND:
+    {
+        return TRUE;
+    }
     case WM_PAINT:
         {
+        float dt = delta_time_tracker.update_delta_time();
+
+        float view_pan_speed = 10.0f;
+
+        float zoom_change_speed = 0.1f;
+
+        //scale up pan speed with more zoom out
+        view_pan_speed *= (1.0f / draw_interface.get_zoom());
+
+
+        float zoom_change = 1.0f - (key_down_array[static_cast<uint32_t>(KEY_PRESS::ZOOM_OUT)] - key_down_array[static_cast<uint32_t>(KEY_PRESS::ZOOM_IN)]) * dt * zoom_change_speed;
+
+        draw_interface.add_zoom(zoom_change);
+
+
+        //handle any key pressses
+        math_2d_util::fvec2d view_offset{};
+        
+        view_offset.y += (key_down_array[static_cast<uint32_t>(KEY_PRESS::UP)] - key_down_array[static_cast<uint32_t>(KEY_PRESS::DOWN)]) * dt * view_pan_speed;
+        view_offset.x += (key_down_array[static_cast<uint32_t>(KEY_PRESS::LEFT)] - key_down_array[static_cast<uint32_t>(KEY_PRESS::RIGHT)]) * dt * view_pan_speed;
+
+        draw_interface.add_offset(view_offset);
+
+        //update the physics 
+        physics_main->update_physics();
+
+
+        draw_interface.clear_to(RGB(255, 255, 255));
+
             //PAINTSTRUCT ps;
             //HDC hdc = BeginPaint(hWnd, &ps);
             //
@@ -214,7 +315,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         draw_interface.draw_dotted_screen_space_line(math_2d_util::ivec2d(0, draw_interface.get_height()), math_2d_util::ivec2d(draw_interface.get_width(),0), RGB(255, 0, 0));
 
+        draw_interface.draw_circle(math_2d_util::fvec2d(draw_interface.get_width() / 2, draw_interface.get_height() / 2), draw_interface.get_height() / 4, RGB(100, 100, 100));
       
+
+        //debug draw all physics main
+        physics_main->draw_debug(draw_interface);
 
 
             PAINTSTRUCT ps;
@@ -239,7 +344,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             );
 
             EndPaint(hWnd, &ps);
-            draw_interface.clear_to(RGB(255, 255, 255));
+            ValidateRect(hWnd, NULL);  // or ValidateRgn(hwnd, NULL);
+            
         }
         break;
     case WM_DESTROY:
@@ -259,6 +365,90 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         draw_interface.resize(window_width, window_height);
     }
         break;
+
+    case WM_KEYDOWN:
+    {
+        // Handle key down event
+        // wParam contains the virtual key code
+        switch (wParam)
+        {
+        case VK_LEFT:
+            // Handle left arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::LEFT)] = true;
+            break;
+        case VK_RIGHT:
+            // Handle right arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::RIGHT)] = true;
+            break;
+        case VK_UP:
+            // Handle right arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::UP)] = true;
+            break;
+
+        case VK_DOWN:
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::DOWN)] = true;
+            break;
+
+        case VK_ADD:
+            // Handle right arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::ZOOM_IN)] = true;
+            break;
+
+        case VK_SUBTRACT:
+            // Handle right arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::ZOOM_OUT)] = true;
+            break;
+            // Add more cases for other keys as needed
+        }
+
+        break;
+    }
+
+    case WM_KEYUP:
+    {
+        // Handle key down event
+        // wParam contains the virtual key code
+        switch (wParam)
+        {
+        case VK_LEFT:
+            // Handle left arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::LEFT)] = false;
+            break;
+        case VK_RIGHT:
+            // Handle right arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::RIGHT)] = false;
+            break;
+        case VK_UP:
+            // Handle right arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::UP)] = false;
+            break;
+
+        case VK_DOWN:
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::DOWN)] = false;
+            break;
+
+        case VK_ADD:
+            // Handle right arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::ZOOM_IN)] = false;
+            break;
+
+        case VK_SUBTRACT:
+            // Handle right arrow key
+            key_down_array[static_cast<uint32_t>(KEY_PRESS::ZOOM_OUT)] = false;
+            break;
+            // Add more cases for other keys as needed
+        }
+
+        break;
+    }
+
+    case WM_TIMER:
+    {
+        // Handle timer events
+        InvalidateRect(hWnd, NULL, TRUE);
+
+        break;
+    }
 
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);

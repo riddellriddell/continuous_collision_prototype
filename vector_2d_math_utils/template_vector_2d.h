@@ -50,6 +50,13 @@ namespace math_2d_util
 			return template_vector_2d<T>(x + other.x, y + other.y);
 		}
 
+
+		template_vector_2d<T> operator*(const template_vector_2d<T>& other) const
+		{
+			return template_vector_2d<T>(x * other.x, y * other.y);
+		}
+
+
 		// Overload the compound addition operator (+=) to add another vector to this vector
 		template_vector_2d<T>& operator+=(const template_vector_2d<T>& other) {
 			x += other.x;
@@ -61,6 +68,49 @@ namespace math_2d_util
 		template_vector_2d<T>& operator-=(const template_vector_2d<T>& other) {
 			x -= other.x;
 			y -= other.y;
+			return *this; // Return a reference to this vector after the subtraction
+		}
+
+		// Overload the compound subtraction operator (-=) to subtract another vector from this vector
+		template_vector_2d<T>& operator*=(const template_vector_2d<T>& other) {
+			x *= other.x;
+			y *= other.y;
+			return *this; // Return a reference to this vector after the subtraction
+		}
+
+		template_vector_2d<T> operator-(const auto other) const
+		{
+			return template_vector_2d<T>(x - other, y - other);
+		}
+
+		template_vector_2d<T> operator+(const auto other) const
+		{
+			return template_vector_2d<T>(x - other, y - other);
+		}
+
+		template_vector_2d<T> operator*(const auto other) const
+		{
+			return template_vector_2d<T>(x * other, y * other);
+		}
+
+		// Overload the compound addition operator (+=) to add another vector to this vector
+		template_vector_2d<T>& operator+=(const auto other) {
+			x += other;
+			y += other;
+			return *this; // Return a reference to this vector after the addition
+		}
+
+		// Overload the compound subtraction operator (-=) to subtract another vector from this vector
+		template_vector_2d<T>& operator-=(const auto other) {
+			x -= other;
+			y -= other;
+			return *this; // Return a reference to this vector after the subtraction
+		}
+
+		// Overload the compound subtraction operator (-=) to subtract another vector from this vector
+		template_vector_2d<T>& operator*=(const auto other) {
+			x *= other;
+			y *= other;
 			return *this; // Return a reference to this vector after the subtraction
 		}
 
