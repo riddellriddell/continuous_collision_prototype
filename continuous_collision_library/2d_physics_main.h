@@ -370,12 +370,10 @@ namespace ContinuousCollisionLibrary
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_all_positions()
 	{
-		//single threaded version.
-		//loop through all sectors and add their items into the simulation
-		std::for_each(sectors_with_queued_items.begin(), sectors_with_queued_items.end(), [&](auto sector_index)
-			{
-				update_positions_in_sector(sector_index);
-			});
+		for (uint32_t is = 0; is < grid_dimensions::sector_grid_count; ++is)
+		{
+			update_positions_in_sector(is);
+		}
 	}
 
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
@@ -443,9 +441,9 @@ namespace ContinuousCollisionLibrary
 					//get ref struct 
 					collision_data_ref ref_struct = collision_data_container.get(real_address);
 
-					float new_max_edge = (ref_struct.x + ref_struct.radius) + ref_struct.velocity_x;
+					float new_max_edge = (ref_struct.x + ref_struct.radius) + ref_struct.velocity_x * time_step;
 
-					float new_min_edge = (ref_struct.x - ref_struct.radius) + ref_struct.velocity_x;
+					float new_min_edge = (ref_struct.x - ref_struct.radius) + ref_struct.velocity_x * time_step;
 
 					//check if this will take the object off the bottom of the map
 					bool will_take_off_map = new_max_edge > grid_dimension_type::tile_w || new_min_edge < 0;
@@ -459,9 +457,9 @@ namespace ContinuousCollisionLibrary
 					//get ref struct 
 					collision_data_ref ref_struct = collision_data_container.get(real_address);
 
-					float new_max_edge = (ref_struct.y + ref_struct.radius) + ref_struct.velocity_y;
+					float new_max_edge = (ref_struct.y + ref_struct.radius) + ref_struct.velocity_y * time_step;
 
-					float new_min_edge = (ref_struct.y - ref_struct.radius) + ref_struct.velocity_y;
+					float new_min_edge = (ref_struct.y - ref_struct.radius) + ref_struct.velocity_y * time_step;
 
 					//check if this will take the object off the bottom of the map
 					bool will_take_off_map = new_max_edge > grid_dimension_type::tile_w || new_min_edge < 0;

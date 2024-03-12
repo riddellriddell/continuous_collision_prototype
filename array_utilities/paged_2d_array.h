@@ -297,7 +297,7 @@ namespace ArrayUtilities
 
 			
 			x_axis_count_type axis_to_iterate_over;
-			y_axis_count_type last_page;
+			y_axis_count_type first_empty_page;
 			y_axis_count_type current_page;
 			y_axis_count_type number_of_items_in_last_page;
 
@@ -308,7 +308,7 @@ namespace ArrayUtilities
 			explicit y_real_page_address_iterator(const parent_type& parent, x_axis_count_type x_axis) : 
 				parent_ref(parent), 
 				axis_to_iterate_over(x_axis), 
-				last_page(parent.y_axis_count[axis_to_iterate_over] >> y_axis_virtual_memory_map_type::local_address_bits),
+				first_empty_page(parent.y_axis_count[axis_to_iterate_over] >> y_axis_virtual_memory_map_type::local_address_bits),
 				current_page(0),
 				number_of_items_in_last_page(y_axis_virtual_memory_map_type::get_sub_page_index(virtual_y_axis_node_adderss_type(parent.y_axis_count[axis_to_iterate_over])))
 			{
@@ -317,28 +317,19 @@ namespace ArrayUtilities
 
 			void setup_first_value()
 			{
-				//get real address
-				real_address_and_count.page_start_address = parent_ref.find_address(axis_to_iterate_over, virtual_y_axis_node_adderss_type(0));
-				real_address_and_count.items_in_page = (current_page < last_page) ? page_size : number_of_items_in_last_page;
-
-				//move to next page 
-				++current_page;
 			}
 
 			void setup_end_value()
 			{
 				//setup current page to be one more than the last active page
+				// but also the first page if there is nothing in it
 				// this is so we can correctly compate begin iterator to end and detect when we have reached the last page 
-				current_page = last_page + 1;
+				current_page = (parent_ref.y_axis_count[axis_to_iterate_over] + (y_axis_virtual_memory_map_type::number_of_items_per_page - 1)) >> y_axis_virtual_memory_map_type::local_address_bits;
 			}
 
 		private:
 			void next()
 			{
-				//get real address
-				real_address_and_count.page_start_address = parent_ref.virtual_memory_lookup[axis_to_iterate_over].resolve_page_number_to_real_address(current_page);
-				real_address_and_count.items_in_page = (current_page < last_page) ? page_size : number_of_items_in_last_page;
-
 				//move to next page 
 				++current_page;
 			}
@@ -349,6 +340,10 @@ namespace ArrayUtilities
 			{
 				//do some extra checks to make sure we are accessing a valid address
 				assert(parent_ref.virtual_memory_lookup[axis_to_iterate_over].does_virtual_page_have_real_page(current_page));
+
+				//setup real address
+				real_address_and_count.page_start_address = parent_ref.find_address(axis_to_iterate_over, virtual_y_axis_node_adderss_type(0));
+				real_address_and_count.items_in_page = (current_page == (first_empty_page)) ? number_of_items_in_last_page : page_size;
 
 				return real_address_and_count;
 			}
