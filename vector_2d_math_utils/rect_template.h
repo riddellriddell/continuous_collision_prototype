@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include "template_vector_2d.h"
+#include <assert.h>
 //template structure for making rects
 
 namespace math_2d_util
@@ -56,6 +57,11 @@ namespace math_2d_util
 		template<typename Trect_a_base_val, typename Trect_b_base_val>
 		static bool is_overlapping(const template_rect_2d<Trect_a_base_val>& rect_a, const template_rect_2d<Trect_b_base_val>& rect_b);
 
+		//check if the two rects overlap
+		//this is a "half open interval" where min is inclusive but max is exclusive and the values from min to max -epsilon / 1 are considered inside the rect 
+		template<typename Trect_base_val, typename Tvec_base_val>
+		static bool is_overlapping(const template_rect_2d<Trect_base_val>& rect, const template_vector_2d<Tvec_base_val>& point);
+
 		//create a new rect offset by the given vector 
 		template<typename Treturn_type, typename Trect, typename Toffset>
 		static Treturn_type get_offset_rect_as(const Trect& rect_to_offset, const Toffset& offset_by);
@@ -75,8 +81,20 @@ namespace math_2d_util
 		bool in_top = rect_a.max.y > rect_b.min.y;
 
 
-		return (in_right & in_bottom & in_left & in_top);
+		return (in_right && in_bottom && in_left && in_top);
 	};
+
+	template<typename Trect_base_val, typename Tvec_base_val>
+	inline bool rect_2d_math::is_overlapping(const template_rect_2d<Trect_base_val>& rect, const template_vector_2d<Tvec_base_val>& point)
+	{
+		//min max
+		bool in_left = rect.min.x <= point.x;
+		bool in_top = rect.min.y <= point.y;
+		bool in_right = rect.max.x > point.x;
+		bool in_bottom = rect.max.y > point.y;
+
+		return (in_right && in_bottom && in_left && in_top);
+	}
 
 	template<typename Treturn_type, typename Trect, typename Toffset>
 	inline Treturn_type rect_2d_math::get_offset_rect_as(const Trect& rect_to_offset, const Toffset& offset_by)

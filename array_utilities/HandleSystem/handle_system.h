@@ -50,6 +50,12 @@ namespace HandleSystem
 
 		default_handle_type(free_handle_type free_handle_data_to_build_from):value(free_handle_data_to_build_from.value) {};
 
+		bool operator == (default_handle_type<Imax_valid_handle_count> other)
+		{
+			return value == other.value;
+		}
+
+
 		free_handle_type convert_to_free_handle()
 		{
 			return free_handle_type(value);

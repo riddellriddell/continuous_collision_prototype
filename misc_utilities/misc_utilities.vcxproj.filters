@@ -51,6 +51,12 @@
     <ClInclude Include="delata_time_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="grid_function_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="grid_utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="misc_utilities.cpp">

@@ -52,6 +52,17 @@ namespace ArrayUtilities
             data_[size_++] = value;
         }
 
+        //this can help speed up writes by not breaking any branch prediction maybe 
+        void branchless_push_back(const Tdata_type& value, const bool apply)
+        {
+            //check we are not about to go off the end of the array
+            assert(size_ < Isize);
+
+            data_[size_] = value;
+
+            size_ += apply;
+        }
+
         //this behaves the same as the above push back but only 
         //increments the number of items if the apply bool is true
         //this is useful if you want to write branchless code and only
@@ -68,11 +79,13 @@ namespace ArrayUtilities
             size_ += apply_push_back;
         }
 
-        void pop_back() {
+        void pop_back() 
+        {
             size_ -= (size_ > 0);
         }
 
-        void clear() {
+        void clear() 
+        {
             size_ = 0;
         }
 

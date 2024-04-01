@@ -6,6 +6,7 @@
 #include "sector.h"
 #include "sector_grid_dimensions.h"
 #include "vector_2d_math_utils/vector_types.h"
+#include "vector_2d_math_utils/rect_types.h"
 #include "sector_grid_index.h"
 #include <assert.h>
 
@@ -38,6 +39,10 @@ namespace SectorGrid
 		static constexpr combined_index y_sub_sector_shift = sub_tile_bits_per_axis;
 		static constexpr combined_index y_sub_sector_mask = x_sub_sector_mask << sub_tile_bits_per_axis;
 
+		//value to convert from sector index to sector bounds 
+		static constexpr combined_index sector_index_x_mask = TSectorGridDimensions::sectors_grid_w - 1;
+	
+
 		//check that the x and y masks dont overlap
 		static_assert((x_sub_sector_mask& y_sub_sector_mask) == 0);
 
@@ -65,6 +70,7 @@ namespace SectorGrid
 
 		uint32 to_sub_sector_index(const sector_tile_index<TSectorGridDimensions>& index) const;
 
+		math_2d_util::uirect sector_bounds(const auto sector_index);
 
 	};
 
@@ -201,5 +207,22 @@ namespace SectorGrid
 	{
 		return static_cast<uint32>(index.index & sub_sector_mask);
 	}
+
+	template<sector_grid_dimension_concept TSectorGridDimensions>
+	inline math_2d_util::uirect sector_grid_helper<TSectorGridDimensions>::sector_bounds(const auto sector_index)
+	{
+		math_2d_util::uirect out_sector_bounds;
+		
+		out_sector_bounds.min.x = TSectorGridDimensions::sector_w * (sector_index & sector_index_x_mask);
+		out_sector_bounds.min.y = TSectorGridDimensions::sector_w * (sector_index >> sector_bits_per_axis);
+
+
+
+		out_sector_bounds.max.x = out_sector_bounds.min.x + TSectorGridDimensions::sector_w;
+		out_sector_bounds.max.y = out_sector_bounds.min.y + TSectorGridDimensions::sector_w;
+		
+		return out_sector_bounds;
+	}
+
 }
 
