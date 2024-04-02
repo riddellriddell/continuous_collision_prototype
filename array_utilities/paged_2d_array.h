@@ -122,6 +122,9 @@ namespace ArrayUtilities
 		//remove the last element and return the address details for it 
 		address_return_type pop_back_and_return_address(x_axis_count_type x_axis_index);
 
+		//expand the array address space by an amount 
+		//will throw an error if new axis count less than start count
+		void expand(x_axis_count_type x_axis_index, y_axis_count_type new_y_axis_count);
 
 		//find the read write address 
 		real_node_address_type find_address(x_axis_count_type x_axis_index, virtual_y_axis_node_adderss_type virtual_address) const;
@@ -129,7 +132,6 @@ namespace ArrayUtilities
 
 		//clear all items in an axis
 		void clear_axis(x_axis_count_type axis_index);
-
 
 		//clear all items in the entire array
 		void clear_all_axis();
@@ -144,6 +146,7 @@ namespace ArrayUtilities
 		static_assert(std::is_same<paged_memory_header<max_pages>::page_handle_type, combined_address_virtual_memory_map_type::page_handle_type>::value);
 
 		//the number of items in the y axis for each x axis 
+		//todo make private 
 		std::array<y_axis_count_type, Inumber_of_x_axis_items> y_axis_count = {};
 
 		const std::array<y_axis_virtual_memory_map_type, Inumber_of_x_axis_items>& get_y_axis_memory_map() const;
@@ -210,27 +213,23 @@ namespace ArrayUtilities
 		private:
 			void next()
 			{
-				//go to the next index
-				++virtual_index;
-				
-
-				//check if we have moved to the next page
-				if (y_axis_virtual_memory_map_type::is_first_item_in_real_page(virtual_index))
-				{
-					//get new real address
-					real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
-				}
-				else
-				{
-					//we can safely go to the next address
-					++real_index;
-				}				
+				//we can safely go to the next address
+				++real_index;
+				//move the virtual index to the next page
+				++virtual_index;		
 			}
 		public:
 
 
 			real_node_address_type& operator*()
 			{
+				//check if we have moved to the next page
+				if (y_axis_virtual_memory_map_type::is_first_item_in_real_page(real_index))
+				{
+					//get new real address
+					real_index = parent_ref.find_address(axis_to_iterate_over, virtual_index);
+				}
+
 				//do some extra checks to make sure we are accessing a valid address
 				assert(parent_ref.is_address_valid(axis_to_iterate_over, virtual_index));
 
@@ -250,7 +249,9 @@ namespace ArrayUtilities
 
 			y_real_address_iterator operator+(uint32_t n) const 
 			{
-				return y_real_address_iterator(parent_ref, axis_to_iterate_over, virtual_index + n);
+				auto iterator = y_real_address_iterator(parent_ref, axis_to_iterate_over, virtual_y_axis_node_adderss_type(virtual_index.address + n));
+				iterator.setup_first_value();
+				return iterator;
 			}
 
 			y_real_address_iterator& operator+=(uint32_t n)
@@ -632,6 +633,37 @@ namespace ArrayUtilities
 
 		//return the address of the last item that was just poped 
 		return address_return_type{ real_address ,combined_virtual_address,y_virtual_address_to_pop };
+	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>
+	inline void paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>::expand(x_axis_count_type x_axis_index, y_axis_count_type new_y_axis_count)
+	{
+		//check we are not trying to contract 
+		assert(y_axis_count[x_axis_index] <= new_y_axis_count);
+
+		//the number of virtual pages to the start of the axis 
+		typename combined_address_virtual_memory_map_type::page_handle_type::data_type axis_page_offset = x_axis_index * max_y_axis_pages;
+
+		//convert both to page indexes
+		typename combined_address_virtual_memory_map_type::page_handle_type::data_type current_page_index = y_axis_virtual_memory_map_type::extract_page_number_from_virtual_address(y_axis_virtual_memory_map_type::virtual_address_type(y_axis_count[x_axis_index]));
+		typename combined_address_virtual_memory_map_type::page_handle_type::data_type new_page_index = y_axis_virtual_memory_map_type::extract_page_number_from_virtual_address(y_axis_virtual_memory_map_type::virtual_address_type(new_y_axis_count));
+
+		//apply offset for start of axis
+		current_page_index += axis_page_offset;
+		new_page_index += axis_page_offset;
+
+		//get pages from the page handler and add them to the table
+		for (uint32_t ipage_index = current_page_index; ipage_index < new_page_index; ++ipage_index)
+		{
+			//get a page
+			typename paged_memory_header<max_pages>::page_handle_type new_page = paged_memory_tracker.allocate();
+
+			//add it to the list of pages assigned to this memory tracker 
+			get_all_axis_memory_map_internal().add_page(ipage_index, new_page);
+		}
+
+		//can now safely set the new axis size 
+		y_axis_count[x_axis_index] = new_y_axis_count;
 	}
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size>

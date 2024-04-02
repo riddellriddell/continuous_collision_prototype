@@ -32,6 +32,8 @@ namespace ArrayUtilities
 
 		//address details type 
 		using address_return_type = paged_array_type::address_return_type;
+
+		using expand_return_type = std::tuple< typename paged_array_type::y_real_address_iterator, typename paged_array_type::y_real_address_iterator>;
 	
 		//the data structure used to house the different arrays 
 		using container_type = Tcontainer;
@@ -72,6 +74,9 @@ namespace ArrayUtilities
 
 		//add an item to the paged array
 		address_return_type add_item_to_paged_array_unsafe(x_axis_type x_index_to_add_to);
+
+		//expands the paged array by the given type
+		expand_return_type add_item_range_to_paged_array_unsafe(x_axis_type x_index_to_add_to, paged_array_type::y_axis_count_type number_to_add);
 	
 		//remove an element only using a combined address
 		real_address_type remove_item_from_paged_array(virtual_combined_node_adderss_type address_to_remove);
@@ -115,6 +120,27 @@ namespace ArrayUtilities
 		//we are doing nothing to the data so we can safely return it
 		return paged_array_header.push_back_and_return_address(x_index_to_add_to);
 	}
+
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::expand_return_type
+		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::add_item_range_to_paged_array_unsafe(x_axis_type x_index_to_add_to, paged_array_type::y_axis_count_type number_to_add)
+	{
+		//get the current number of items in the y axis
+		auto current_item_count = paged_array_header.y_axis_count[x_index_to_add_to];
+		auto new_item_count = current_item_count + number_to_add;
+
+		//expand the address space in the header 
+		paged_array_header.expand(x_index_to_add_to, new_item_count);
+
+		//create the start and end address iterators
+		auto begin_itr = paged_array_header.begin(x_index_to_add_to) + current_item_count;
+		auto end_itr = paged_array_header.end(x_index_to_add_to);
+
+		//return tuple with start and end iterator 
+		//this will allow the caller to iterate over all the newly created addresses 
+		return expand_return_type(begin_itr, end_itr);
+	}
+
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
 	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::real_address_type

@@ -59,6 +59,8 @@ namespace ArrayUtilities
 
 		using address_return_type = paged_array_type::address_return_type;
 
+		using reserve_space_for_move_return_type = typename tight_packed_array_type::expand_return_type;
+
 		//type used to find an element on an axis
 		using x_axis_type = tight_packed_array_type::x_axis_type;
 
@@ -71,6 +73,9 @@ namespace ArrayUtilities
 		const tight_packed_array_type& get_tight_packed_data() const { return tight_packed_data; };
 
 		address_return_type insert(Thandle_type handle, x_axis_type x_index_to_add_to);
+
+		//reserve_space_for_move 
+		reserve_space_for_move_return_type reserve_space_for_move(x_axis_type axis_to_move_to, typename paged_array_type::y_axis_count_type number_to_add);
 
 		address_return_type move(x_axis_type x_index_to_add_to, auto address_to_move_from);
 
@@ -112,6 +117,14 @@ namespace ArrayUtilities
 		handle_to_data_lookup[handle_index] = std::get<1>(return_address);
 
 		return return_address;
+	}
+
+	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>
+	inline typename handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::reserve_space_for_move_return_type
+		handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::reserve_space_for_move(x_axis_type axis_to_move_to, typename paged_array_type::y_axis_count_type number_to_add)
+	{
+		//expand the array and return the iterators for accessing the new addresses 
+		return tight_packed_data.add_item_range_to_paged_array_unsafe(axis_to_move_to, number_to_add);
 	}
 
 	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>

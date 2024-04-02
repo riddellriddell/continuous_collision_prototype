@@ -163,11 +163,16 @@ namespace ArrayUtilities
 		//get the index in a page of a virtual address
 		static virtual_address_value_type get_sub_page_index(virtual_address_type virtual_address);
 
+		//get the index in a page of a real address
+		static real_address_value_type get_sub_page_index(real_node_address_type real_address);
+
 		real_node_address_type resolve_address(virtual_address_type address) const;
 
 		real_node_address_type resolve_address_using_virtual_page_offset(virtual_address_type address, auto virtual_page_number) const;
 
-		page_handle_type resolve_virtual_address_to_page_handle(virtual_address_type address) const;
+		real_node_address_type resolve_address_using_page_and_offset(virtual_address_value_type sub_page_offset, auto page_number) const;
+
+		page_handle_type resolve_virtual_address_to_page_handle( virtual_address_type address) const;
 
 		//turn a page number to the real address at the start of the page
 		real_node_address_type resolve_page_number_to_real_address(auto page_number) const;
@@ -184,8 +189,13 @@ namespace ArrayUtilities
 		//check if address is first item in a memory page
 		static bool is_first_item_in_real_page(virtual_address_type address);
 
+		static bool is_first_item_in_real_page(real_node_address_type address);
+
 		//check if a virtual page has a real page value
 		bool does_virtual_page_have_real_page(auto virtual_page_number) const;
+
+		//assigns a page to a given virtual address range 
+		void add_page(auto virtual_page_number, page_handle_type page_to_add);
 
 		//sets the page for the given virtual address but only if the bool is set to true 
 		//this is done in a non branching optimal way
@@ -227,6 +237,13 @@ namespace ArrayUtilities
 
 
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
+	inline virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_address_value_type
+		virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::get_sub_page_index(real_node_address_type real_address)
+	{
+		return real_address_value_type(real_address.address & local_address_mask);
+	}
+
+	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_node_address_type virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::resolve_address(virtual_address_type address) const
 	{
 		auto page_number = extract_page_number_from_virtual_address(address);
@@ -240,6 +257,16 @@ namespace ArrayUtilities
 		assert(extract_page_number_from_virtual_address(address) == virtual_page_number, "this function is an optimization over just passing in the address and calculating the page number on the fly, the passed in page number should match that of the virtual address");
 
 		return real_node_address_type(convert_to_real_using_page_internal(address.address, virtual_page_number));
+	}
+
+	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
+	inline virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_node_address_type 
+		virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::resolve_address_using_page_and_offset(virtual_address_value_type sub_page_offset, auto page_number) const
+	{
+		//check that the page we are accessing is valid 
+		assert(sub_page_offset < number_of_items_per_page);
+
+		return resolve_page_number_to_real_address(page_number) | sub_page_offset;
 	}
 
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
@@ -295,6 +322,16 @@ namespace ArrayUtilities
 		//first item in a page should have an offset of 0, doing a boolean invert should return the correct val
 		return !page_offset;
 	}
+
+	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
+	inline bool virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::is_first_item_in_real_page(real_node_address_type address)
+	{
+		//get the page offset component of the virtual address
+		auto page_offset = get_sub_page_index(address);
+
+		//first item in a page should have an offset of 0, doing a boolean invert should return the correct val
+		return !page_offset;
+	}
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	inline bool virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::does_virtual_page_have_real_page(auto virtual_page_number) const
 	{
@@ -305,6 +342,15 @@ namespace ArrayUtilities
 		bool page_alocated = page_number.is_valid();
 
 		return page_alocated;
+	}
+
+	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
+	inline void virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::add_page(auto virtual_page_number, page_handle_type page_to_add)
+	{
+		//check we are assigning a vilid page
+		assert(page_to_add.is_valid());
+
+		pages_in_space[virtual_page_number].set_handle(page_to_add);
 	}
 
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>

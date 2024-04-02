@@ -522,6 +522,8 @@ namespace ContinuousCollisionLibrary
 		std::array<uint8_t, sector_transfer_buffers::max_item_transfer * diagonal_count> indexes_of_diag_items;
 		std::array<uint8_t, diagonal_count> end_index_for_diagonal_transfer{};
 
+		//std::array<std::reference_wrapper<sector_transfer_buffers>, static_cast<uint32_t>(grid_utility::grid_directions::COUNT)> neighbour_buffers;
+
 		{
 			//gather all diagonal entry cases
 			if constexpr (!Tedge_info::is_on_left_edge() && !Tedge_info::is_on_up_edge())
@@ -620,10 +622,27 @@ namespace ContinuousCollisionLibrary
 		}
 
 		//compare the number of items entering vs those leaving and get the difference 
-		uint32_t transfer_dif = items_entering_sector - sector_transfer_removal_address_groups[sector_index].size();
+		int32_t transfer_dif = items_entering_sector - sector_transfer_removal_address_groups[sector_index].size();
+
+		//check if transfer dif is > 
+		int32_t space_to_reserver = std::max(transfer_dif, 0);
 
 		//allocate extra room to bulk insert items into if needed 
-		//collision_data_container.
+		auto [begin_itr, end_itr] = collision_data_container.reserve_space_for_move(sector_index, space_to_reserver);
+
+		//loop through the extra space and extract the real addresses to copy data to
+		std::for_each(begin_itr, end_itr, [&](auto real_address)
+			{
+				//store the real adderss in the list of addresses we can write to
+				sector_transfer_removal_address_groups[sector_index].push_back(real_address);
+			});
+
+		//at this point we have all the addresses we need to copy the data in now we just need to iterate over all the different axis to copy in the target data
+
+		//get list of all valid directions
+		//auto all_valid_directions = grid_utility::get_non_blocked_cardinal_directions(Tedge_info());
+
+		auto all_valid_directions = grid_utility::get_non_blocked_cardinal_directions2<bool>();
 
 		//convert to index in map
 		//auto root_index = grid_helper.from_xy(math_2d_util::uivec2d(x, y));
