@@ -31,7 +31,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::initialize()
 void ContinuousCollisionLibrary::overlap_tracking_grid::update_bounds(const math_2d_util::ivec2d& tile_coordinate_to_update, overlap_grid_index tile_sector_packed_index_to_update, const math_2d_util::irect& new_world_bounds_for_tile_items)
 {
 	//check that the index and coordinate match
-	assert(grid_helper.to_xy<math_2d_util::ivec2d>(tile_sector_packed_index_to_update) == tile_coordinate_to_update, "Passed in tile xy corrdinate did not match tile index");
+	//, "Passed in tile xy corrdinate did not match tile index"
+	assert(grid_helper.to_xy<math_2d_util::ivec2d>(tile_sector_packed_index_to_update) == tile_coordinate_to_update);
 
 	auto signed_tile_coordinate_to_update = static_cast<math_2d_util::ivec2d>(tile_coordinate_to_update);
 
@@ -197,9 +198,11 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 	const math_2d_util::irect& new_bounds)
 {
 	//sanity check to make sure boudns falls within grid 
-	assert(is_rect_in_grid(add_to_area), "rect exits map bounds");
+	//, "rect exits map bounds"
+	assert(is_rect_in_grid(add_to_area));
 
-	assert(grid_helper.to_xy<math_2d_util::ivec2d>(source_world_tile) == source_tile_cord, "source cord and source index must be for the same tile");
+	//, "source cord and source index must be for the same tile"
+	assert(grid_helper.to_xy<math_2d_util::ivec2d>(source_world_tile) == source_tile_cord);
 
 	//the per tile overlap list is a lot more likely to trigger a cache miss so I am 
 	//delaying it and doing it in a sepparate pass to hopefully not trash the cache as much
@@ -352,8 +355,11 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(c
 void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(const math_2d_util::ivec2d& source_tile_cord, overlap_grid_index source_world_tile,  const math_2d_util::irect & remove_area, const math_2d_util::irect & old_bounds, const math_2d_util::irect & new_bounds)
 {
 	//sanity check to make sure boudns falls within grid 
-	assert(is_rect_in_grid(remove_area), "rect exits map bounds");
-	assert(grid_helper.to_xy<math_2d_util::ivec2d>(source_world_tile) ==  static_cast<math_2d_util::ivec2d>(source_tile_cord), "source cord and source index must be for the same tile");
+	//, "rect exits map bounds"
+	assert(is_rect_in_grid(remove_area));
+
+	//, "source cord and source index must be for the same tile"
+	assert(grid_helper.to_xy<math_2d_util::ivec2d>(source_world_tile) ==  static_cast<math_2d_util::ivec2d>(source_tile_cord));
 
 	//the per tile overlap list is a lot more likely to trigger a cache miss so I am 
 	//delaying it and doing it in a sepparate pass to hopefully not trash the cache as much

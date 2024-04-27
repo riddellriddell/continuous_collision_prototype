@@ -2,6 +2,7 @@
 
 #include <cinttypes>
 #include <array>
+#include "shared_types.h"
 
 //the purpose of this class is to help performing a computation on grid data efficiently 
 
@@ -10,22 +11,6 @@ namespace MiscUtilities
 	template<int32_t Iwidth, int32_t Iheight = Iwidth, typename Tint_type = int32_t>
 	struct grid_navigation_helper
 	{
-		enum class grid_directions : uint8_t
-		{
-			LEFT,
-			UP,
-			RIGHT,
-			DOWN,
-			UP_LEFT,
-			UP_RIGHT,
-			DOWN_RIGHT,
-			DOWN_LEFT,
-			COUNT,
-			CARDINAL_COUNT = UP_LEFT,
-			DIAGONAL_START = UP_LEFT,
-			DIAGONAL_COUNT = COUNT - DIAGONAL_START
-		};
-
 		//using index_value_type = 
 
 		static constexpr std::array< Tint_type, static_cast<uint32_t>(grid_directions::COUNT)> all_direction_offset
@@ -50,6 +35,18 @@ namespace MiscUtilities
 		static constexpr Tint_type get_offset_for_direction(grid_directions direction)
 		{
 			return all_direction_offset[static_cast<uint32_t>(direction)];
+		}
+
+		template<size_t Inum>
+		static constexpr std::array<Tint_type,Inum> get_offset_for_direction(std::array<grid_directions, Inum> directions)
+		{
+			std::array<Tint_type, Inum> output = {};
+
+			for (int i = 0; i < Inum; ++i)
+			{
+				output[i] = get_offset_for_direction(directions[i]);
+			}
+			return output;
 		}
 
 		template<grid_directions Edirection>

@@ -169,7 +169,7 @@ namespace SectorGrid
 			(x_sector_component << x_axis_sector_shift) |
 			(y_sector_component << y_axis_sector_shift);
 
-		assert(out_index_val < TSectorGridDimensions::tile_count, "address falls outside grid");
+		assert(out_index_val < TSectorGridDimensions::tile_count );// "address falls outside grid");
 
 		sector_tile_index<TSectorGridDimensions> out_index = sector_tile_index<TSectorGridDimensions>{ out_index_val };
 

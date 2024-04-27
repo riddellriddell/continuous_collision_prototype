@@ -29,7 +29,8 @@ namespace ArrayUtilities
 			};
 
 			//structure breaks if the data is less than the size of the next node pointer
-			static_assert(sizeof(data) > sizeof(parent_node), "size of parent node larger than data size, will cause issues with node sizes");
+			//, "size of parent node larger than data size, will cause issues with node sizes"
+			static_assert(sizeof(data) > sizeof(parent_node));
 
 			TLinkType child_node;
 			usage_flag_type usage_flags;

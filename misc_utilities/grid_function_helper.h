@@ -2,26 +2,13 @@
 #include <cinttypes>
 #include <functional>
 
+#include "shared_types.h"
 //the purpose of this class is to help performing a computation on grid data efficiently 
 
 namespace MiscUtilities
 {
 	struct grid_function_helper
 	{
-		enum class edge_enum
-		{
-			LEFT,
-			UP,
-			RIGHT,
-			DOWN,
-
-			UP_LEFT,
-			UP_RIGHT,
-			DOWN_LEFT,
-			DOWN_RIGHT,
-
-			COUNT
-		};
 
 		struct on_edge
 		{
@@ -30,26 +17,26 @@ namespace MiscUtilities
 			bool right;
 			bool down;
 			
-			template<edge_enum edge>
+			template<grid_directions edge>
 			bool is_on_edge() const
 			{
 
-				if constexpr (edge == edge_enum::LEFT)
+				if constexpr (edge == grid_directions::LEFT)
 				{
 					return left;
 				}
 
-				if constexpr (edge == edge_enum::UP)
+				if constexpr (edge == grid_directions::UP)
 				{
 					return up;
 				}
 
-				if constexpr (edge == edge_enum::RIGHT)
+				if constexpr (edge == grid_directions::RIGHT)
 				{
 					return right;
 				}
 
-				if constexpr (edge == edge_enum::DOWN)
+				if constexpr (edge == grid_directions::DOWN)
 				{
 					return down;
 				}
@@ -57,25 +44,25 @@ namespace MiscUtilities
 				return false;
 			}
 			
-			template<edge_enum corner>
+			template<grid_directions corner>
 			bool is_on_corner() const
 			{
-				if constexpr (corner == edge_enum::UP_LEFT)
+				if constexpr (corner == grid_directions::UP_LEFT)
 				{
 					return left && up;
 				}
 
-				if constexpr (corner == edge_enum::UP_RIGHT)
+				if constexpr (corner == grid_directions::UP_RIGHT)
 				{
 					return up && right;
 				}
 
-				if constexpr (corner == edge_enum::DOWN_LEFT)
+				if constexpr (corner == grid_directions::DOWN_LEFT)
 				{
 					return down && left;
 				}
 
-				if constexpr (corner == edge_enum::DOWN_RIGHT)
+				if constexpr (corner == grid_directions::DOWN_RIGHT)
 				{
 					return down && right;
 				}
@@ -93,25 +80,25 @@ namespace MiscUtilities
 		template<bool left, bool up, bool right, bool down>
 		struct on_edge_template
 		{
-			template<edge_enum edge>
+			template<grid_directions edge>
 			static constexpr bool is_edge()
 			{
-				if constexpr (edge == edge_enum::LEFT)
+				if constexpr (edge == grid_directions::LEFT)
 				{
 					return left;
 				}
 
-				if constexpr (edge == edge_enum::UP)
+				if constexpr (edge == grid_directions::UP)
 				{
 					return up;
 				}
 
-				if constexpr (edge == edge_enum::RIGHT)
+				if constexpr (edge == grid_directions::RIGHT)
 				{
 					return right;
 				}
 
-				if constexpr (edge == edge_enum::DOWN)
+				if constexpr (edge == grid_directions::DOWN)
 				{
 					return down;
 				}
@@ -119,45 +106,45 @@ namespace MiscUtilities
 				return false;
 			}
 
-			template<edge_enum edge>
+			template<grid_directions edge>
 			static constexpr bool is_edge_direction()
 			{
-				if constexpr (edge == edge_enum::LEFT)
+				if constexpr (edge == grid_directions::LEFT)
 				{
 					return left && !(up || down || right);
 				}
 
-				if constexpr (edge == edge_enum::UP)
+				if constexpr (edge == grid_directions::UP)
 				{
 					return up && !(left || right || down);
 				}
 
-				if constexpr (edge == edge_enum::RIGHT)
+				if constexpr (edge == grid_directions::RIGHT)
 				{
 					return right && !(up || down || left);
 				}
 
-				if constexpr (edge == edge_enum::DOWN)
+				if constexpr (edge == grid_directions::DOWN)
 				{
 					return down && !(up || left || right);
 				}
 
-				if constexpr (edge == edge_enum::UP_LEFT)
+				if constexpr (edge == grid_directions::UP_LEFT)
 				{
 					return left && up;
 				}
 
-				if constexpr (edge == edge_enum::UP_RIGHT)
+				if constexpr (edge == grid_directions::UP_RIGHT)
 				{
 					return up && right;
 				}
 
-				if constexpr (edge == edge_enum::DOWN_LEFT)
+				if constexpr (edge == grid_directions::DOWN_LEFT)
 				{
 					return down && left;
 				}
 
-				if constexpr (edge == edge_enum::DOWN_RIGHT)
+				if constexpr (edge == grid_directions::DOWN_RIGHT)
 				{
 					return down && right;
 				}
@@ -165,25 +152,25 @@ namespace MiscUtilities
 				return false;
 			}
 
-			template<edge_enum corner>
+			template<grid_directions corner>
 			static constexpr bool is_corner()
 			{
-				if constexpr (corner == edge_enum::UP_LEFT)
+				if constexpr (corner == grid_directions::UP_LEFT)
 				{
 					return left && up;
 				}
 
-				if constexpr (corner == edge_enum::UP_RIGHT)
+				if constexpr (corner == grid_directions::UP_RIGHT)
 				{
 					return up && right;
 				}
 
-				if constexpr (corner == edge_enum::DOWN_LEFT)
+				if constexpr (corner == grid_directions::DOWN_LEFT)
 				{
 					return down && left;
 				}
 
-				if constexpr (corner == edge_enum::DOWN_RIGHT)
+				if constexpr (corner == grid_directions::DOWN_RIGHT)
 				{
 					return down && right;
 				}
@@ -193,42 +180,42 @@ namespace MiscUtilities
 
 			static constexpr bool is_left()
 			{
-				return is_edge_direction<edge_enum::LEFT>();
+				return is_edge_direction<grid_directions::LEFT>();
 			}
 
 			static constexpr bool is_up_left()
 			{
-				return is_edge_direction<edge_enum::UP_LEFT>();
+				return is_edge_direction<grid_directions::UP_LEFT>();
 			}
 
 			static constexpr bool is_up()
 			{
-				return is_edge_direction<edge_enum::UP>();
+				return is_edge_direction<grid_directions::UP>();
 			}
 
 			static constexpr bool is_up_right()
 			{
-				return is_edge_direction<edge_enum::UP_RIGHT>();
+				return is_edge_direction<grid_directions::UP_RIGHT>();
 			}
 
 			static constexpr bool is_right()
 			{
-				return is_edge_direction<edge_enum::RIGHT>();
+				return is_edge_direction<grid_directions::RIGHT>();
 			}
 
 			static constexpr bool is_down_right()
 			{
-				return is_edge_direction<edge_enum::DOWN_RIGHT>();
+				return is_edge_direction<grid_directions::DOWN_RIGHT>();
 			}
 
 			static constexpr bool is_down()
 			{
-				return is_edge_direction<edge_enum::DOWN>();
+				return is_edge_direction<grid_directions::DOWN>();
 			}
 
 			static constexpr bool is_down_left()
 			{
-				return is_edge_direction<edge_enum::DOWN_LEFT>();
+				return is_edge_direction<grid_directions::DOWN_LEFT>();
 			}
 
 			static constexpr bool is_center()
@@ -238,23 +225,139 @@ namespace MiscUtilities
 		
 			static constexpr bool is_on_left_edge()
 			{
-				return is_edge<edge_enum::LEFT>();
+				return is_edge<grid_directions::LEFT>();
 			}
 
 			static constexpr bool is_on_up_edge()
 			{
-				return is_edge<edge_enum::UP>();
+				return is_edge<grid_directions::UP>();
 			}
 
 			static constexpr bool is_on_right_edge()
 			{
-				return is_edge<edge_enum::RIGHT>();
+				return is_edge<grid_directions::RIGHT>();
 			}
 
 			static constexpr bool is_on_down_edge()
 			{
-				return is_edge<edge_enum::DOWN>();
+				return is_edge<grid_directions::DOWN>();
 			}
+		
+			static consteval auto get_non_edge_cardinal_directions()
+			{
+				std::array< grid_directions, !left + !up + !right + !down> non_edge_directions{};
+
+				uint32_t write_index = 0;
+
+				if (!left)
+				{
+					non_edge_directions[write_index++] = grid_directions::LEFT;
+				}
+
+				if (!up)
+				{
+					non_edge_directions[write_index++] = grid_directions::UP;
+				}
+
+				if (!right)
+				{
+					non_edge_directions[write_index++] = grid_directions::RIGHT;
+				} 
+
+				if (!down)
+				{
+					non_edge_directions[write_index++] = grid_directions::DOWN;
+				}
+
+				return non_edge_directions;
+			}
+
+			static consteval auto get_non_edge_diagonal_directions()
+			{
+				std::array< grid_directions, (!left && !up) + (!up && !right) + (!right && !down) + (!down && !left)> non_edge_directions;
+
+				uint32_t write_index = 0;
+
+				if (!left && !up)
+				{
+					non_edge_directions[write_index++] = grid_directions::UP_LEFT;
+				}
+
+				if (!up && !right)
+				{
+					non_edge_directions[write_index++] = grid_directions::UP_RIGHT;
+				}
+
+				if (!right && !down)
+				{
+					non_edge_directions[write_index++] = grid_directions::DOWN_RIGHT;
+				}
+
+				if (!down && !left)
+				{
+					non_edge_directions[write_index++] = grid_directions::DOWN_LEFT;
+				}
+
+				return non_edge_directions;
+			}
+
+			static consteval auto get_non_edge_directions()
+			{
+				constexpr auto non_edge_cardinal = get_non_edge_cardinal_directions();
+				constexpr auto non_edge_diagonal = get_non_edge_diagonal_directions();
+
+				std::array<grid_directions, non_edge_cardinal.size() + non_edge_diagonal.size()> output{};
+
+				// Copy elements from arr1
+				std::copy(non_edge_cardinal.begin(), non_edge_cardinal.end(), output.begin());
+
+				// Copy elements from arr2
+				std::copy(non_edge_diagonal.begin(), non_edge_diagonal.end(), output.begin() + non_edge_cardinal.size());
+
+				return output;
+			}
+
+
+			template<size_t Inum>
+			static consteval std::array< grid_directions, Inum> get_directions_array_flipped(std::array<grid_directions, Inum> in_direction_array)
+			{
+				std::array< grid_directions, Inum> output{};
+
+				for (int i = 0; i < Inum; i++)
+				{
+					switch (in_direction_array[i])
+					{
+					case grid_directions::LEFT:
+						output[i] = grid_directions::RIGHT;
+						break;
+					case grid_directions::UP_LEFT:
+						output[i] = grid_directions::DOWN_RIGHT;
+						break;
+					case grid_directions::UP:
+						output[i] = grid_directions::DOWN;
+						break;
+					case grid_directions::UP_RIGHT:
+						output[i] = grid_directions::DOWN_LEFT;
+						break;
+					case grid_directions::RIGHT:
+						output[i] = grid_directions::LEFT;
+						break;
+					case grid_directions::DOWN_RIGHT:
+						output[i] = grid_directions::UP_LEFT;
+						break;
+					case grid_directions::DOWN:
+						output[i] = grid_directions::UP;
+						break;
+					case grid_directions::DOWN_LEFT:
+						output[i] = grid_directions::UP_RIGHT;
+						break;
+
+					}
+				}
+
+				return output;
+			}
+
 		};
 
 

@@ -5,6 +5,8 @@
 #include <limits>
 #include <bit>
 #include <span>
+#include <assert.h>
+
 #include "array_utilities/SectorPackedArray/paged_memory_header.h"
 #include "array_utilities/SectorPackedArray/virtual_memory_map.h"
 
@@ -158,13 +160,15 @@ namespace ArrayUtilities
 				};
 
 				//structure breaks if the data * width is smaller than the link type
-				static_assert(sizeof(std::array<Tdatatype, Inode_width>) > sizeof(free_node_links), "size of node links larger than data size, will cause issues with node sizes");
+				//, "size of node links larger than data size, will cause issues with node sizes"
+				static_assert(sizeof(std::array<Tdatatype, Inode_width>) > sizeof(free_node_links));
 
 				//this is set to a specific value to indicate that this node is free / not in use
 				node_link_type free_node_flag;
 			};
 
-			static_assert(sizeof(active_node) == sizeof(free_node), "active node and free nodes should occupy the same space / be the same size");
+			//, "active node and free nodes should occupy the same space / be the same size"
+			static_assert(sizeof(active_node) == sizeof(free_node));
 
 			union
 			{
@@ -478,7 +482,10 @@ namespace ArrayUtilities
 		assert(index_of_replacement_item < Iroot_node_group_size);
 
 		//get replacement node 
-		root_node& replacement_root_node = root_node_ptrs[index_of_replacement_item + start_of_root_group];
+		root_node& replacement_root_node = root_node_ptrs[root_group_tracker.active_nodes[index_of_replacement_item] + start_of_root_group];
+
+		//check we have the correct node
+		assert(replacement_root_node.active_node_index == index_of_replacement_item);
 
 		replacement_root_node.active_node_index = root_node_to_remove.active_node_index;
 	}
@@ -489,7 +496,8 @@ namespace ArrayUtilities
 	{
 
 		//check root node is in expected range
-		assert(root_node_index < Iroot_entries_count, "trying to add to a root node that does not exist / is out of bounds");
+		//, "trying to add to a root node that does not exist / is out of bounds"
+		assert(root_node_index < Iroot_entries_count);
 
 		//get the memory page this node is mapped to 
 		page_handle_type root_address_group_handle = convert_root_node_to_root_page_handle(root_node_index);
@@ -847,7 +855,8 @@ namespace ArrayUtilities
 	inline void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::add(root_entry_address_type root_node_index, Tdatatype data)
 	{
 		//check root node is in expected range
-		assert(root_node_index < Iroot_entries_count, "trying to add to a root node that does not exist / is out of bounds");
+		//, "trying to add to a root node that does not exist / is out of bounds"
+		assert(root_node_index < Iroot_entries_count);
 
 		//get the node the root points to 
 		root_node& root_node_data = root_node_ptrs[root_node_index];
@@ -872,7 +881,8 @@ namespace ArrayUtilities
 			//need to get node off the free list 
 			auto node_index = get_free_node(root_node_index);
 
-			assert(nodes[node_index].is_free(), "node pulled from free list is not initializesd to a free state");
+			//, "node pulled from free list is not initializesd to a free state"
+			assert(nodes[node_index].is_free());
 
 			//point this new node to the previous active head node
 			nodes[node_index].active_node_data.child_node = root_node_data.write_node;
@@ -893,6 +903,9 @@ namespace ArrayUtilities
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
 	inline void paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::remove(root_entry_address_type root_node_index, Tdatatype data)
 	{
+		//make sure the address is inside expected ranges
+		assert(root_node_index < root_node_ptrs.size());
+
 		//get the node the root points to 
 		root_node& root_node_data = root_node_ptrs[root_node_index];
 
@@ -954,7 +967,8 @@ namespace ArrayUtilities
 			--active_node_read_index;
 		}
 
-		assert(false, "only here if no matching node found");
+		//, "only here if no matching node found "
+		assert(false);
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>

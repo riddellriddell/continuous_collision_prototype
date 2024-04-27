@@ -34,9 +34,10 @@ namespace ContinuousCollisionLibrary
 	{
 		using phyisics_2d_main_type = phyisics_2d_main<Imax_objects, Iworld_sector_x_count>;
 		
+	public:
 		//definition of the target dimensions of the grid system
 		using grid_dimension_type = SectorGrid::sector_grid_dimensions<Iworld_sector_x_count, 16>;
-
+	private:
 		using tile_coordinate_type = SectorGrid::sector_tile_index<grid_dimension_type>;
 
 		//use the sector tile helper to convert to sector
@@ -232,7 +233,7 @@ namespace ContinuousCollisionLibrary
 				uint32_t cardinal_index = combined + vertical;
 
 				//other detect
-				uint32_t cardinal_or_other_index = diagnal ? combined : static_cast<uint32_t>(transfer_buffer_types::COUNT);
+				uint32_t cardinal_or_other_index = diagnal ?  static_cast<uint32_t>(transfer_buffer_types::OTHER) : cardinal_index;
 
 				assert(cardinal_or_other_index < static_cast<uint32_t>(transfer_buffer_types::COUNT));
 
@@ -252,7 +253,11 @@ namespace ContinuousCollisionLibrary
 		std::array<sector_transfer_buffers, grid_dimension_type::sector_grid_count> sector_transfer_buffer_groups;
 
 		//temp buffer 
-		std::array<ArrayUtilities::fixed_size_vector_array<typename collision_data_container_type::real_address_type, sector_transfer_buffers::max_item_transfer >, grid_dimension_type::sector_grid_count> sector_transfer_removal_address_groups;
+		std::array<
+			ArrayUtilities::fixed_size_vector_array<
+				std::tuple<typename collision_data_container_type::real_address_type, typename collision_data_container_type::virtual_combined_node_adderss_type>,
+				sector_transfer_buffers::max_item_transfer >, 
+			grid_dimension_type::sector_grid_count> sector_transfer_removal_address_groups;
 
 		public:
 
@@ -490,17 +495,25 @@ namespace ContinuousCollisionLibrary
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_all_positions()
 	{
+		//update the positions and copy any items changing sectors to the sector edge buffer
 		for (uint32_t is = 0; is < grid_dimensions::sector_grid_count; ++is)
 		{
 			update_positions_in_sector(is);
-
-			
 		}
 
+		//move items out of the sector edge buffer
 		MiscUtilities::grid_function_helper::template_edge_corner_and_fill_function(grid_dimension_type::sectors_grid_w, grid_dimension_type::sectors_grid_w, 0, 0, [&]<typename edge_info>(uint32 x, uint32 y)
 		{
 			transfer_items_between_sectors<edge_info>((grid_dimension_type::sectors_grid_w * y) + x);
 		});
+	
+		//clear the sector edge buffers 
+		for (uint32_t is = 0; is < grid_dimensions::sector_grid_count; ++is)
+		{
+			sector_transfer_buffer_groups[is].clear();
+			sector_transfer_removal_address_groups[is].clear();
+		}
+	
 	}
 
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
@@ -508,13 +521,12 @@ namespace ContinuousCollisionLibrary
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::transfer_items_between_sectors(sector_count_type sector_index)
 	{
 
-
 		using grid_utility = MiscUtilities::grid_navigation_helper<grid_dimension_type::sectors_grid_w>;
 
 		//define sector bounds 
 		math_2d_util::uirect sector_bounds = grid_helper.sector_bounds(sector_index);
 
-		static constexpr uint32_t diagonal_count = static_cast<uint32_t>(grid_utility::grid_directions::DIAGONAL_COUNT);
+		static constexpr uint32_t diagonal_count = static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_COUNT);
 
 		uint32_t items_entering_sector = 0;
 
@@ -522,13 +534,13 @@ namespace ContinuousCollisionLibrary
 		std::array<uint8_t, sector_transfer_buffers::max_item_transfer * diagonal_count> indexes_of_diag_items;
 		std::array<uint8_t, diagonal_count> end_index_for_diagonal_transfer{};
 
-		//std::array<std::reference_wrapper<sector_transfer_buffers>, static_cast<uint32_t>(grid_utility::grid_directions::COUNT)> neighbour_buffers;
+		//std::array<std::reference_wrapper<sector_transfer_buffers>, static_cast<uint32_t>(MiscUtilities::grid_directions::COUNT)> neighbour_buffers;
 
 		{
 			//gather all diagonal entry cases
 			if constexpr (!Tedge_info::is_on_left_edge() && !Tedge_info::is_on_up_edge())
 			{
-				auto& transfer_buffer_in_dir = sector_transfer_buffer_groups[grid_utility::get_address_for_direction< grid_utility::grid_directions::UP_LEFT>(sector_index)].get_ref_to_buffer<transfer_buffer_types::OTHER>();
+				auto& transfer_buffer_in_dir = sector_transfer_buffer_groups[grid_utility::get_address_for_direction< MiscUtilities::grid_directions::UP_LEFT>(sector_index)].get_ref_to_buffer<transfer_buffer_types::OTHER>();
 
 				for (uint32_t ix = 0; ix < transfer_buffer_in_dir.size(); ++ix)
 				{
@@ -540,13 +552,14 @@ namespace ContinuousCollisionLibrary
 
 					items_entering_sector += is_in_sector;
 				};
+
+				end_index_for_diagonal_transfer[static_cast<uint32_t>(MiscUtilities::grid_directions::UP_LEFT) - static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_START)] = items_entering_sector;
 			}
 
-			end_index_for_diagonal_transfer[static_cast<uint32_t>(grid_utility::grid_directions::UP_LEFT) - static_cast<uint32_t>(grid_utility::grid_directions::DIAGONAL_START)] = items_entering_sector;
 
 			if constexpr (!Tedge_info::is_on_right_edge() && !Tedge_info::is_on_up_edge())
 			{
-				auto& transfer_buffer_in_dir = sector_transfer_buffer_groups[grid_utility::get_address_for_direction< grid_utility::grid_directions::UP_RIGHT>(sector_index)].get_ref_to_buffer<transfer_buffer_types::OTHER>();
+				auto& transfer_buffer_in_dir = sector_transfer_buffer_groups[grid_utility::get_address_for_direction< MiscUtilities::grid_directions::UP_RIGHT>(sector_index)].get_ref_to_buffer<transfer_buffer_types::OTHER>();
 
 				for (uint32_t ix = 0; ix < transfer_buffer_in_dir.size(); ++ix)
 				{
@@ -558,13 +571,15 @@ namespace ContinuousCollisionLibrary
 
 					items_entering_sector += is_in_sector;
 				};
+
+
+				end_index_for_diagonal_transfer[static_cast<uint32_t>(MiscUtilities::grid_directions::UP_RIGHT) - static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_START)] = items_entering_sector;
+
 			}
-				
-			end_index_for_diagonal_transfer[static_cast<uint32_t>(grid_utility::grid_directions::UP_RIGHT) - static_cast<uint32_t>(grid_utility::grid_directions::DIAGONAL_START)] = items_entering_sector;
 
 			if constexpr (!Tedge_info::is_on_right_edge() && !Tedge_info::is_on_down_edge())
 			{
-				auto& transfer_buffer_in_dir = sector_transfer_buffer_groups[grid_utility::get_address_for_direction< grid_utility::grid_directions::DOWN_RIGHT>(sector_index)].get_ref_to_buffer<transfer_buffer_types::OTHER>();
+				auto& transfer_buffer_in_dir = sector_transfer_buffer_groups[grid_utility::get_address_for_direction< MiscUtilities::grid_directions::DOWN_RIGHT>(sector_index)].get_ref_to_buffer<transfer_buffer_types::OTHER>();
 
 				for (uint32_t ix = 0; ix < transfer_buffer_in_dir.size(); ++ix)
 				{
@@ -576,14 +591,16 @@ namespace ContinuousCollisionLibrary
 
 					items_entering_sector += is_in_sector;
 				};
+
+				end_index_for_diagonal_transfer[static_cast<uint32_t>(MiscUtilities::grid_directions::DOWN_RIGHT) - static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_START)] = items_entering_sector;
+
 			}
 			
-			end_index_for_diagonal_transfer[static_cast<uint32_t>(grid_utility::grid_directions::DOWN_RIGHT) - static_cast<uint32_t>(grid_utility::grid_directions::DIAGONAL_START)] = items_entering_sector;
 
 
 			if constexpr (!Tedge_info::is_on_left_edge() && !Tedge_info::is_on_down_edge())
 			{
-				auto& transfer_buffer_in_dir = sector_transfer_buffer_groups[grid_utility::get_address_for_direction< grid_utility::grid_directions::DOWN_LEFT>(sector_index)].get_ref_to_buffer<transfer_buffer_types::OTHER>();
+				auto& transfer_buffer_in_dir = sector_transfer_buffer_groups[grid_utility::get_address_for_direction< MiscUtilities::grid_directions::DOWN_LEFT>(sector_index)].get_ref_to_buffer<transfer_buffer_types::OTHER>();
 
 				for (uint32_t ix = 0; ix < transfer_buffer_in_dir.size(); ++ix)
 				{
@@ -595,69 +612,211 @@ namespace ContinuousCollisionLibrary
 
 					items_entering_sector += is_in_sector;
 				};
-			}
 
-			end_index_for_diagonal_transfer[static_cast<uint32_t>(grid_utility::grid_directions::DOWN_RIGHT) - static_cast<uint32_t>(grid_utility::grid_directions::DIAGONAL_START)] = items_entering_sector;
+				end_index_for_diagonal_transfer[static_cast<uint32_t>(MiscUtilities::grid_directions::DOWN_RIGHT) - static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_START)] = items_entering_sector;
+			}
 		}
 
 
 		if constexpr (!Tedge_info::is_on_left_edge())
 		{
-			items_entering_sector += sector_transfer_buffer_groups[grid_utility::get_address_for_direction< grid_utility::grid_directions::LEFT>(sector_index)].get_buffer_size<transfer_buffer_types::RIGHT>();
+			items_entering_sector += sector_transfer_buffer_groups[grid_utility::get_address_for_direction< MiscUtilities::grid_directions::LEFT>(sector_index)].get_buffer_size<transfer_buffer_types::RIGHT>();
 		}
 
 		if constexpr (!Tedge_info::is_on_up_edge())
 		{
-			items_entering_sector += sector_transfer_buffer_groups[grid_utility::get_address_for_direction< grid_utility::grid_directions::UP>(sector_index)].get_buffer_size<transfer_buffer_types::DOWN>();
+			items_entering_sector += sector_transfer_buffer_groups[grid_utility::get_address_for_direction< MiscUtilities::grid_directions::UP>(sector_index)].get_buffer_size<transfer_buffer_types::DOWN>();
 		}
 
 		if constexpr (!Tedge_info::is_on_right_edge())
 		{
-			items_entering_sector += sector_transfer_buffer_groups[grid_utility::get_address_for_direction< grid_utility::grid_directions::RIGHT>(sector_index)].get_buffer_size<transfer_buffer_types::LEFT>();
+			items_entering_sector += sector_transfer_buffer_groups[grid_utility::get_address_for_direction< MiscUtilities::grid_directions::RIGHT>(sector_index)].get_buffer_size<transfer_buffer_types::LEFT>();
 		}
 
 		if constexpr (!Tedge_info::is_on_down_edge())
 		{
-			items_entering_sector += sector_transfer_buffer_groups[grid_utility::get_address_for_direction< grid_utility::grid_directions::DOWN>(sector_index)].get_buffer_size<transfer_buffer_types::UP>();
+			items_entering_sector += sector_transfer_buffer_groups[grid_utility::get_address_for_direction< MiscUtilities::grid_directions::DOWN>(sector_index)].get_buffer_size<transfer_buffer_types::UP>();
 		}
 
+		//ArrayUtilities::fixed_size_vector_array<typename collision_data_container_type::virtual_combined_node_adderss_type, sector_transfer_buffers::max_item_transfer >& write_to_addresses = sector_transfer_removal_address_groups[sector_index];
+		auto& write_to_addresses = sector_transfer_removal_address_groups[sector_index];
+
 		//compare the number of items entering vs those leaving and get the difference 
-		int32_t transfer_dif = items_entering_sector - sector_transfer_removal_address_groups[sector_index].size();
+		int32_t transfer_dif = items_entering_sector - write_to_addresses.size();
 
 		//check if transfer dif is > 
 		int32_t space_to_reserver = std::max(transfer_dif, 0);
+		
+		auto& tight_packed_data_ref = collision_data_container.get_tight_packed_data();
+
+		auto& virtual_mem_header = tight_packed_data_ref.get_array_header();
+		
+		//get the start address of the new entries
+		auto new_virtual_address_start = virtual_mem_header.y_axis_count[sector_index];
 
 		//allocate extra room to bulk insert items into if needed 
 		auto [begin_itr, end_itr] = collision_data_container.reserve_space_for_move(sector_index, space_to_reserver);
+
+		
+
+		//get the end virtual address in the sector (one more than the last occupied address)
+		typename collision_data_container_type::virtual_combined_node_adderss_type new_virtual_addresses(new_virtual_address_start + (sector_index * collision_data_container_type::paged_array_type::max_y_items));
 
 		//loop through the extra space and extract the real addresses to copy data to
 		std::for_each(begin_itr, end_itr, [&](auto real_address)
 			{
 				//store the real adderss in the list of addresses we can write to
-				sector_transfer_removal_address_groups[sector_index].push_back(real_address);
+				write_to_addresses.push_back(std::tuple(real_address, new_virtual_addresses++));
+
 			});
 
 		//at this point we have all the addresses we need to copy the data in now we just need to iterate over all the different axis to copy in the target data
 
 		//get list of all valid directions
 		//auto all_valid_directions = grid_utility::get_non_blocked_cardinal_directions(Tedge_info());
+		//using array_type = decltype(Tedge_info::get_non_edge_cardinal_directions());
 
-		auto all_valid_directions = grid_utility::get_non_blocked_cardinal_directions2<bool>();
 
-		//convert to index in map
-		//auto root_index = grid_helper.from_xy(math_2d_util::uivec2d(x, y));
-		//
-		//if constexpr (!Tedge_info::is_on_left_edge())
-		//{
-		//	//transfer items in from the left buffer 
-		//    int32_t left_offset = MiscUtilities::grid_navigation_helper<grid_dimension_type::sectors_grid_w>::get_offset_for_direction<MiscUtilities::grid_navigation_helper::grid_directions::LEFT>();
-		//
-		//	//sector to the left of current 
-		//	sector_count_type left_sector_index = sector_index - left_offset;
-		//
-		//	//get the right transfer buffer 
-		//	sector_transfer_buffers& sector_transfer_buffer_groups[left_sector_index].get_ref_to_buffer<transfer_buffer_types::RIGHT>()
-		//}
+		static constexpr auto all_valid_cardinal_directions = Tedge_info::get_non_edge_cardinal_directions();
+
+		static constexpr auto all_offsets_for_all_valid_directions = grid_utility::get_offset_for_direction(all_valid_cardinal_directions);
+
+		static constexpr auto flipped_direction_of_all_valid_directions = Tedge_info::get_directions_array_flipped(all_valid_cardinal_directions);
+
+		uint32_t write_index = 0;
+
+		//loop through all the cardinal directions and copy accross the values in the buffers
+		for (uint32_t ibuffer = 0; ibuffer < all_valid_cardinal_directions.size(); ++ibuffer)
+		{
+			//get the sector address
+			uint32_t neighbour_index = sector_index + all_offsets_for_all_valid_directions[ibuffer];
+
+			//convert the flipped direction to a buffer name, this assumes we are only looping over cardinal directions
+			assert(static_cast<uint32_t>(flipped_direction_of_all_valid_directions[ibuffer]) < static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_START));
+
+			transfer_buffer_types buffer_type = static_cast<transfer_buffer_types>(flipped_direction_of_all_valid_directions[ibuffer]);
+
+			//get the buffer to copy from 
+			auto& read_buffer = sector_transfer_buffer_groups[neighbour_index].get_ref_to_buffer(buffer_type);
+
+			//copy items in writing over items leaving or new empty items 
+			for (uint32_t ibuffer_item = 0; ibuffer_item < read_buffer.size(); ++ibuffer_item)
+			{
+				auto real_address_to_write_to = std::get<0>(write_to_addresses[write_index]);
+				auto virtual_address_to_point_handle_to = std::get<1>(write_to_addresses[write_index]);
+
+				++write_index;
+
+				auto& buffer_item_ref = read_buffer[ibuffer_item];
+
+				//get the ref for the write target
+				auto ref_struct = collision_data_container.overwrite(buffer_item_ref.owner, real_address_to_write_to, virtual_address_to_point_handle_to);
+			
+				//copy accross the values
+				//copy across the values (could maybe make a meta function for this)
+				ref_struct.x = buffer_item_ref.position.x;
+				ref_struct.y = buffer_item_ref.position.y;
+
+				ref_struct.velocity_x = buffer_item_ref.velocity.x;
+				ref_struct.velocity_y = buffer_item_ref.velocity.y;
+
+				ref_struct.radius = buffer_item_ref.radius;
+			}
+		}
+
+		static constexpr auto all_valid_diagonal_directions = Tedge_info::get_non_edge_diagonal_directions();
+
+		static constexpr auto all_offsets_for_all_valid_diagonal_directions = grid_utility::get_offset_for_direction(all_valid_diagonal_directions);
+
+		static constexpr uint32_t diagonal_dir_offset = static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_START);
+
+		uint32_t read_index = 0;
+
+		
+		//loop through all diagonal directions and copy accross the values in the buffers
+		for (uint32_t ibuffer = 0; ibuffer < all_valid_diagonal_directions.size(); ++ibuffer)
+		{
+			//get the start and end index for all items from this direction entering this sector
+			uint32_t end_index = end_index_for_diagonal_transfer[ static_cast<uint32_t>(all_valid_diagonal_directions[ibuffer]) - diagonal_dir_offset];
+
+			//offset to target 
+			auto neighbour_index = sector_index + all_offsets_for_all_valid_diagonal_directions[ibuffer];
+
+			//get the buffer to read from, all diagonals use other buffer
+			auto& read_buffer = sector_transfer_buffer_groups[neighbour_index].get_ref_to_buffer(transfer_buffer_types::OTHER);
+
+			//loop throuhg all the items crossing into the sector through diagonal 
+			for (; read_index < end_index; ++read_index)
+			{
+				auto ibuffer_item = indexes_of_diag_items[read_index];
+
+				auto real_address_to_write_to = std::get<0>(write_to_addresses[write_index]);
+				auto virtual_address_to_point_handle_to = std::get<1>(write_to_addresses[write_index]);
+
+				++write_index;
+
+				auto& buffer_item_ref = read_buffer[ibuffer_item];
+
+				//get the ref for the write target
+				auto ref_struct = collision_data_container.overwrite(buffer_item_ref.owner, real_address_to_write_to, virtual_address_to_point_handle_to);
+
+				//copy accross the values
+				//copy across the values (could maybe make a meta function for this)
+				ref_struct.x = buffer_item_ref.position.x;
+				ref_struct.y = buffer_item_ref.position.y;
+
+				ref_struct.velocity_x = buffer_item_ref.velocity.x;
+				ref_struct.velocity_y = buffer_item_ref.velocity.y;
+
+				ref_struct.radius = buffer_item_ref.radius;
+			}
+		}
+
+		//loop through all the newly added items and add them to the per tile tracker 
+		for (uint32_t iwrite_to_index = 0; iwrite_to_index < write_index; ++iwrite_to_index)
+		{
+			//get the data ref
+			auto ref_struct = collision_data_container.get(std::get<0>(write_to_addresses[iwrite_to_index]));
+
+			//get the tile data is moving into
+			math_2d_util::uivec2d new_tile(static_cast<uint32_t>(ref_struct.x), static_cast<uint32_t>(ref_struct.y));
+
+			//convert to indexes
+			auto new_address = grid_helper.from_xy(new_tile);
+
+			//add the item to the tile tracker
+			colliders_in_tile_tracker.add(new_address.index, ref_struct.handle);
+		}
+
+		//clean up the reamaining items that are nolonger in the sector
+		//first remove all the items
+		for (uint32_t iremove_index = write_to_addresses.size(); iremove_index > write_index;)
+		{
+			--iremove_index;
+			collision_data_container.remove_without_updating_handle(sector_index, std::get<0>(write_to_addresses[iremove_index]));
+		}
+
+		//second repoint all the items that were used to replace items 
+		//as long as a write to virtual address is less than the last virtual address for the sector we know 
+		//it needs to be replaced
+
+		typename collision_data_container_type::virtual_combined_node_adderss_type last_virtual_addresses(virtual_mem_header.y_axis_count[sector_index] + (sector_index * collision_data_container_type::paged_array_type::max_y_items));
+
+		for (int iremap_index = write_index; write_index < write_to_addresses.size(); ++iremap_index)
+		{
+			//check if index is less than the last item in the array 
+			if (std::get<1>(write_to_addresses[iremap_index]) >= last_virtual_addresses)
+			{
+				//we have reached the end of the array, no need to remap any of the other values
+				break;
+			}
+			
+			//get the data ref
+			auto ref_struct = collision_data_container.get(std::get<0>(write_to_addresses[iremap_index]));
+
+			//update the address the handle points to 
+			collision_data_container.update_handle_address(ref_struct.handle, std::get<1>(write_to_addresses[iremap_index]));
+		}
 
 	}
 
@@ -790,9 +949,11 @@ namespace ContinuousCollisionLibrary
 			//loop through all the pages that a sectors data is in
 			std::for_each(page_begin_itr, page_end_itr, [&](auto& page_address_and_count)
 				{
-					using sector_change_tuple_type = std::tuple<collision_data_container_type::real_address_type, handle_type, math_2d_util::ivec2d, math_2d_util::ivec2d>;
+					using sector_change_tuple_type = std::tuple<collision_data_container_type::real_address_type, collision_data_container_type::virtual_combined_node_adderss_type, handle_type, math_2d_util::ivec2d, math_2d_util::ivec2d>;
 
-					ArrayUtilities::fixed_size_vector_array< sector_change_tuple_type, collision_data_container_type::paged_array_type::page_size> items_changing_tile;
+					using tile_change_tuple_type = std::tuple<handle_type, math_2d_util::ivec2d, math_2d_util::ivec2d>;
+
+					ArrayUtilities::fixed_size_vector_array< tile_change_tuple_type, collision_data_container_type::paged_array_type::page_size> items_changing_tile;
 
 					ArrayUtilities::fixed_size_vector_array< sector_change_tuple_type, collision_data_container_type::paged_array_type::page_size> items_exiting_sector;
 
@@ -820,23 +981,25 @@ namespace ContinuousCollisionLibrary
 
 							if (exiting_sector)
 							{
-								items_exiting_sector.push_back(sector_change_tuple_type(real_address, ref_struct.handle, old_tile, new_tile ));
+								typename collision_data_container_type::virtual_combined_node_adderss_type virtual_addres(page_address_and_count.virtual_page_start_address.address + real_address.get_sub_page_offset());
+
+								items_exiting_sector.push_back(sector_change_tuple_type(real_address, virtual_addres, ref_struct.handle, old_tile, new_tile ));
 							}
 							else
 							{
-								items_changing_tile.push_back(sector_change_tuple_type(real_address, ref_struct.handle, old_tile, new_tile ));
+								items_changing_tile.push_back(tile_change_tuple_type(ref_struct.handle, old_tile, new_tile ));
 							}
 						}
 					}
 
 					//loop through all the tiles that have changed position and move them in the lookup structure
-					std::for_each(items_changing_tile.cbegin(), items_changing_tile.cend(), [&](const sector_change_tuple_type& sector_change_info)
+					std::for_each(items_changing_tile.cbegin(), items_changing_tile.cend(), [&](const tile_change_tuple_type& sector_change_info)
 						{
 							
 							//convert to indexes
-							auto from_address = grid_helper.from_xy(std::get<2>(sector_change_info));
-							auto to_address = grid_helper.from_xy(std::get<3>(sector_change_info));
-							auto handle = std::get<1>(sector_change_info);
+							auto from_address = grid_helper.from_xy(std::get<1>(sector_change_info));
+							auto to_address = grid_helper.from_xy(std::get<2>(sector_change_info));
+							auto handle = std::get<0>(sector_change_info);
 
 							//remove from old tile and put in new tile
 							colliders_in_tile_tracker.remove(from_address.index, handle);
@@ -850,12 +1013,13 @@ namespace ContinuousCollisionLibrary
 					std::for_each(items_exiting_sector.cbegin(), items_exiting_sector.cend(), [&](const sector_change_tuple_type& sector_change_info)
 						{
 							//convert to indexes
-							auto from_coordinate = std::get<2>(sector_change_info);
-							auto to_coordinate = std::get<3>(sector_change_info);
+							auto from_coordinate = std::get<3>(sector_change_info);
+							auto to_coordinate = std::get<4>(sector_change_info);
 
 							auto from_address = grid_helper.from_xy(from_coordinate);
-							auto handle = std::get<1>(sector_change_info);
+							auto handle = std::get<2>(sector_change_info);
 							auto real_address = std::get<0>(sector_change_info);
+							auto virtual_address = std::get<1>(sector_change_info);
 
 							//get buffer to insert into
 							auto& transfer_buffer_to_add_to = sector_transfer_buffer_groups[sector_index].get_buffer_for_transfer(from_coordinate, to_coordinate);
@@ -863,7 +1027,7 @@ namespace ContinuousCollisionLibrary
 							//get the buffer to track items leaving the sector
 							auto& address_of_items_leaving = sector_transfer_removal_address_groups[sector_index];
 
-							//remove from old tile and put in new tile
+							//remove from old tile, next sector will put it into the new tile
 							colliders_in_tile_tracker.remove(from_address.index, handle);
 
 							//get ref struct
@@ -873,7 +1037,7 @@ namespace ContinuousCollisionLibrary
 
 							//add to correct buffer
 							transfer_buffer_to_add_to.push_back(transfer_data);
-							address_of_items_leaving.push_back(real_address);
+							address_of_items_leaving.push_back(std::tuple(real_address, virtual_address));
 
 						});
 					

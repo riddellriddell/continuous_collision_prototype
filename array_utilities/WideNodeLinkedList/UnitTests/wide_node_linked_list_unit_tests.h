@@ -33,7 +33,8 @@ namespace ArrayUtilities
 
 				std::for_each(begin, end, [&](auto& x) {found_added_item = (x == item_to_add_01); });
 
-				assert(found_added_item, "the value of x was not correctly retrieved");
+				//, "the value of x was not correctly retrieved"
+				assert(found_added_item);
 			}
 
 			//remove the value inserted 
@@ -47,7 +48,8 @@ namespace ArrayUtilities
 
 				std::for_each(begin, end, [&](auto& x) {found_added_item = (x == item_to_add_01); });
 
-				assert(!found_added_item, "the value of x should have been removed");
+				//, "the value of x should have been removed"
+				assert(!found_added_item);
 			}
 
 
@@ -64,7 +66,8 @@ namespace ArrayUtilities
 
 				std::for_each(begin, end, [&](auto& x) {found_added_item = (x == item_to_add_02); });
 
-				assert(found_added_item, "the value of x was not correctly retrieved");
+				//, "the value of x was not correctly retrieved"
+				assert(found_added_item);
 			}
 
 			//remove the value inserted 
@@ -78,7 +81,8 @@ namespace ArrayUtilities
 
 				std::for_each(begin, end, [&](auto& x) {found_added_item = (x == item_to_add_02); });
 
-				assert(!found_added_item, "the value of x should have been removed");
+				//, "the value of x should have been removed"
+				assert(!found_added_item);
 			}
 
 			//add 9 items forcing the creation of 2 nodex 
@@ -103,7 +107,8 @@ namespace ArrayUtilities
 
 					std::for_each(begin, end, [&](auto& item) {found_added_item |= (item == x); });
 
-					assert(found_added_item, "the value of x should have been found");
+					//, "the value of x should have been found"
+					assert(found_added_item);
 				});
 
 			uint32 item_to_remove_03 = 4;
@@ -123,11 +128,13 @@ namespace ArrayUtilities
 
 					if (x == item_to_remove_03)
 					{
-						assert(!found_added_item, "the value of item_to_remove_03 should have been removed");
+						//, "the value of item_to_remove_03 should have been removed"
+						assert(!found_added_item);
 					}
 					else
 					{
-						assert(found_added_item, "the value of x should have been found");
+						//, "the value of x should have been found"
+						assert(found_added_item);
 					}
 				});
 
@@ -153,7 +160,8 @@ namespace ArrayUtilities
 
 					std::for_each(begin, end, [&](auto& item) {found_added_item |= (item == x); });
 
-					assert(!found_added_item, "the value of x should have been removed");
+					//, "the value of x should have been removed"
+					assert(!found_added_item);
 				});
 
 			//add items to several different nodes
@@ -193,7 +201,8 @@ namespace ArrayUtilities
 
 							std::for_each(begin, end, [&](auto& x) {found_added_item |= (x == item); });
 
-							assert(found_added_item, "the value of x should exist");
+							//, "the value of x should exist"
+							assert(found_added_item);
 						});
 				});
 
@@ -222,7 +231,8 @@ namespace ArrayUtilities
 
 							std::for_each(begin, end, [&](auto& x) {found_added_item |= (x == item); });
 
-							assert(!found_added_item, "the value of x should exist");
+							//, "the value of x should exist"
+							assert(!found_added_item);
 						});
 				});
 

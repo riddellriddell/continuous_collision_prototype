@@ -31,8 +31,12 @@ namespace ArrayUtilities
 
 		constexpr void branchless_destroy(bool apply_destroy)
 		{
-			assert(is_valid() && apply_destroy);
-			page_number -= ((page_number + 1) * apply_destroy);
+			assert(is_valid() || !apply_destroy);
+
+			//this converts the valut back to uint max if this handle is being destroyed
+			page_number = apply_destroy? invalid_page_value : page_number;
+
+			assert(!apply_destroy || (page_number == invalid_page_value));
 		}
 
 		constexpr page_handle() :page_number(invalid_page_value) {};
@@ -55,7 +59,8 @@ namespace ArrayUtilities
 
 		constexpr void set_handle(page_handle new_handle_value)
 		{
-			assert(new_handle_value.is_valid(), "This function assumes if your setting the page address that there is not a page already mapped to that address");
+			//, "This function assumes if your setting the page address that there is not a page already mapped to that address"
+			assert(new_handle_value.is_valid());
 
 			//dont try and beat the compiler 
 			page_number = new_handle_value.get_page();
@@ -64,7 +69,8 @@ namespace ArrayUtilities
 
 		constexpr void branchless_set_handle(page_handle new_handle_value, bool apply_page)
 		{
-			assert(!apply_page || (new_handle_value.is_valid() == true), "This function assumes if your setting the page address that there is not a page already mapped to that address");
+			//, "This function assumes if your setting the page address that there is not a page already mapped to that address"
+			assert(!apply_page || (new_handle_value.is_valid() == true));
 
 			//this assumes the existing page is a invalid value which == max value
 			//by adding 1 max value wraps arround to 0,

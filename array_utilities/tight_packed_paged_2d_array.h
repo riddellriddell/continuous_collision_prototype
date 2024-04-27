@@ -84,6 +84,9 @@ namespace ArrayUtilities
 		//removes element and returns address of data that was replaced
 		real_address_type remove_item_from_paged_array(x_axis_type x_index_to_remove_from, virtual_combined_node_adderss_type address_to_remove);
 
+		//removes element and returns address of data that was replaced
+		real_address_type remove_item_from_paged_array(x_axis_type x_index_to_remove_from, real_address_type address_to_remove);
+
 		//find the data at the given address 
 		real_address_type resolve_address(auto... args) const;
 
@@ -156,22 +159,36 @@ namespace ArrayUtilities
 	inline  tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::real_address_type
 		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::remove_item_from_paged_array(x_axis_type x_index_to_remove_from, virtual_combined_node_adderss_type address_type)
 	{
+		//get the y axis virtual address as well as decrement the number of items in this y axis array
+		auto combined_virtual_address_to_pop = virtual_combined_node_adderss_type( (paged_array_header.y_axis_count[x_index_to_remove_from] - 1 ) + x_index_to_remove_from * Ipage_size);
+		auto y_address_start = virtual_combined_node_adderss_type(x_index_to_remove_from * Ipage_size);
+
+		//make sure we are not replacing with an item not in the array
+		assert(combined_virtual_address_to_pop >= address_type);
+		assert(y_address_start <= address_type);
 
 		//convert replacement address 
 		//do this first as if this address is the same as the address to remove the 
 		//next line will invalidate the page handle it is on
 		auto remove_real_address = paged_array_header.find_address(address_type);
 
+		remove_item_from_paged_array(x_index_to_remove_from, remove_real_address);
+		
+	}
 
+	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>
+	inline tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::real_address_type 
+		tight_packed_paged_2d_array_manager<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Tcontainer>::remove_item_from_paged_array(x_axis_type x_index_to_remove_from, real_address_type address_to_remove)
+	{
 		//reduce the number of elelments in the list and get the address of the last entry
 		auto replacment_element_address = paged_array_header.pop_back_and_return_address(x_index_to_remove_from);
 
 		//use iterators to get the last and first addresses
-		replace_remove_internal(packed_data, std::get<0>(replacment_element_address), remove_real_address);
-		
+		replace_remove_internal(packed_data, std::get<0>(replacment_element_address), address_to_remove);
+
 		//return the address of the items moved 
 		//this is so other systems can update the index of tracked data
-		return remove_real_address;
+		return std::get<0>(replacment_element_address);
 	}
 
 	template<size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Tcontainer>

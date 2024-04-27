@@ -150,12 +150,13 @@ namespace ContinuousCollisionLibrary
 		constexpr overlap_flag_template(const Toffset_type& offset_to_encode)
 		{
 			//sanity check that the offsets are not larger than the largest possible flag width
-			assert(offset_to_encode.x < width && offset_to_encode.y < width, "Offset larget than allowed values");
-			assert(offset_to_encode.x >= 0 && offset_to_encode.y >= 0, "Offset less than allowed values");
+			//, "Offset larget than allowed values"
+			assert(offset_to_encode.x < width && offset_to_encode.y < width);
+			assert(offset_to_encode.x >= 0 && offset_to_encode.y >= 0); //, "Offset less than allowed values"
 
 			uint64 flag_offset = offset_to_encode.x + (width * offset_to_encode.y);
 
-			assert(flag_offset < max_overlaps, "the uint 64 represeing all the tiles overlapping this tile can only store max_overlaps values staring at offset 0");
+			assert(flag_offset < max_overlaps); //, "the uint 64 represeing all the tiles overlapping this tile can only store max_overlaps values staring at offset 0"
 
 			auto flag = 1ull << flag_offset;
 

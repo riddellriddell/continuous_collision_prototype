@@ -163,6 +163,7 @@
     <ClInclude Include="int_type_selection.h" />
     <ClInclude Include="int_wrapper.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="shared_types.h" />
     <ClInclude Include="strong_type\is_strong_type.hpp" />
     <ClInclude Include="strong_type\st.hpp" />
     <ClInclude Include="strong_type\traits.hpp" />

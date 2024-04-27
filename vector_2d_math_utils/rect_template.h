@@ -113,7 +113,7 @@ namespace math_2d_util
 	template<typename Trect_a_base_val, typename Trect_b_base_val, typename Treturn>
 	inline math_2d_util::template_vector_2d<Treturn> rect_2d_math::get_top_left_corner_of_overlap(const template_rect_2d<Trect_a_base_val>& rect_a, const template_rect_2d<Trect_b_base_val>& rect_b)
 	{
-		assert(is_overlapping(rect_a, rect_b), "Attempting to get overlap for non overlapping rects");
+		assert(is_overlapping(rect_a, rect_b));//  "Attempting to get overlap for non overlapping rects");
 
 		math_2d_util::template_vector_2d<Treturn> top_left_corner;
 

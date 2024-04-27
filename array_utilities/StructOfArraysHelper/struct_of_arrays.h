@@ -129,19 +129,53 @@ namespace ArrayUtilities
         template <typename TupleType, std::size_t N>
         struct ConvertTupleToArrayOfArrays
         {
+           //template <std::size_t... Indices>
+           //static auto convert(std::index_sequence<Indices...>)
+           //{
+           //    return std::make_tuple(std::array< typename std::remove_pointer< typename std::remove_reference< std::tuple_element_t<Indices, TupleType>>::type>::type, N>{}...);
+           //}
+           //
+           //static auto convert()
+           //{
+           //    return convert(std::make_index_sequence<std::tuple_size_v<TupleType>>());
+           //}
+
+
+
+            //template <typename... TProcessedArgs, typename TArgToProcess  typename... TUnprocessedArgs>
+            //static auto convert_v2(std::tuple<TProcessedArgs...>* processed_ptr, std::tuple<TArgToProcess, TUnprocessedArgs...>* un_processed_prt)
+            //{
+            //    std::tuple<TProcessedArgs..., std::array< typename std::remove_pointer< typename std::remove_reference<TArgToProcess>>>>* new_processed_ptr;
+            //    std::tuple<TUnprocessedArgs...>* un_processed_prt;
+            //
+            //    convert_v2(new_processed_ptr, un_processed_prt)
+            //}
+            //
+            //static auto convert_v2()
+            //{
+            //    return convert_v2(std::make_index_sequence<std::tuple_size_v<TupleType>>());
+            //}
+            //
+
+             template <class... _Types>
+             static constexpr std::tuple<typename std::remove_pointer<_Types>::type...>* make_tuple_ptr(_Types... _Args)
+             { // make tuple from elements
+                 using _Ttype = std::tuple< typename std::remove_pointer<_Types>::type...>;
+                 _Ttype* ptr = nullptr;
+                 return ptr;
+             }
+
             template <std::size_t... Indices>
-            static auto convert(std::index_sequence<Indices...>)
+            static auto convert_v3(std::index_sequence<Indices...>)
             {
-                return std::make_tuple(std::array<
-                    typename std::remove_pointer<
-                    typename std::remove_reference<
-                    std::tuple_element_t<Indices, TupleType>>::type>::type
-                    , N>{}...);
+                auto ptr = make_tuple_ptr(static_cast<std::array< typename std::remove_pointer< typename std::remove_reference< std::tuple_element_t<Indices, TupleType>>::type>::type, N>*>(nullptr)...);
+
+                return ptr;
             }
 
-            static auto convert()
+            static auto convert_v3()
             {
-                return convert(std::make_index_sequence<std::tuple_size_v<TupleType>>());
+                return convert_v3(std::make_index_sequence<std::tuple_size_v<TupleType>>());
             }
         };
 
@@ -151,7 +185,7 @@ namespace ArrayUtilities
 
         //the array of tuples type
         template<size_t Iarray_size> 
-        using tuple_of_arrays_type = decltype(ConvertTupleToArrayOfArrays< ref_tuple_type, Iarray_size>::convert());
+        using tuple_of_arrays_type = typename std::remove_pointer<decltype(ConvertTupleToArrayOfArrays< ref_tuple_type, Iarray_size>::convert_v3())>::type;
 
     private:
         // Helper function to set pointers in the tuple

@@ -74,12 +74,21 @@ namespace ArrayUtilities
 
 		address_return_type insert(Thandle_type handle, x_axis_type x_index_to_add_to);
 
+		//change where a handle is pointing to and get a ref struct so the data can be overwritten;
+		handle_reference_wrapper overwrite(Thandle_type handle, real_address_type real_address, virtual_combined_node_adderss_type address);
+
 		//reserve_space_for_move 
 		reserve_space_for_move_return_type reserve_space_for_move(x_axis_type axis_to_move_to, typename paged_array_type::y_axis_count_type number_to_add);
 
 		address_return_type move(x_axis_type x_index_to_add_to, auto address_to_move_from);
 
 		void remove(Thandle_type handle);
+
+		//this is used when doing a bulk replace 
+		void remove_without_updating_handle(x_axis_type x_index_to_remove_from, real_address_type real_address);
+
+		//used when moving data arround instead of adding or removing 
+		void update_handle_address(Thandle_type handle, virtual_combined_node_adderss_type address);
 
 		reference_tuple_type get_ref_tuple(auto address);
 
@@ -117,6 +126,26 @@ namespace ArrayUtilities
 		handle_to_data_lookup[handle_index] = std::get<1>(return_address);
 
 		return return_address;
+	}
+
+
+	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>
+	inline handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::handle_reference_wrapper 
+		handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::overwrite(Thandle_type handle, real_address_type real_address, virtual_combined_node_adderss_type address)
+	{
+		handle_reference_wrapper overwrite_target = get(real_address);
+
+		//point data to new handle 
+		overwrite_target.handle = handle;
+
+		//change where the source handle points to
+		handle_index_type handle_index = handle.get_index();
+
+		//set the address of data 
+		handle_to_data_lookup[handle_index] = address;
+
+		//return the ref wrapper for other code to overwrite 
+		return overwrite_target;
 	}
 
 	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>
@@ -157,6 +186,23 @@ namespace ArrayUtilities
 
 		//update the replacement handle address
 		handle_to_data_lookup[handle_index] = virtual_address;
+	}
+
+	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>
+	inline void handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::remove_without_updating_handle(x_axis_type x_index_to_remove_from, real_address_type real_address)
+	{
+		//remove replace the data at that address
+		tight_packed_data.remove_item_from_paged_array(x_index_to_remove_from, real_address);
+	}
+
+	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>
+	inline void handle_tracked_2d_paged_array<Thandle_type, Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size, Treference_struct>::update_handle_address(Thandle_type handle, virtual_combined_node_adderss_type address)
+	{
+		// get the handle index
+		handle_index_type handle_index = handle.get_index();
+
+		handle_to_data_lookup[handle_index] = address;
+
 	}
 
 	template<typename Thandle_type, size_t Inumber_of_x_axis_items, size_t Imax_y_items, size_t Imax_total_y_items, size_t Ipage_size, typename Treference_struct>

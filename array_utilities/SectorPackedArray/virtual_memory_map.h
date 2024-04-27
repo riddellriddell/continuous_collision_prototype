@@ -62,6 +62,11 @@ namespace ArrayUtilities
 		using address_value_type = real_address_value_type;
 
 		real_address_value_type address;
+
+		real_address_value_type get_sub_page_offset()
+		{
+			return address & page_bits_mask;
+		}
 	};
 
 
@@ -114,7 +119,7 @@ namespace ArrayUtilities
 			//postfix plus
 			virtual_address& operator++(int)
 			{
-				virtual_address_value_type temp{ address };
+				virtual_address temp{ address };
 
 				++address;
 
@@ -211,7 +216,8 @@ namespace ArrayUtilities
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_address_value_type virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::convert_to_real_using_page_internal(virtual_address_value_type virtual_address, auto page_number) const
 	{
-		assert((virtual_address >> local_address_bits) == page_number, "the virtual address has a different virtual page number to the virtual page we are using, the virtual page should match that of the virtual address, the only reason it is not calculated is for optimization reasons");
+		//, "the virtual address has a different virtual page number to the virtual page we are using, the virtual page should match that of the virtual address, the only reason it is not calculated is for optimization reasons"
+		assert((virtual_address >> local_address_bits) == page_number);
 
 		auto page_val = pages_in_space[page_number];
 
@@ -254,7 +260,8 @@ namespace ArrayUtilities
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::real_node_address_type virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::resolve_address_using_virtual_page_offset(virtual_address_type address, auto virtual_page_number) const
 	{
-		assert(extract_page_number_from_virtual_address(address) == virtual_page_number, "this function is an optimization over just passing in the address and calculating the page number on the fly, the passed in page number should match that of the virtual address");
+		//, "this function is an optimization over just passing in the address and calculating the page number on the fly, the passed in page number should match that of the virtual address"
+		assert(extract_page_number_from_virtual_address(address) == virtual_page_number);
 
 		return real_node_address_type(convert_to_real_using_page_internal(address.address, virtual_page_number));
 	}
@@ -356,7 +363,8 @@ namespace ArrayUtilities
 	template<size_t Ipage_size, size_t Imax_number_of_pages_in_virtual_address_space, size_t Itotal_number_of_pages>
 	inline void virtual_memory_map<Ipage_size, Imax_number_of_pages_in_virtual_address_space, Itotal_number_of_pages>::non_branching_add_page(auto virtual_page_number, page_handle_type page_to_add, bool apply_page)
 	{
-		assert(page_to_add.is_valid() || (apply_page == false), "should not be applying pages that are not correctly alocated");
+		//, "should not be applying pages that are not correctly alocated"
+		assert(page_to_add.is_valid() || (apply_page == false));
 
 		//this assumes the existing page is a invalid value which == max value
 		//by adding 1 max value wraps arround to 0,
@@ -370,7 +378,8 @@ namespace ArrayUtilities
 		page_handle_type& page = pages_in_space[virtual_page_number];
 
 		//check that the page handle is valid and has not already been destroyed
-		assert(page.is_valid(), "should not be handing out reffs to non allocated pages, this function is intended for getting pages to later destroy / return to the page pool");
+		//, "should not be handing out reffs to non allocated pages, this function is intended for getting pages to later destroy / return to the page pool"
+		assert(page.is_valid());
 
 		return page;
 	}
