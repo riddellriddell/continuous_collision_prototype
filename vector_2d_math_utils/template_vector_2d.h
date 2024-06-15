@@ -114,6 +114,19 @@ namespace math_2d_util
 			return *this; // Return a reference to this vector after the subtraction
 		}
 
+		// Overload the shift right operator (>>) to shift both x and y values x bits to the right
+		template_vector_2d<T> operator>>(int shift_amount) const
+		{
+			return template_vector_2d<T>(x >> shift_amount, y >> shift_amount);
+		}
+
+		// Overload the shift left operator (<<) to shift both x and y values x bits to the left
+		template_vector_2d<T> operator<<(int shift_amount) const
+		{
+			return template_vector_2d<T>(x << shift_amount, y << shift_amount);
+		}
+
+
 		template<typename TTarget_type>
 		TTarget_type convert_to() const
 		{

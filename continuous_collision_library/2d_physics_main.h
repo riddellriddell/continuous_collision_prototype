@@ -2,6 +2,7 @@
 #include <array>
 #include <algorithm>
 #include <tuple>
+#include <set>
 
 #include "vector_2d_math_utils/rect_types.h"
 #include "vector_2d_math_utils/vector_types.h"
@@ -25,6 +26,8 @@
 #include "sector_grid_data_structure/sector_grid_dimensions.h"
 #include "sector_grid_data_structure/sector_grid_index.h"
 #include "DebugWindowsDrawHelper/debug_draw_interface.h"
+
+#include <assert.h>
 
 
 namespace ContinuousCollisionLibrary
@@ -146,7 +149,8 @@ namespace ContinuousCollisionLibrary
 		new_collider_data_containter_type colliders_to_add_data;
 		
 		//which sectors have items queued to be added into the game
-		ArrayUtilities::fixed_size_vector_array<sector_count_type, max_sectors_internal> sectors_with_queued_items;
+		//the extra +1 is because we are using branchless write and need that extra space for writes we are discarding
+		ArrayUtilities::fixed_size_vector_array<sector_count_type, max_sectors_internal + 1> sectors_with_queued_items;
 
 		//sector_count_type number_of_active_sectors;
 		//std::array<sector_count_type, max_sectors_internal> active_sectors;
@@ -182,7 +186,7 @@ namespace ContinuousCollisionLibrary
 		static constexpr uint32_t number_of_transfer_buffers = grid_dimension_type::sector_grid_count * static_cast<uint32_t>(transfer_buffer_types::COUNT);
 
 		//node width, assuming average unit is the size of a tile the worst case for a single frame is 16 units  
-		static constexpr uint32_t transfer_buffer_size = grid_dimension_type::sector_w;
+		static constexpr uint32_t transfer_buffer_size = grid_dimension_type::sector_w * 2;
 
 		//transfer buffers per sector
 		struct sector_transfer_buffers
@@ -220,7 +224,10 @@ namespace ContinuousCollisionLibrary
 
 			ArrayUtilities::fixed_size_vector_array<new_collider_data, transfer_buffer_size>& get_buffer_for_transfer(math_2d_util::ivec2d& from, math_2d_util::ivec2d& to)
 			{
-				auto diff = to - from;
+				auto from_sector = from >> sector_grid_helper_type::sub_tile_bits_per_axis;
+				auto to_sector = to >> sector_grid_helper_type::sub_tile_bits_per_axis;
+
+				auto diff = to_sector - from_sector;
 
 				//if we are traveling vertical
 				bool vertical = diff.y;
@@ -299,9 +306,69 @@ namespace ContinuousCollisionLibrary
 		//debug draw tool
 		void draw_debug(debug_draw_interface& draw_interface);
 
+
+		//do a simple setup of the physics
+		void setup_physics_simple();
+
+		//do a more complicated random setup
+		void setup_physics_random(uint32_t number_to_spawn, float max_velocity);
+
+
 	};
 
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void ContinuousCollisionLibrary::phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::setup_physics_simple()
+	{
+		new_collider_data colider_to_add01;
 
+		colider_to_add01.position = math_2d_util::fvec2d(0.9f);
+		colider_to_add01.velocity = math_2d_util::fvec2d(0.0f);
+
+		colider_to_add01.radius = 0.5f;
+
+		new_collider_data colider_to_add02;
+
+
+		colider_to_add02.position = math_2d_util::fvec2d(16.1f);
+		colider_to_add02.velocity = math_2d_util::fvec2d(-69.0f);
+
+		colider_to_add02.radius = 1.0f;
+
+		//queue up a new item 
+		auto colider_handle01 = try_queue_item_to_add(std::move(colider_to_add01));
+		auto colider_handle02 = try_queue_item_to_add(std::move(colider_to_add02));
+	}
+
+	template<size_t Imax_objects, size_t Iworld_sector_x_count>
+	inline void ContinuousCollisionLibrary::phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::setup_physics_random(uint32_t number_to_spawn, float max_velocity)
+	{
+		for (uint32_t i = 0; i < number_to_spawn; ++i)
+		{
+			new_collider_data colider_to_add;
+
+			// Generate a random float value between 0 and 1 for radius
+			float random_radius = static_cast<float>(rand()) / RAND_MAX;
+
+			colider_to_add.radius = (random_radius * 4) + 1.0f;
+
+			// Generate a random float value between 0 and 1 for radius
+			float random_pos_x = static_cast<float>(rand()) / RAND_MAX;
+			float random_pos_y = static_cast<float>(rand()) / RAND_MAX;
+
+			float radius_negative_padding = (grid_dimension_type::tile_w - (colider_to_add.radius * 2));
+
+			colider_to_add.position = math_2d_util::fvec2d(
+				(random_pos_x * radius_negative_padding) + colider_to_add.radius,
+				(random_pos_y * radius_negative_padding) + colider_to_add.radius);
+
+			float random_vel_x = (static_cast<float>(rand()) / RAND_MAX) - 0.5f;
+			float random_vel_y = (static_cast<float>(rand()) / RAND_MAX) - 0.5f;
+
+			colider_to_add.velocity = math_2d_util::fvec2d(random_vel_x * max_velocity, random_vel_y * max_velocity);
+
+			auto colider_handle02 = try_queue_item_to_add(std::move(colider_to_add));
+		}
+	}
 	
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::handle_type 
@@ -330,6 +397,27 @@ namespace ContinuousCollisionLibrary
 
 		//check if this is the first item in this sector
 		bool is_first_in_sector = !collider_to_add_header.y_axis_count[sector_index];
+
+		//check that index is less than max number of sectors in world
+		assert(sector_index < max_sectors_internal);
+
+		//validate that this item is not already in the list
+		auto existing_entry_it = std::find(sectors_with_queued_items.begin(), sectors_with_queued_items.end(), sector_index);
+
+		assert(existing_entry_it == sectors_with_queued_items.end() || (is_first_in_sector == false));
+
+		//double check that there are no duplicates
+		std::set<sector_count_type> seen;
+
+		for (sector_count_type value : sectors_with_queued_items)
+		{
+			if (!seen.insert(value).second) 
+			{
+				//duplicate found
+				assert(false);
+			}
+		}
+
 
 		//if this is the first in the sector add to the active sector list
 		sectors_with_queued_items.push_back(sector_index, is_first_in_sector);
@@ -802,7 +890,7 @@ namespace ContinuousCollisionLibrary
 
 		typename collision_data_container_type::virtual_combined_node_adderss_type last_virtual_addresses(virtual_mem_header.y_axis_count[sector_index] + (sector_index * collision_data_container_type::paged_array_type::max_y_items));
 
-		for (int iremap_index = write_index; write_index < write_to_addresses.size(); ++iremap_index)
+		for (int iremap_index = write_index; iremap_index < write_to_addresses.size(); ++iremap_index)
 		{
 			//check if index is less than the last item in the array 
 			if (std::get<1>(write_to_addresses[iremap_index]) >= last_virtual_addresses)
@@ -981,12 +1069,24 @@ namespace ContinuousCollisionLibrary
 
 							if (exiting_sector)
 							{
+								//sanity check that we are talking about the something movingout of a sector
+								{
+									bool is_crossing_sector_x = (new_tile.x / grid_dimension_type::sector_w) != (old_tile.x / grid_dimension_type::sector_w);
+									bool is_crossing_sector_y = (new_tile.y / grid_dimension_type::sector_w) != (old_tile.y / grid_dimension_type::sector_w);
+
+									assert(is_crossing_sector_x || is_crossing_sector_y);
+								}
+
 								typename collision_data_container_type::virtual_combined_node_adderss_type virtual_addres(page_address_and_count.virtual_page_start_address.address + real_address.get_sub_page_offset());
 
 								items_exiting_sector.push_back(sector_change_tuple_type(real_address, virtual_addres, ref_struct.handle, old_tile, new_tile ));
 							}
 							else
 							{
+								//sanity check that we are talking about the something moving inside a sector
+								assert((new_tile.x / grid_dimension_type::sector_w) == (old_tile.x / grid_dimension_type::sector_w));
+								assert((new_tile.y / grid_dimension_type::sector_w) == (old_tile.y / grid_dimension_type::sector_w));
+
 								items_changing_tile.push_back(tile_change_tuple_type(ref_struct.handle, old_tile, new_tile ));
 							}
 						}
@@ -1034,6 +1134,9 @@ namespace ContinuousCollisionLibrary
 							collision_data_ref ref_struct = collision_data_container.get(real_address);
 
 							new_collider_data transfer_data = new_collider_data(handle, math_2d_util::fvec2d(ref_struct.x, ref_struct.y), math_2d_util::fvec2d(ref_struct.velocity_x, ref_struct.velocity_y), ref_struct.radius);
+
+							//check that the transfer buffer is not full
+							assert(transfer_buffer_to_add_to.size() != transfer_buffer_to_add_to.max_size());
 
 							//add to correct buffer
 							transfer_buffer_to_add_to.push_back(transfer_data);

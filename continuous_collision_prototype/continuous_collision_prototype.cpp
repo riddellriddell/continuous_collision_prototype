@@ -53,59 +53,7 @@ enum class KEY_PRESS : uint8_t
 std::array<bool, static_cast<uint32_t>(KEY_PRESS::KEY_COUNT)> key_down_array{};
 
 
-void setup_physics_main()
-{
-    physics_main_type::new_collider_data colider_to_add01;
 
-    colider_to_add01.position = math_2d_util::fvec2d(0.9f);
-    colider_to_add01.velocity = math_2d_util::fvec2d(0.0f);
-
-    colider_to_add01.radius = 0.5f;
-
-    physics_main_type::new_collider_data colider_to_add02;
-
-
-    colider_to_add02.position = math_2d_util::fvec2d(16.1f);
-    colider_to_add02.velocity = math_2d_util::fvec2d(-69.0f);
-
-    colider_to_add02.radius = 1.0f;
-
-    //queue up a new item 
-    auto colider_handle01 = physics_main->try_queue_item_to_add(std::move(colider_to_add01));
-    auto colider_handle02 = physics_main->try_queue_item_to_add(std::move(colider_to_add02));
-
-}
-
-void setup_physics_main_random(uint32_t number_to_spawn, float max_velocity)
-{
-    for (uint32_t i = 0; i < number_to_spawn; ++i)
-    {
-        physics_main_type::new_collider_data colider_to_add;
-
-        // Generate a random float value between 0 and 1 for radius
-        float random_radius = static_cast<float>(rand()) / RAND_MAX;
-
-        colider_to_add.radius = (random_radius * 4) + 1.0f;
-
-        // Generate a random float value between 0 and 1 for radius
-        float random_pos_x = static_cast<float>(rand()) / RAND_MAX;
-        float random_pos_y = static_cast<float>(rand()) / RAND_MAX;
-
-        float radius_negative_padding = (physics_main_type::grid_dimension_type::tile_w - (colider_to_add.radius * 2));
-
-        colider_to_add.position = math_2d_util::fvec2d(
-            (random_pos_x * radius_negative_padding) + colider_to_add.radius,
-            (random_pos_y * radius_negative_padding) + colider_to_add.radius);
-
-        float random_vel_x = (static_cast<float>(rand()) / RAND_MAX) - 0.5f;
-        float random_vel_y = (static_cast<float>(rand()) / RAND_MAX) - 0.5f;
-
-        colider_to_add.velocity = math_2d_util::fvec2d(random_vel_x * max_velocity, random_vel_y * max_velocity);
-
-        auto colider_handle02 = physics_main->try_queue_item_to_add(std::move(colider_to_add));
-    }
-
-}
 
 
 
@@ -162,7 +110,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //setup the physics library 
     //setup_physics_main();
 
-    setup_physics_main_random(1, 200);
+    physics_main->setup_physics_random(65000, 200);
 
 
     // Initialize global strings

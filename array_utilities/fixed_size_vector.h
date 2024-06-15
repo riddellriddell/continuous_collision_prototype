@@ -72,7 +72,9 @@ namespace ArrayUtilities
         void push_back(const Tdata_type& value, bool apply_push_back)
         {
             //check we are not about to go off the end of the array
-            assert(size_ < Isize);
+            //when using this optional push option you must have on extra entry than you expecetd max
+            //this is so this code can write but not commit to the changes at that last "extra" entry 
+            assert(size_ < Isize );
 
             data_[size_] = value;
 

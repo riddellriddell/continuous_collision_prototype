@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "debug_windows_draw_helper",
 		{1B7CC090-0F5A-4F5C-81AC-BC7B9790771E} = {1B7CC090-0F5A-4F5C-81AC-BC7B9790771E}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "continuous_collision_prototype_headless", "continious_collision_prototype_headless\continious_collision_prototype_headless.vcxproj", "{BC4454B9-9AEB-4EE0-B40F-64B676413174}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -93,6 +95,14 @@ Global
 		{6290D925-6E23-479A-B884-2437CE88E298}.Release|x64.Build.0 = Release|x64
 		{6290D925-6E23-479A-B884-2437CE88E298}.Release|x86.ActiveCfg = Release|Win32
 		{6290D925-6E23-479A-B884-2437CE88E298}.Release|x86.Build.0 = Release|Win32
+		{BC4454B9-9AEB-4EE0-B40F-64B676413174}.Debug|x64.ActiveCfg = Debug|x64
+		{BC4454B9-9AEB-4EE0-B40F-64B676413174}.Debug|x64.Build.0 = Debug|x64
+		{BC4454B9-9AEB-4EE0-B40F-64B676413174}.Debug|x86.ActiveCfg = Debug|Win32
+		{BC4454B9-9AEB-4EE0-B40F-64B676413174}.Debug|x86.Build.0 = Debug|Win32
+		{BC4454B9-9AEB-4EE0-B40F-64B676413174}.Release|x64.ActiveCfg = Release|x64
+		{BC4454B9-9AEB-4EE0-B40F-64B676413174}.Release|x64.Build.0 = Release|x64
+		{BC4454B9-9AEB-4EE0-B40F-64B676413174}.Release|x86.ActiveCfg = Release|Win32
+		{BC4454B9-9AEB-4EE0-B40F-64B676413174}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

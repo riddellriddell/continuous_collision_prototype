@@ -573,10 +573,26 @@ namespace ArrayUtilities
 				//do some extra checks to make sure we are accessing a valid address
 				assert(combined_memory_map.does_virtual_page_have_real_page(current_page));
 
+				if (current_page >= (max_y_axis_pages * Inumber_of_x_axis_items))
+				{
+					//have gone off end of array
+					assert(false);
+				}
+
 				//setup real address
 				page_address_and_count.page_start_address = combined_memory_map.resolve_page_number_to_real_address(current_page);
 				page_address_and_count.virtual_page_start_address = virtual_combined_node_adderss_type(current_page << y_axis_virtual_memory_map_type::local_address_bits);
 				page_address_and_count.items_in_page = std::min(decltype(items_remaining)(page_size), items_remaining);
+
+				//doing this because visual studio cant assert :(
+				if (page_address_and_count.page_start_address.address >= max_total_entries ||
+					page_address_and_count.items_in_page >= Ipage_size ||
+					page_address_and_count.virtual_page_start_address.address >= combined_address_virtual_memory_map_type::max_virtual_address
+					)
+				{
+					//have gone off end of array
+					assert(false);
+				}
 
 				return page_address_and_count;
 			}
