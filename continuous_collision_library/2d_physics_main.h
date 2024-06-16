@@ -346,10 +346,23 @@ namespace ContinuousCollisionLibrary
 		{
 			new_collider_data colider_to_add;
 
+			constexpr float big_unit_percent = 0.75f;
+
+			constexpr float unit_min = 0.5f;
+			
+			constexpr float small_unit_max = 1.5f;
+
+			constexpr float big_unit_max = 5;
+
+			//choose if its a small or big unit
+			bool is_big = (static_cast<float>(rand()) / RAND_MAX) > 0.75f;
+
+			float rand_size_scale = is_big ? big_unit_max - unit_min : small_unit_max - unit_min;
+
 			// Generate a random float value between 0 and 1 for radius
 			float random_radius = static_cast<float>(rand()) / RAND_MAX;
 
-			colider_to_add.radius = (random_radius * 4) + 1.0f;
+			colider_to_add.radius = (random_radius * rand_size_scale) + unit_min;
 
 			// Generate a random float value between 0 and 1 for radius
 			float random_pos_x = static_cast<float>(rand()) / RAND_MAX;
@@ -463,6 +476,9 @@ namespace ContinuousCollisionLibrary
 	template<size_t Imax_objects, size_t Iworld_sector_x_count>
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::add_collider_data_to_sector_data(const new_collider_data& data_for_new_collider, sector_count_type sector_index)
 	{
+		//make sure the data getting added is valid 
+		assert(data_for_new_collider.radius > 0);
+
 		//add to the target sector 
 		auto [destination__real_address, _, __] = collision_data_container.insert(data_for_new_collider.owner, sector_index);
 
@@ -609,6 +625,21 @@ namespace ContinuousCollisionLibrary
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::transfer_items_between_sectors(sector_count_type sector_index)
 	{
 
+		//before we start do a sanity check that all the object in this sector are valid
+		{
+			//loop through all the items that are now in this sector and make sure that they are valid and should be in the sector
+			auto itrSectorStart = collision_data_container.get_tight_packed_data().get_array_header().begin(sector_index);
+			auto itrSectorEnd = collision_data_container.get_tight_packed_data().get_array_header().end(sector_index);
+
+			std::for_each(itrSectorStart, itrSectorEnd, [&](auto real_address)
+				{
+					auto refStruct = collision_data_container.get(real_address);
+
+					assert(refStruct.radius > 0);
+				});
+		}
+
+
 		using grid_utility = MiscUtilities::grid_navigation_helper<grid_dimension_type::sectors_grid_w>;
 
 		//define sector bounds 
@@ -632,6 +663,9 @@ namespace ContinuousCollisionLibrary
 
 				for (uint32_t ix = 0; ix < transfer_buffer_in_dir.size(); ++ix)
 				{
+					//sanity check that the object is valid
+					assert(transfer_buffer_in_dir[ix].radius > 0);
+
 					//check if the object is in this sector
 					bool is_in_sector = math_2d_util::rect_2d_math::is_overlapping(sector_bounds, math_2d_util::uivec2d(transfer_buffer_in_dir[ix].position));
 
@@ -651,6 +685,9 @@ namespace ContinuousCollisionLibrary
 
 				for (uint32_t ix = 0; ix < transfer_buffer_in_dir.size(); ++ix)
 				{
+					//sanity check that the object is valid
+					assert(transfer_buffer_in_dir[ix].radius > 0);
+
 					//check if the object is in this sector
 					bool is_in_sector = math_2d_util::rect_2d_math::is_overlapping(sector_bounds, math_2d_util::uivec2d(transfer_buffer_in_dir[ix].position));
 
@@ -671,6 +708,9 @@ namespace ContinuousCollisionLibrary
 
 				for (uint32_t ix = 0; ix < transfer_buffer_in_dir.size(); ++ix)
 				{
+					//sanity check that the object is valid
+					assert(transfer_buffer_in_dir[ix].radius > 0);
+
 					//check if the object is in this sector
 					bool is_in_sector = math_2d_util::rect_2d_math::is_overlapping(sector_bounds, math_2d_util::uivec2d(transfer_buffer_in_dir[ix].position));
 
@@ -683,8 +723,6 @@ namespace ContinuousCollisionLibrary
 				end_index_for_diagonal_transfer[static_cast<uint32_t>(MiscUtilities::grid_directions::DOWN_RIGHT) - static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_START)] = items_entering_sector;
 
 			}
-			
-
 
 			if constexpr (!Tedge_info::is_on_left_edge() && !Tedge_info::is_on_down_edge())
 			{
@@ -692,6 +730,9 @@ namespace ContinuousCollisionLibrary
 
 				for (uint32_t ix = 0; ix < transfer_buffer_in_dir.size(); ++ix)
 				{
+					//sanity check that the object is valid
+					assert(transfer_buffer_in_dir[ix].radius > 0);
+
 					//check if the object is in this sector
 					bool is_in_sector = math_2d_util::rect_2d_math::is_overlapping(sector_bounds, math_2d_util::uivec2d(transfer_buffer_in_dir[ix].position));
 
@@ -701,7 +742,7 @@ namespace ContinuousCollisionLibrary
 					items_entering_sector += is_in_sector;
 				};
 
-				end_index_for_diagonal_transfer[static_cast<uint32_t>(MiscUtilities::grid_directions::DOWN_RIGHT) - static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_START)] = items_entering_sector;
+				end_index_for_diagonal_transfer[static_cast<uint32_t>(MiscUtilities::grid_directions::DOWN_LEFT) - static_cast<uint32_t>(MiscUtilities::grid_directions::DIAGONAL_START)] = items_entering_sector;
 			}
 		}
 
@@ -729,8 +770,13 @@ namespace ContinuousCollisionLibrary
 		//ArrayUtilities::fixed_size_vector_array<typename collision_data_container_type::virtual_combined_node_adderss_type, sector_transfer_buffers::max_item_transfer >& write_to_addresses = sector_transfer_removal_address_groups[sector_index];
 		auto& write_to_addresses = sector_transfer_removal_address_groups[sector_index];
 
+		//for testing reasons get the number of items already in the sector
+		uint32 start_sector_item_count = collision_data_container.get_tight_packed_data().get_array_header().y_axis_count[sector_index];
+
+		uint32 items_leaving_sector = write_to_addresses.size();
+
 		//compare the number of items entering vs those leaving and get the difference 
-		int32_t transfer_dif = items_entering_sector - write_to_addresses.size();
+		int32_t transfer_dif = items_entering_sector - items_leaving_sector;
 
 		//check if transfer dif is > 
 		int32_t space_to_reserver = std::max(transfer_dif, 0);
@@ -744,8 +790,6 @@ namespace ContinuousCollisionLibrary
 
 		//allocate extra room to bulk insert items into if needed 
 		auto [begin_itr, end_itr] = collision_data_container.reserve_space_for_move(sector_index, space_to_reserver);
-
-		
 
 		//get the end virtual address in the sector (one more than the last occupied address)
 		typename collision_data_container_type::virtual_combined_node_adderss_type new_virtual_addresses(new_virtual_address_start + (sector_index * collision_data_container_type::paged_array_type::max_y_items));
@@ -845,6 +889,9 @@ namespace ContinuousCollisionLibrary
 
 				auto& buffer_item_ref = read_buffer[ibuffer_item];
 
+				//check that the read buffer is a valid object
+				assert(buffer_item_ref.radius > 0);
+
 				//get the ref for the write target
 				auto ref_struct = collision_data_container.overwrite(buffer_item_ref.owner, real_address_to_write_to, virtual_address_to_point_handle_to);
 
@@ -887,7 +934,6 @@ namespace ContinuousCollisionLibrary
 		//second repoint all the items that were used to replace items 
 		//as long as a write to virtual address is less than the last virtual address for the sector we know 
 		//it needs to be replaced
-
 		typename collision_data_container_type::virtual_combined_node_adderss_type last_virtual_addresses(virtual_mem_header.y_axis_count[sector_index] + (sector_index * collision_data_container_type::paged_array_type::max_y_items));
 
 		for (int iremap_index = write_index; iremap_index < write_to_addresses.size(); ++iremap_index)
@@ -904,6 +950,30 @@ namespace ContinuousCollisionLibrary
 
 			//update the address the handle points to 
 			collision_data_container.update_handle_address(ref_struct.handle, std::get<1>(write_to_addresses[iremap_index]));
+		}
+
+		//check that the number of object in this sector are what we expect
+		{
+			//for testing reasons get the number of items already in the sector
+			uint32 end_sector_item_count = collision_data_container.get_tight_packed_data().get_array_header().y_axis_count[sector_index];
+
+			bool does_item_count_match = end_sector_item_count == start_sector_item_count + (items_entering_sector - items_leaving_sector);
+
+			assert(does_item_count_match);
+		}
+
+		//final sanity check
+		//loop through all the items that are now in this sector and make sure that they are valid and should be in the sector
+		{
+			auto itrSectorStart = collision_data_container.get_tight_packed_data().get_array_header().begin(sector_index);
+			auto itrSectorEnd = collision_data_container.get_tight_packed_data().get_array_header().end(sector_index);
+
+			std::for_each(itrSectorStart, itrSectorEnd, [&](auto real_address)
+				{
+					auto refStruct = collision_data_container.get(real_address);
+
+					assert(refStruct.radius > 0);
+				});
 		}
 
 	}
@@ -1008,8 +1078,24 @@ namespace ContinuousCollisionLibrary
 						//get ref struct 
 						collision_data_ref ref_struct = collision_data_container.get(real_address);
 
+						//make sure object is in correct sector to start off with
+						{
+							//get the sector bounds
+							math_2d_util::uirect sector_bounds = grid_helper.sector_bounds(sector_index);
+
+							bool is_in_sector = (sector_bounds.min.x <= ref_struct.x) && (sector_bounds.max.x > ref_struct.x);
+
+							//check that the object is in the sector
+							assert(is_in_sector);
+						}
+
+						auto move_dist = ref_struct.velocity_x * time_step;
+
+						//check that we are not moving so fast that we jump over an entire sector
+						assert(std::abs(move_dist) < grid_dimensions::sectors_grid_w);
+
 						//apply the x velocity to the x position 
-						ref_struct.x += ref_struct.velocity_x * time_step;
+						ref_struct.x += move_dist;
 					}
 
 					//apply y movement 
@@ -1018,8 +1104,22 @@ namespace ContinuousCollisionLibrary
 						//get ref struct 
 						collision_data_ref ref_struct = collision_data_container.get(real_address);
 
+						//make sure object is in correct sector to start off with
+						{
+							//get the sector bounds
+							math_2d_util::uirect sector_bounds = grid_helper.sector_bounds(sector_index);
+
+							//check that the object is in the sector
+							assert((sector_bounds.min.y <= ref_struct.y) && (sector_bounds.max.y > ref_struct.y));
+						}
+
+						auto move_dist = ref_struct.velocity_y * time_step;
+
+						//check that we are not moving so fast that we jump over an entire sector
+						assert(std::abs(move_dist) < grid_dimensions::sectors_grid_w);
+
 						//apply the x velocity to the x position 
-						ref_struct.y += ref_struct.velocity_y * time_step;
+						ref_struct.y += move_dist;
 					}
 
 				});
@@ -1052,6 +1152,9 @@ namespace ContinuousCollisionLibrary
 						//get ref struct
 						auto ref_struct = collision_data_container.get(real_address);
 
+						//sanity check that the object is valid
+						assert(ref_struct.radius > 0);
+
 						//old tile
 						math_2d_util::uivec2d old_tile(static_cast<uint32_t>(ref_struct.x - (ref_struct.velocity_x * time_step)), static_cast<uint32_t>(ref_struct.y - (ref_struct.velocity_y * time_step)));
 
@@ -1069,7 +1172,7 @@ namespace ContinuousCollisionLibrary
 
 							if (exiting_sector)
 							{
-								//sanity check that we are talking about the something movingout of a sector
+								//sanity check that we are talking about the something moving out of a sector
 								{
 									bool is_crossing_sector_x = (new_tile.x / grid_dimension_type::sector_w) != (old_tile.x / grid_dimension_type::sector_w);
 									bool is_crossing_sector_y = (new_tile.y / grid_dimension_type::sector_w) != (old_tile.y / grid_dimension_type::sector_w);
@@ -1132,6 +1235,13 @@ namespace ContinuousCollisionLibrary
 
 							//get ref struct
 							collision_data_ref ref_struct = collision_data_container.get(real_address);
+
+							//sanity check that the object is valid
+							assert(ref_struct.radius > 0);
+
+							//sanity check that the object is leaving from this sector 
+							bool was_in_this_sector = math_2d_util::rect_2d_math::is_overlapping(sector_bounds, from_coordinate);
+							assert(was_in_this_sector);
 
 							new_collider_data transfer_data = new_collider_data(handle, math_2d_util::fvec2d(ref_struct.x, ref_struct.y), math_2d_util::fvec2d(ref_struct.velocity_x, ref_struct.velocity_y), ref_struct.radius);
 
