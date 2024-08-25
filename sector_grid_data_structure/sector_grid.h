@@ -199,7 +199,7 @@ namespace SectorGrid
 		//combine the components 
 		uint32 combined = y_sector_component | x_sector_component;
 
-		return combined >> sector_bits_per_axis;
+		return combined >> sub_tile_bits_per_axis;
 	}
 
 	template<sector_grid_dimension_concept TSectorGridDimensions>

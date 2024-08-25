@@ -1,4 +1,5 @@
 #pragma once
+
 #include "sector_grid_data_structure/sector_grid.h"
 #include "sector_grid_data_structure/sector_grid_index.h"
 #include "base_types_definition.h"
@@ -168,49 +169,51 @@ namespace ContinuousCollisionLibrary
 
 #pragma region TypeDef
 
-	using tile_local_bounds = math_2d_util::ubrect;
-
-	using grid_dimensions = SectorGrid::sector_grid_dimensions<16, 16>;
-
-	using overlap_grid_index = SectorGrid::sector_tile_index<grid_dimensions>;
 	
-	using overlap_flags = overlap_flag_template<uint64, 7>;
-
-	static constexpr uint32 tile_overlap_max_width = 7;
-
-	//the max posible representable range of overlaps
-	//todo caluclate this at compile time using numeric limits and compile time sqrt 
-	//static constexpr uint32 tile_overlap_rep_max = std::sqrt( std::numeric_limits<uint8>::max());
-	static constexpr uint32 tile_overlap_rep_max = 16;
-
-	static constexpr uint32 tile_overlap_half_rep_max = tile_overlap_rep_max /2;
-
-	static constexpr uint32 tile_overlap_quater_rep_max = tile_overlap_rep_max / 4;
-
-
-	//if you subtract this from a tile it will return the top left corner for the maximum rect size of a tile
-	static constexpr math_2d_util::uivec2d tile_overlap_half_width_offset = { tile_overlap_max_width / 2, tile_overlap_max_width / 2 };
-
-	static constexpr math_2d_util::uivec2d tile_overlap_offset = { tile_overlap_max_width, tile_overlap_max_width };
-
-	static constexpr math_2d_util::uivec2d offset_for_0_to_7_vec = { tile_overlap_quater_rep_max, tile_overlap_quater_rep_max };
-
-
-
-	static constexpr uint32 max_tile_overlaps_per_tile = tile_overlap_max_width * tile_overlap_max_width;
-
-	static constexpr uint32 max_overlap_pairs_per_tile = (tile_overlap_max_width + (tile_overlap_max_width -1)) * (tile_overlap_max_width + (tile_overlap_max_width - 1));
-
-	static constexpr uint32 max_overlap_pairs_per_sector = max_overlap_pairs_per_tile * grid_dimensions::sector_tile_count;
-
-	static constexpr uint32 wide_node_linked_list_width = 8;
-
-	using sector_overlap_list = ArrayUtilities::wide_node_linked_list<grid_dimensions::sector_tile_count, uint16, max_overlap_pairs_per_sector, wide_node_linked_list_width, math_2d_util::byte_vector_2d>;
-
 #pragma endregion
  
+	template<typename TGridDimensions>
 	struct overlap_tracking_grid
 	{
+		using tile_local_bounds = math_2d_util::ubrect;
+
+		using grid_dimensions = TGridDimensions;
+
+		using overlap_grid_index = SectorGrid::sector_tile_index<grid_dimensions>;
+
+		using overlap_flags = overlap_flag_template<uint64, 7>;
+
+		static constexpr uint32 tile_overlap_max_width = 7;
+
+		//the max posible representable range of overlaps
+		//todo caluclate this at compile time using numeric limits and compile time sqrt 
+		//static constexpr uint32 tile_overlap_rep_max = std::sqrt( std::numeric_limits<uint8>::max());
+		static constexpr uint32 tile_overlap_rep_max = 16;
+
+		static constexpr uint32 tile_overlap_half_rep_max = tile_overlap_rep_max / 2;
+
+		static constexpr uint32 tile_overlap_quater_rep_max = tile_overlap_rep_max / 4;
+
+
+		//if you subtract this from a tile it will return the top left corner for the maximum rect size of a tile
+		static constexpr math_2d_util::uivec2d tile_overlap_half_width_offset = { tile_overlap_max_width / 2, tile_overlap_max_width / 2 };
+
+		static constexpr math_2d_util::uivec2d tile_overlap_offset = { tile_overlap_max_width, tile_overlap_max_width };
+
+		static constexpr math_2d_util::uivec2d offset_for_0_to_7_vec = { tile_overlap_quater_rep_max, tile_overlap_quater_rep_max };
+
+
+
+		static constexpr uint32 max_tile_overlaps_per_tile = tile_overlap_max_width * tile_overlap_max_width;
+
+		static constexpr uint32 max_overlap_pairs_per_tile = (tile_overlap_max_width + (tile_overlap_max_width - 1)) * (tile_overlap_max_width + (tile_overlap_max_width - 1));
+
+		static constexpr uint32 max_overlap_pairs_per_sector = max_overlap_pairs_per_tile * grid_dimensions::sector_tile_count;
+
+		static constexpr uint32 wide_node_linked_list_width = 8;
+
+		using sector_overlap_list = ArrayUtilities::wide_node_linked_list<grid_dimensions::sector_tile_count, uint16, max_overlap_pairs_per_sector, wide_node_linked_list_width, math_2d_util::byte_vector_2d>;
+
 
 		//constructor 
 		overlap_tracking_grid();
@@ -288,3 +291,5 @@ namespace ContinuousCollisionLibrary
 
 };
 
+//include the inline file 
+#include "overlap_tracking_grid.inl"

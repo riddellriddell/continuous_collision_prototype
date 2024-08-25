@@ -1,3 +1,4 @@
+
 //#include <algorithm>
 //#include "vector_2d_math_utils/vector_types.h"
 //#include "vector_2d_math_utils/byte_vector_2d.h"
@@ -6,13 +7,15 @@
 #include <algorithm>
 #include <type_traits>
 
-ContinuousCollisionLibrary::overlap_tracking_grid::overlap_tracking_grid()
+template<typename TGridDimensions>
+inline ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::overlap_tracking_grid()
 {
 	//call the setup code
 	initialize();
 }
 
-void ContinuousCollisionLibrary::overlap_tracking_grid::initialize()
+template<typename TGridDimensions>
+inline void ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::initialize()
 {
 	//set all the overlap flags to 0
 	overlaps.clear_data();
@@ -28,7 +31,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::initialize()
 
 }
 
-void ContinuousCollisionLibrary::overlap_tracking_grid::update_bounds(const math_2d_util::ivec2d& tile_coordinate_to_update, overlap_grid_index tile_sector_packed_index_to_update, const math_2d_util::irect& new_world_bounds_for_tile_items)
+template<typename TGridDimensions>
+inline void ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::update_bounds(const math_2d_util::ivec2d& tile_coordinate_to_update, overlap_grid_index tile_sector_packed_index_to_update, const math_2d_util::irect& new_world_bounds_for_tile_items)
 {
 	//check that the index and coordinate match
 	//, "Passed in tile xy corrdinate did not match tile index"
@@ -164,21 +168,23 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::update_bounds(const math
 
 }
 
-ContinuousCollisionLibrary::overlap_flags ContinuousCollisionLibrary::overlap_tracking_grid::calculate_flag_for_tile(
+template<typename TGridDimensions>
+inline ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::overlap_flags ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::calculate_flag_for_tile(
 	const math_2d_util::ivec2d & tile_to_create_flag_for, 
 	const math_2d_util::ivec2d & target_tile) const
 {
 	//get top left corner for overlap range
-	auto top_left_corner = target_tile - ContinuousCollisionLibrary::overlap_flags::center<std::remove_reference<decltype(target_tile)>::type>();
+	auto top_left_corner = target_tile - overlap_flags::center<std::remove_reference<decltype(target_tile)>::type>();
 	
 	//offset from top left corner
 	auto offset = tile_to_create_flag_for - top_left_corner;
 	
 	//convert from uint to int vectors
-	return ContinuousCollisionLibrary::overlap_flags(offset);
+	return overlap_flags(offset);
 }
 
-void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
+template<typename TGridDimensions>
+inline void ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::add_flag_to_tiles(
 	const math_2d_util::ivec2d& source_tile_cord,
 	const math_2d_util::irect& add_to_area,
 	const math_2d_util::irect& old_bounds,
@@ -190,7 +196,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 	add_flag_to_tiles(source_tile_cord, source_world_tile, add_to_area, old_bounds, new_bounds);
 }
 
-void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
+template<typename TGridDimensions>
+inline void ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::add_flag_to_tiles(
 	const math_2d_util::ivec2d& source_tile_cord,
 	overlap_grid_index source_world_tile,
 	const math_2d_util::irect& add_to_area,
@@ -343,8 +350,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::add_flag_to_tiles(
 	}
 }
 
-
-void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(const math_2d_util::ivec2d& source_tile_cord, const math_2d_util::irect& remove_area, const math_2d_util::irect& old_bounds, const math_2d_util::irect& new_bounds)
+template<typename TGridDimensions>
+inline void ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::remove_flag_from_tiles(const math_2d_util::ivec2d& source_tile_cord, const math_2d_util::irect& remove_area, const math_2d_util::irect& old_bounds, const math_2d_util::irect& new_bounds)
 {
 	//the source tile index
 	auto source_world_tile = grid_helper.from_xy(source_tile_cord);
@@ -352,7 +359,8 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(c
 	remove_flag_from_tiles(source_tile_cord, source_world_tile, remove_area, old_bounds, new_bounds);
 }
 
-void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(const math_2d_util::ivec2d& source_tile_cord, overlap_grid_index source_world_tile,  const math_2d_util::irect & remove_area, const math_2d_util::irect & old_bounds, const math_2d_util::irect & new_bounds)
+template<typename TGridDimensions>
+inline void ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::remove_flag_from_tiles(const math_2d_util::ivec2d& source_tile_cord, overlap_grid_index source_world_tile,  const math_2d_util::irect & remove_area, const math_2d_util::irect & old_bounds, const math_2d_util::irect & new_bounds)
 {
 	//sanity check to make sure boudns falls within grid 
 	//, "rect exits map bounds"
@@ -502,32 +510,38 @@ void ContinuousCollisionLibrary::overlap_tracking_grid::remove_flag_from_tiles(c
 	}
 }
 
-bool ContinuousCollisionLibrary::overlap_tracking_grid::is_point_in_grid(const math_2d_util::uivec2d& point)
+template<typename TGridDimensions>
+inline bool ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::is_point_in_grid(const math_2d_util::uivec2d& point)
 {
 	bool x_valid = point.x < grid_dimensions::tile_w;
 	bool y_valid = point.y < grid_dimensions::tile_w;
 	return x_valid & y_valid;
 }
 
-bool ContinuousCollisionLibrary::overlap_tracking_grid::is_point_in_grid(const math_2d_util::ivec2d& point)
+template<typename TGridDimensions>
+inline bool ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::is_point_in_grid(const math_2d_util::ivec2d& point)
 {
 	bool x_valid = (point.x < grid_dimensions::tile_w) && point.x >= 0;
 	bool y_valid = (point.y < grid_dimensions::tile_w) && point.y >= 0;
 	return x_valid & y_valid;
 }
 
-bool ContinuousCollisionLibrary::overlap_tracking_grid::is_rect_in_grid(const math_2d_util::uirect& rect)
+template<typename TGridDimensions>
+inline bool ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::is_rect_in_grid(const math_2d_util::uirect& rect)
 {
 	return is_point_in_grid(rect.min) & is_point_in_grid(rect.max);
 }
 
-bool ContinuousCollisionLibrary::overlap_tracking_grid::is_rect_in_grid(const math_2d_util::irect& rect)
+template<typename TGridDimensions>
+inline bool ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::is_rect_in_grid(const math_2d_util::irect& rect)
 {
 	return is_point_in_grid(rect.min) & is_point_in_grid(rect.max);
 }
 
-ContinuousCollisionLibrary::uint32 ContinuousCollisionLibrary::overlap_tracking_grid::get_affinity_for_offset(const math_2d_util::uivec2d& offset) const
+template<typename TGridDimensions>
+inline ContinuousCollisionLibrary::uint32 ContinuousCollisionLibrary::overlap_tracking_grid<TGridDimensions>::get_affinity_for_offset(const math_2d_util::uivec2d& offset) const
 {
 	
 	return ContinuousCollisionLibrary::uint32();
 }
+

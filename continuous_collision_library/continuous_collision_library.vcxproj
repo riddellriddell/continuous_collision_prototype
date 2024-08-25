@@ -175,7 +175,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="continuous_collision_library.cpp" />
-    <ClCompile Include="overlap_tracking_grid.cpp" />
+    <ClInclude Include="overlap_tracking_grid.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
     <ClCompile Include="tight_grid_node.cpp" />
     <ClCompile Include="loose_tight_grid.cpp" />
     <ClCompile Include="pch.cpp">

@@ -379,7 +379,7 @@ namespace ArrayUtilities
 
 		private:
 			//int type used for page handle 
-			using page_index_type = combined_address_virtual_memory_map_type::page_handle_type::data_type;
+			using page_index_type = combined_address_virtual_memory_map_type::combined_virtual_page_addres_type;
 			using parent_type = paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>;
 			using reference = page_start_and_count&;
 
@@ -501,7 +501,7 @@ namespace ArrayUtilities
 
 		private:
 			//int type used for page handle 
-			using page_index_type = combined_address_virtual_memory_map_type::page_handle_type::data_type;
+			using page_index_type = combined_address_virtual_memory_map_type::combined_virtual_page_addres_type;
 			using parent_type = paged_2d_array_header<Inumber_of_x_axis_items, Imax_y_items, Imax_total_y_items, Ipage_size>;
 			using reference = page_start_and_count&;
 
@@ -511,6 +511,10 @@ namespace ArrayUtilities
 			page_start_and_count page_address_and_count;
 
 			const parent_type& parent_ref;
+
+			//make sure memort types are big enough
+			static_assert(std::numeric_limits<page_index_type>::max() > static_cast<uint64_t>(Inumber_of_x_axis_items* max_y_axis_pages));
+			static_assert(std::numeric_limits<y_axis_count_type>::max() > static_cast<uint64_t>(Imax_total_y_items));
 
 		public:
 			real_and_virtual_page_address_iterator(const parent_type& parent, page_index_type start_page, y_axis_count_type item_count) :parent_ref(parent), current_page(start_page), items_remaining(item_count)
@@ -899,11 +903,11 @@ namespace ArrayUtilities
 		assert(y_axis_count[x_axis_index] <= new_y_axis_count);
 
 		//the number of virtual pages to the start of the axis 
-		typename combined_address_virtual_memory_map_type::page_handle_type::data_type axis_page_offset = x_axis_index * max_y_axis_pages;
+		typename combined_address_virtual_memory_map_type::combined_virtual_page_addres_type axis_page_offset = x_axis_index * max_y_axis_pages;
 
 		//convert both to page indexes
-		typename combined_address_virtual_memory_map_type::page_handle_type::data_type current_page_count = y_axis_virtual_memory_map_type::extract_page_number_from_virtual_address(y_axis_virtual_memory_map_type::virtual_address_type(y_axis_count[x_axis_index] + (page_size - 1)));
-		typename combined_address_virtual_memory_map_type::page_handle_type::data_type new_page_count = y_axis_virtual_memory_map_type::extract_page_number_from_virtual_address(y_axis_virtual_memory_map_type::virtual_address_type(new_y_axis_count + (page_size - 1)));
+		typename combined_address_virtual_memory_map_type::combined_virtual_page_addres_type current_page_count = y_axis_virtual_memory_map_type::extract_page_number_from_virtual_address(y_axis_virtual_memory_map_type::virtual_address_type(y_axis_count[x_axis_index] + (page_size - 1)));
+		typename combined_address_virtual_memory_map_type::combined_virtual_page_addres_type new_page_count = y_axis_virtual_memory_map_type::extract_page_number_from_virtual_address(y_axis_virtual_memory_map_type::virtual_address_type(new_y_axis_count + (page_size - 1)));
 
 		//apply offset for start of axis
 		current_page_count += axis_page_offset;

@@ -34,7 +34,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 debug_draw_interface draw_interface;
 delata_time_util delta_time_tracker;
 
-using physics_main_type = ContinuousCollisionLibrary::phyisics_2d_main<std::numeric_limits<ContinuousCollisionLibrary::uint16>::max() - 1, 16>;
+using physics_main_type = ContinuousCollisionLibrary::phyisics_2d_main<std::numeric_limits<ContinuousCollisionLibrary::uint16>::max() - 1, 32>;
 //using physics_main_type = phyisics_2d_main<254, 16>;
 
 std::unique_ptr<physics_main_type> physics_main = std::make_unique<physics_main_type>();

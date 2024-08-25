@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <ranges>
 
-#include "../../overlap_tracking_grid.h"
+#include "../../overlap_tracking_grid.hpp"
 #include "vector_2d_math_utils/vector_types.h"
 #include "vector_2d_math_utils/byte_vector_2d.h"
 
@@ -19,8 +19,12 @@ namespace ContinuousCollisionLibrary
 	public:
 		static void run_test()
 		{
+			//definition of the target dimensions of the grid system
+			using grid_dimension_type = SectorGrid::sector_grid_dimensions<16, 16>;
+
+
 			//create an overlap tracking grid 
-			auto overlap_grid = new ContinuousCollisionLibrary::overlap_tracking_grid();
+			auto overlap_grid = new ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>();
 			
 			//test grid helper 
 			{
@@ -90,10 +94,10 @@ namespace ContinuousCollisionLibrary
 				//add overlap flags to a region
 				overlap_grid->add_flag_to_tiles(target_tile, area_to_add_flags_to, old_bounds, area_to_add_flags_to);
 
-				auto new_bounds = ContinuousCollisionLibrary::tile_local_bounds::center_rect();
+				auto new_bounds = ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>::tile_local_bounds::center_rect();
 
-				new_bounds.min -= ContinuousCollisionLibrary::tile_local_bounds::vector_type{ 1u,1u };
-				new_bounds.max += ContinuousCollisionLibrary::tile_local_bounds::vector_type{ 2u,2u };
+				new_bounds.min -= ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>::tile_local_bounds::vector_type{ 1u,1u };
+				new_bounds.max += ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>::tile_local_bounds::vector_type{ 2u,2u };
 
 				//update the bounds
 				overlap_grid->bounds.set_data(overlap_grid->grid_helper.from_xy(target_tile), new_bounds);
@@ -137,10 +141,10 @@ namespace ContinuousCollisionLibrary
 				//add overlap flags to a region
 				overlap_grid->add_flag_to_tiles(target_tile, area_to_add_flags_to, old_bounds, area_to_add_flags_to);
 
-				auto new_bounds = ContinuousCollisionLibrary::tile_local_bounds::center_rect();
+				auto new_bounds = ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>::tile_local_bounds::center_rect();
 
-				new_bounds.min -= ContinuousCollisionLibrary::tile_local_bounds::vector_type{ 1u,1u };
-				new_bounds.max += ContinuousCollisionLibrary::tile_local_bounds::vector_type{ 2u,2u };
+				new_bounds.min -= ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>::tile_local_bounds::vector_type{ 1u,1u };
+				new_bounds.max += ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>::tile_local_bounds::vector_type{ 2u,2u };
 
 				//update the bounds
 				overlap_grid->bounds.set_data(overlap_grid->grid_helper.from_xy(target_tile), new_bounds);
@@ -225,7 +229,7 @@ namespace ContinuousCollisionLibrary
 				overlap_grid->remove_flag_from_tiles(target_tile, area_to_remove_flags_from, area_to_remove_flags_from, new_bounds);
 
 				//update the bounds
-				overlap_grid->bounds.set_data(overlap_grid->grid_helper.from_xy(target_tile), ContinuousCollisionLibrary::tile_local_bounds::inverse_max_size_rect());
+				overlap_grid->bounds.set_data(overlap_grid->grid_helper.from_xy(target_tile), ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>::tile_local_bounds::inverse_max_size_rect());
 
 				//check if flags were added
 				for (int32 iy = area_to_remove_flags_from.min.y; iy < area_to_remove_flags_from.max.y; ++iy)
@@ -266,7 +270,7 @@ namespace ContinuousCollisionLibrary
 				overlap_grid->remove_flag_from_tiles(target_tile, area_to_remove_flags_from, area_to_remove_flags_from, new_bounds);
 
 				//update the bounds
-				overlap_grid->bounds.set_data(overlap_grid->grid_helper.from_xy(target_tile), ContinuousCollisionLibrary::tile_local_bounds::inverse_max_size_rect());
+				overlap_grid->bounds.set_data(overlap_grid->grid_helper.from_xy(target_tile), ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>::tile_local_bounds::inverse_max_size_rect());
 
 				//check if flags were added
 				for (int32 iy = area_to_remove_flags_from.min.y; iy < area_to_remove_flags_from.max.y; ++iy)
@@ -378,7 +382,7 @@ namespace ContinuousCollisionLibrary
 				overlap_grid->remove_flag_from_tiles(target_tile, area_to_remove_flags_from, area_to_remove_flags_from, new_bounds);
 
 				//update the bounds
-				overlap_grid->bounds.set_data(overlap_grid->grid_helper.from_xy(target_tile), ContinuousCollisionLibrary::tile_local_bounds::inverse_max_size_rect());
+				overlap_grid->bounds.set_data(overlap_grid->grid_helper.from_xy(target_tile), ContinuousCollisionLibrary::overlap_tracking_grid<grid_dimension_type>::tile_local_bounds::inverse_max_size_rect());
 
 				//check if flags were added
 				for (int32 iy = area_to_remove_flags_from.min.y; iy < area_to_remove_flags_from.max.y; ++iy)

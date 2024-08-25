@@ -54,6 +54,9 @@
     <ClInclude Include="UnitTests\PhysicsMain\phyisics_2d_main_unit_test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="overlap_tracking_grid.inl">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="continuous_collision_library.cpp">
@@ -69,9 +72,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="loose_grid_node.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="overlap_tracking_grid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="unit_test_manager.cpp">

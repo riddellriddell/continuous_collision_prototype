@@ -81,7 +81,6 @@ namespace ArrayUtilities
 		//one is added so we can safely assume max value == invalid address 
 		using page_address_value_type = MiscUtilities::uint_s<Itotal_number_of_pages + 1>::int_type_t;
 
-
 		//the virtual address number type needed to store all possible addess values in the available address space 
 		using virtual_address_value_type = MiscUtilities::uint_s<Imax_number_of_pages_in_virtual_address_space* Ipage_size >::int_type_t;
 
@@ -141,6 +140,10 @@ namespace ArrayUtilities
 
 		using virtual_address_type = virtual_address;
 		using real_node_address_type = real_address<real_address_value_type, local_address_bits>;
+		
+		//the address type to use when doing a combined space lookup into a virtual page
+		using combined_virtual_page_addres_type = MiscUtilities::uint_s<Imax_number_of_pages_in_virtual_address_space + 1>::int_type_t;
+
 		using page_handle_type = page_handle<page_address_value_type>;
 
 	private:

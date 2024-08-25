@@ -155,8 +155,10 @@ namespace ContinuousCollisionLibrary
 		//sector_count_type number_of_active_sectors;
 		//std::array<sector_count_type, max_sectors_internal> active_sectors;
 
+		using overlap_tracking_grid_type = overlap_tracking_grid<grid_dimension_type>;
+
 		//grid tracking collisions 
-		overlap_tracking_grid overlap_grid;
+		overlap_tracking_grid_type overlap_grid;
 
 		//assuming average tile will have at max 6? 
 		static constexpr size_t node_width = 8;
@@ -408,6 +410,19 @@ namespace ContinuousCollisionLibrary
 		//use grid helper to get sector
 		uint32 sector_index = grid_helper.to_sector_index(tile_xy);
 
+		//sanity check that the tile is in that sector
+		{
+			math_2d_util::uirect sector_bounds = grid_helper.sector_bounds(sector_index);
+
+			bool is_in_sector_x = (sector_bounds.min.x <= tile_xy.x) && (sector_bounds.max.x > tile_xy.x);
+			bool is_in_sector_y = (sector_bounds.min.y <= tile_xy.y) && (sector_bounds.max.y > tile_xy.y);
+
+			if ((is_in_sector_x && is_in_sector_y) == false)
+			{
+				assert(is_in_sector_x && is_in_sector_y);
+			}
+		}
+
 		//check if this is the first item in this sector
 		bool is_first_in_sector = !collider_to_add_header.y_axis_count[sector_index];
 
@@ -549,8 +564,11 @@ namespace ContinuousCollisionLibrary
 
 				using sector_type_type = typename sector_grid_helper_type::sector_tile_index_type;
 
+				//check for overflow
+				assert(world_tile < std::numeric_limits<sector_type_type::combined_index>::max());
+
 				//convert to a tile type
-				sector_type_type tile = sector_type_type{ world_tile };
+				sector_type_type tile = sector_type_type{ static_cast<sector_type_type::combined_index>( world_tile )};
 
 				//get the tils coordinate
 				math_2d_util::ivec2d tile_coordinate = grid_helper.to_xy<math_2d_util::ivec2d>(tile);
@@ -600,7 +618,7 @@ namespace ContinuousCollisionLibrary
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::update_all_positions()
 	{
 		//update the positions and copy any items changing sectors to the sector edge buffer
-		for (uint32_t is = 0; is < grid_dimensions::sector_grid_count; ++is)
+		for (uint32_t is = 0; is < grid_dimension_type::sector_grid_count; ++is)
 		{
 			update_positions_in_sector(is);
 		}
@@ -612,7 +630,7 @@ namespace ContinuousCollisionLibrary
 		});
 	
 		//clear the sector edge buffers 
-		for (uint32_t is = 0; is < grid_dimensions::sector_grid_count; ++is)
+		for (uint32_t is = 0; is < grid_dimension_type::sector_grid_count; ++is)
 		{
 			sector_transfer_buffer_groups[is].clear();
 			sector_transfer_removal_address_groups[is].clear();
@@ -1086,13 +1104,16 @@ namespace ContinuousCollisionLibrary
 							bool is_in_sector = (sector_bounds.min.x <= ref_struct.x) && (sector_bounds.max.x > ref_struct.x);
 
 							//check that the object is in the sector
-							assert(is_in_sector);
+							if (!is_in_sector)
+							{
+								assert(is_in_sector);
+							}
 						}
 
 						auto move_dist = ref_struct.velocity_x * time_step;
 
 						//check that we are not moving so fast that we jump over an entire sector
-						assert(std::abs(move_dist) < grid_dimensions::sectors_grid_w);
+						assert(std::abs(move_dist) < grid_dimension_type::sectors_grid_w);
 
 						//apply the x velocity to the x position 
 						ref_struct.x += move_dist;
@@ -1116,7 +1137,7 @@ namespace ContinuousCollisionLibrary
 						auto move_dist = ref_struct.velocity_y * time_step;
 
 						//check that we are not moving so fast that we jump over an entire sector
-						assert(std::abs(move_dist) < grid_dimensions::sectors_grid_w);
+						assert(std::abs(move_dist) < grid_dimension_type::sectors_grid_w);
 
 						//apply the x velocity to the x position 
 						ref_struct.y += move_dist;
@@ -1262,10 +1283,10 @@ namespace ContinuousCollisionLibrary
 	inline void phyisics_2d_main<Imax_objects, Iworld_sector_x_count>::draw_debug(debug_draw_interface& draw_interface)
 	{
 		//draw a grid for all the tiles
-		draw_interface.draw_grid(math_2d_util::fvec2d(0, 0), math_2d_util::ivec2d(grid_dimensions::tile_w, grid_dimensions::tile_w), 1.0f, debug_draw_interface::to_colour(200, 200, 200));
+		draw_interface.draw_grid(math_2d_util::fvec2d(0, 0), math_2d_util::ivec2d(grid_dimension_type::tile_w, grid_dimension_type::tile_w), 1.0f, debug_draw_interface::to_colour(200, 200, 200));
 
 		//draw the grid for all the sectors
-		draw_interface.draw_grid(math_2d_util::fvec2d(0, 0), math_2d_util::ivec2d(grid_dimensions::sectors_grid_w, grid_dimensions::sectors_grid_w), grid_dimensions::sectors_grid_w, debug_draw_interface::to_colour(150, 150, 150));
+		draw_interface.draw_grid(math_2d_util::fvec2d(0, 0), math_2d_util::ivec2d(grid_dimension_type::sectors_grid_w, grid_dimension_type::sectors_grid_w), grid_dimension_type::sectors_grid_w, debug_draw_interface::to_colour(150, 150, 150));
 
 
 		//draw all the objects 
