@@ -5,6 +5,7 @@
 #include <set>
 
 #include "vector_2d_math_utils/rect_types.h"
+#include "vector_2d_math_utils/rect_template.h"
 #include "vector_2d_math_utils/vector_types.h"
 
 #include "base_types_definition.h"
@@ -267,6 +268,16 @@ namespace ContinuousCollisionLibrary
 				std::tuple<typename collision_data_container_type::real_address_type, typename collision_data_container_type::virtual_combined_node_adderss_type>,
 				sector_transfer_buffers::max_item_transfer >, 
 			grid_dimension_type::sector_grid_count> sector_transfer_removal_address_groups;
+
+
+		//create buffers for items changing tile or sector
+		using sector_change_tuple_type = std::tuple<typename collision_data_container_type::real_address_type, typename collision_data_container_type::virtual_combined_node_adderss_type, handle_type, math_2d_util::ivec2d, math_2d_util::ivec2d>;
+		using tile_change_tuple_type = std::tuple<handle_type, math_2d_util::ivec2d, math_2d_util::ivec2d>;
+
+
+		ArrayUtilities::fixed_size_vector_array< sector_change_tuple_type, collision_data_container_type::paged_array_type::page_size> items_exiting_sector;
+		ArrayUtilities::fixed_size_vector_array< tile_change_tuple_type, collision_data_container_type::paged_array_type::page_size> items_changing_tile;
+
 
 		public:
 
@@ -1155,16 +1166,15 @@ namespace ContinuousCollisionLibrary
 			//define sector bounds 
 			math_2d_util::uirect sector_bounds = grid_helper.sector_bounds(sector_index);
 
+
 			//loop through all the pages that a sectors data is in
 			std::for_each(page_begin_itr, page_end_itr, [&](auto& page_address_and_count)
 				{
-					using sector_change_tuple_type = std::tuple<collision_data_container_type::real_address_type, collision_data_container_type::virtual_combined_node_adderss_type, handle_type, math_2d_util::ivec2d, math_2d_util::ivec2d>;
 
-					using tile_change_tuple_type = std::tuple<handle_type, math_2d_util::ivec2d, math_2d_util::ivec2d>;
 
-					ArrayUtilities::fixed_size_vector_array< tile_change_tuple_type, collision_data_container_type::paged_array_type::page_size> items_changing_tile;
-
-					ArrayUtilities::fixed_size_vector_array< sector_change_tuple_type, collision_data_container_type::paged_array_type::page_size> items_exiting_sector;
+					//reset buffers
+					items_changing_tile.clear();
+					items_exiting_sector.clear();
 
 					//shift items in grid tracker 
 					for (auto real_address = page_address_and_count.page_start_address; real_address < page_address_and_count.page_start_address + page_address_and_count.items_in_page; ++real_address)
@@ -1292,13 +1302,47 @@ namespace ContinuousCollisionLibrary
 		//draw all the objects 
 		auto itr_start = collision_data_container.get_tight_packed_data().get_array_header().begin();
 		auto itr_end = collision_data_container.get_tight_packed_data().get_array_header().end();
+		
+		//std::for_each(itr_start, itr_end, [&](auto& real_address)
+		//	{
+		//		collision_data_ref ref_struct = collision_data_container.get(real_address);
+		//
+		//		draw_interface.draw_circle(math_2d_util::fvec2d(ref_struct.x, ref_struct.y), ref_struct.radius, debug_draw_interface::to_colour(255, 0, 0));
+		//	});
 
-		std::for_each(itr_start, itr_end, [&](auto& real_address)
+		
+		//try and only draw the sectors in view 
+		
+		//get the bounds of the world
+		math_2d_util::irect alowable_values({ 0,0 }, { grid_dimension_type::tile_w - 1,grid_dimension_type::tile_w - 1 });
+
+		//get the top left corner
+		math_2d_util::ivec2d top_left_tile = static_cast<math_2d_util::ivec2d>(math_2d_util::rect_2d_math::clamp_to_rect(alowable_values, draw_interface.get_top_left()));
+		math_2d_util::ivec2d bottom_right_tile = static_cast<math_2d_util::ivec2d>(math_2d_util::rect_2d_math::clamp_to_rect(alowable_values, draw_interface.get_bottom_right()));
+		
+		//convert to sectors
+		math_2d_util::ivec2d top_left_sector = top_left_tile / math_2d_util::ivec2d{grid_dimension_type::sector_w};
+		math_2d_util::ivec2d bottom_right_sector = bottom_right_tile / math_2d_util::ivec2d{ grid_dimension_type::sector_w };
+
+		for (int iy = top_left_sector.y; iy <= bottom_right_sector.y; iy++)
+		{
+			for (int ix = top_left_sector.x; ix <= bottom_right_sector.x; ix++)
 			{
-				collision_data_ref ref_struct = collision_data_container.get(real_address);
+				//convert from sector xy to sector index
+				uint32 sector_index = grid_helper.to_sector_index_from_sector_xy(math_2d_util::ivec2d{ ix,iy });
 
-				draw_interface.draw_circle(math_2d_util::fvec2d(ref_struct.x, ref_struct.y), ref_struct.radius, debug_draw_interface::to_colour(255, 0, 0));
-			});
+				auto itr_begin = collision_data_container.get_tight_packed_data().get_array_header().begin(sector_index);
+				auto itr_end = collision_data_container.get_tight_packed_data().get_array_header().end(sector_index);
 
-	}
+				std::for_each(itr_begin, itr_end, [&](auto& real_address)
+					{
+						collision_data_ref ref_struct = collision_data_container.get(real_address);
+
+						draw_interface.draw_circle(math_2d_util::fvec2d(ref_struct.x, ref_struct.y), ref_struct.radius, debug_draw_interface::to_colour(0, 255, 0));
+					});
+			}
+		}
+
+		
+	};
 }

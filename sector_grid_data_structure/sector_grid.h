@@ -68,6 +68,9 @@ namespace SectorGrid
 		template<typename Tcord_type = math_2d_util::uivec2d>
 		uint32 to_sector_index(const Tcord_type& xy) const;
 
+		template<typename Tcord_type = math_2d_util::uivec2d>
+		uint32 to_sector_index_from_sector_xy(const Tcord_type& xy) const;
+
 		uint32 to_sub_sector_index(const sector_tile_index<TSectorGridDimensions>& index) const;
 
 		math_2d_util::uirect sector_bounds(const auto sector_index);
@@ -200,6 +203,22 @@ namespace SectorGrid
 		uint32 combined = y_sector_component | x_sector_component;
 
 		return combined >> sub_tile_bits_per_axis;
+	}
+
+	template<sector_grid_dimension_concept TSectorGridDimensions>
+	template<typename Tcord_type>
+	inline uint32 sector_grid_helper<TSectorGridDimensions>::to_sector_index_from_sector_xy(const Tcord_type& xy) const
+	{
+		//make sure no negative numbers are passed in as that will break the calculations of the index 
+		assert(xy.x >= 0 && xy.y >= 0);
+
+		//offset the y component 
+		uint32 y_sector_component = xy.y << sector_bits_per_axis;
+
+		//combine the components 
+		uint32 combined = y_sector_component | xy.x;
+
+		return combined;
 	}
 
 	template<sector_grid_dimension_concept TSectorGridDimensions>

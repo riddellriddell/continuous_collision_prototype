@@ -87,6 +87,9 @@ namespace ArrayUtilities
 		//check that the page is valid 
 		assert(default_handle_type.is_valid());
 
+		//check that the page is in the expected range
+		assert(default_handle_type.get_page() < Inumber_of_pages);
+
 		//check we have not retuned to many pages 
 		assert(free_page_count <= Inumber_of_pages);
 

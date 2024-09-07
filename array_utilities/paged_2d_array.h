@@ -104,6 +104,9 @@ namespace ArrayUtilities
 
 		static constexpr uint32_t page_size = Ipage_size;
 
+		//catch the case where the y axis count type cant represent the page size because it is too small
+		static constexpr y_axis_count_type max_items_in_page = static_cast<y_axis_count_type>(std::min(static_cast<size_t>(page_size), static_cast<size_t>(std::numeric_limits< y_axis_count_type>::max())));
+
 		//get the end address for an x axis index
 		virtual_y_axis_node_adderss_type get_virtual_end_address_for_x_axis(x_axis_count_type x_axis_index);
 
@@ -586,7 +589,7 @@ namespace ArrayUtilities
 				//setup real address
 				page_address_and_count.page_start_address = combined_memory_map.resolve_page_number_to_real_address(current_page);
 				page_address_and_count.virtual_page_start_address = virtual_combined_node_adderss_type(current_page << y_axis_virtual_memory_map_type::local_address_bits);
-				page_address_and_count.items_in_page = std::min(decltype(items_remaining)(page_size), items_remaining);
+				page_address_and_count.items_in_page = std::min(decltype(items_remaining)(max_items_in_page), items_remaining);
 
 				//doing this because visual studio cant assert :(
 				if (page_address_and_count.page_start_address.address >= max_total_entries ||

@@ -19,7 +19,7 @@ int main()
     std::cout << "Starting Test!\n";
 
     std::cout << "Making Physics System\n";
-    using physics_main_type = ContinuousCollisionLibrary::phyisics_2d_main<std::numeric_limits<ContinuousCollisionLibrary::uint16>::max() - 1,8>;
+    using physics_main_type = ContinuousCollisionLibrary::phyisics_2d_main<std::numeric_limits<ContinuousCollisionLibrary::uint16>::max() - 1,16>;
     //using physics_main_type = phyisics_2d_main<254, 16>;
 
    
@@ -35,7 +35,7 @@ int main()
 
     std::cout << "Spawning all items\n";
     //setup physics 
-    physics_main->setup_physics_random(65, 200);
+    physics_main->setup_physics_random(std::numeric_limits<ContinuousCollisionLibrary::uint16>::max() - 1, 200);
 
     static constexpr int itterations = 100;
 

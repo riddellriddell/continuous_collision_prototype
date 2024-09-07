@@ -3,6 +3,8 @@
 #include <algorithm>
 #include "template_vector_2d.h"
 #include <assert.h>
+#include <cmath>
+#include <limits>  
 //template structure for making rects
 
 namespace math_2d_util
@@ -69,6 +71,11 @@ namespace math_2d_util
 		//get the top left corner of the overlapping region between two rects
 		template<typename Trect_a_base_val, typename Trect_b_base_val, typename Treturn = Trect_b_base_val>
 		static math_2d_util::template_vector_2d<Treturn> get_top_left_corner_of_overlap(const template_rect_2d<Trect_a_base_val>& rect_a, const template_rect_2d<Trect_b_base_val>& rect_b);
+
+		template<typename Trect_base_val, typename Tvector_base_val>
+		static template_vector_2d<Tvector_base_val> clamp_to_rect(const template_rect_2d<Trect_base_val>& rect, const template_vector_2d<Tvector_base_val>& point);
+		template<typename Trect_base_val, typename Tvector_base_val>
+		template_vector_2d<Tvector_base_val> clamp_to_rect_max_exclusive(const template_rect_2d<Trect_base_val>& rect, const template_vector_2d<Tvector_base_val>& point);
 	};
 
 	template<typename Trect_a_base_val, typename Trect_b_base_val>
@@ -121,5 +128,31 @@ namespace math_2d_util
 		top_left_corner.y = std::max(std::min(rect_a.max.y, rect_b.min.y), rect_a.min.y);
 
 		return top_left_corner;
+	}
+
+	template<typename Trect_base_val, typename Tvector_base_val>
+	inline template_vector_2d<Tvector_base_val> rect_2d_math::clamp_to_rect(const template_rect_2d<Trect_base_val>& rect, const template_vector_2d<Tvector_base_val>& point)
+	{
+		Tvector_base_val x = std::clamp(point.x, static_cast<Tvector_base_val> (rect.min.x), static_cast<Tvector_base_val> (rect.max.x));
+		Tvector_base_val y = std::clamp(point.y, static_cast<Tvector_base_val> (rect.min.y), static_cast<Tvector_base_val> (rect.max.y));
+		return template_vector_2d<Tvector_base_val>{x,y};
+	}
+
+	template<typename Trect_base_val, typename Tvector_base_val>
+	inline template_vector_2d<Tvector_base_val> rect_2d_math::clamp_to_rect_max_exclusive(const template_rect_2d<Trect_base_val>& rect, const template_vector_2d<Tvector_base_val>& point)
+	{
+		//if the base value is floating point
+		if constexpr (std::is_floating_point<Trect_base_val>::value)
+		{
+			Tvector_base_val x = std::clamp(point.x, static_cast<Tvector_base_val> (rect.min.x), static_cast<Tvector_base_val> (std::nextafter(rect.max.x, -std::numeric_limits<Trect_base_val>::infinity())));
+			Tvector_base_val y = std::clamp(point.y, static_cast<Tvector_base_val> (rect.min.y), static_cast<Tvector_base_val> (std::nextafter(rect.max.y, -std::numeric_limits<Trect_base_val>::infinity())));
+			return template_vector_2d<Tvector_base_val>{x, y};
+		}
+		else
+		{
+			Tvector_base_val x = std::clamp(point.x, static_cast<Tvector_base_val> (rect.min.x), static_cast<Tvector_base_val> (rect.max.x - 1));
+			Tvector_base_val y = std::clamp(point.y, static_cast<Tvector_base_val> (rect.min.y), static_cast<Tvector_base_val> (rect.max.y - 1));
+			return template_vector_2d<Tvector_base_val>{x, y};
+		}
 	}
 }

@@ -125,9 +125,12 @@ namespace ArrayUtilities
 
 
 		//because we use page handles for the sentinal objects as well we need the page handle type to also be big enough to store those addresses 
-		using page_handle_value_type = typename MiscUtilities::uint_s < total_pages + number_of_root_groups + 1>::int_type_t;
+		using page_handle_with_root_value_type = typename MiscUtilities::uint_s < total_pages + number_of_root_groups + 1>::int_type_t;
+		using page_handle_with_root_nodes_type = typename page_handle<page_handle_with_root_value_type>;
 
-		using page_handle_type = typename page_handle<page_handle_value_type>;
+		//the page handle tracker does not need to know about the sentinal nodes because they are never freed it does not need to understand larger types
+		using page_handle_no_root_value_type = typename MiscUtilities::uint_s < total_pages + 1>::int_type_t;
+		using page_handle_no_root_node_type = typename page_handle<page_handle_no_root_value_type>;
 
 
 #pragma region SubStructDefinition
@@ -214,15 +217,15 @@ namespace ArrayUtilities
 			struct sentinal_partial_page_data
 			{
 				//page holding the free nodes
-				page_handle_type last_page;
-				page_handle_type next_page;
+				page_handle_with_root_nodes_type last_page;
+				page_handle_with_root_nodes_type next_page;
 			};
 
 			struct sentinal_full_page_data
 			{
 				//page holding the free nodes
-				page_handle_type last_page;
-				page_handle_type next_page;
+				page_handle_with_root_nodes_type last_page;
+				page_handle_with_root_nodes_type next_page;
 			};
 
 			sentinal_partial_page_data partial_page_link_info;
@@ -244,9 +247,9 @@ namespace ArrayUtilities
 
 			bool has_free_nodes() const;
 
-			bool has_valid_partial_page(page_handle_type handle_to_page_info) const;
+			bool has_valid_partial_page(page_handle_with_root_nodes_type handle_to_page_info) const;
 
-			bool has_valid_full_page(page_handle_type handle_to_page_info) const;
+			bool has_valid_full_page(page_handle_with_root_nodes_type handle_to_page_info) const;
 
 			page_link_info() {};
 		};
@@ -327,7 +330,7 @@ namespace ArrayUtilities
 
 		void return_node(root_entry_address_type root_node_index, node_link_type address_of_node_to_return);
 
-		static constexpr page_handle_type convert_root_node_to_root_page_handle(root_entry_address_type root_node_index);
+		static constexpr page_handle_with_root_nodes_type convert_root_node_to_root_page_handle(root_entry_address_type root_node_index);
 		
 		//reset all the data structures back to their initial states
 		constexpr void reset();
@@ -344,7 +347,7 @@ namespace ArrayUtilities
 
 		constexpr node_link_type get_total_node_count() const;
 
-		constexpr page_handle_value_type empty_page_count() const;
+		constexpr page_handle_with_root_value_type empty_page_count() const;
 
 
 		struct itterator
@@ -500,12 +503,12 @@ namespace ArrayUtilities
 		assert(root_node_index < Iroot_entries_count);
 
 		//get the memory page this node is mapped to 
-		page_handle_type root_address_group_handle = convert_root_node_to_root_page_handle(root_node_index);
+		page_handle_with_root_nodes_type root_address_group_handle = convert_root_node_to_root_page_handle(root_node_index);
 
 		//get pointer to active page link list 
 		auto& root_group_sentinal = page_meta_linked_list[root_address_group_handle.get_page()];
 
-		page_handle_type free_page_start = root_group_sentinal.partial_page_link_info.next_page;
+		page_handle_with_root_nodes_type free_page_start = root_group_sentinal.partial_page_link_info.next_page;
 
 		//if invalid page link then get new page 
 		bool needs_new_free_page = !root_group_sentinal.has_valid_partial_page(root_address_group_handle);
@@ -528,7 +531,8 @@ namespace ArrayUtilities
 		{
 			if ( needs_new_free_page) [[unlikely]]
 			{
-				free_page_start = page_header.allocate();
+				page_handle_no_root_node_type no_root_handle = page_header.allocate();
+				free_page_start = page_handle_with_root_nodes_type(no_root_handle.get_page());
 
 				root_group_sentinal.partial_page_link_info.next_page = free_page_start;
 				root_group_sentinal.partial_page_link_info.last_page = free_page_start;
@@ -564,19 +568,19 @@ namespace ArrayUtilities
 		if constexpr (use_branchless_page_update)
 		{
 			//get next page or your own page if invalid
-			page_handle_type next_partial_page_address = page_has_empty_nodes ? free_page_start : free_node_source_page.partial_page_link_info.next_page;
-			page_handle_type last_partial_page_address = page_has_empty_nodes ? free_page_start : free_node_source_page.partial_page_link_info.last_page;
+			page_handle_with_root_nodes_type next_partial_page_address = page_has_empty_nodes ? free_page_start : free_node_source_page.partial_page_link_info.next_page;
+			page_handle_with_root_nodes_type last_partial_page_address = page_has_empty_nodes ? free_page_start : free_node_source_page.partial_page_link_info.last_page;
 
 			//un link the next page from this one so that if it ever removes itself it does not break anything
 			page_meta_linked_list[next_partial_page_address.get_page()].partial_page_link_info.last_page = free_node_source_page.partial_page_link_info.last_page;
 			page_meta_linked_list[last_partial_page_address.get_page()].partial_page_link_info.next_page = free_node_source_page.partial_page_link_info.next_page;
 
 			//update the parent node links
-			page_handle_type old_full_next_handle = root_group_sentinal.full_page_link_info.next_page;
+			page_handle_with_root_nodes_type old_full_next_handle = root_group_sentinal.full_page_link_info.next_page;
 			page_link_info& current_next_full_page = page_meta_linked_list[old_full_next_handle.get_page()];
 
-			page_handle_type next_partial_page_address = page_has_empty_nodes ? old_full_next_handle : free_page_start;
-			page_handle_type last_partial_page_address = page_has_empty_nodes ? root_address_group_handle : free_page_start;
+			page_handle_with_root_nodes_type next_partial_page_address = page_has_empty_nodes ? old_full_next_handle : free_page_start;
+			page_handle_with_root_nodes_type last_partial_page_address = page_has_empty_nodes ? root_address_group_handle : free_page_start;
 
 
 			page_meta_linked_list[next_partial_page_address.get_page()].full_page_link_info.last_page = root_address_group_handle;
@@ -596,15 +600,15 @@ namespace ArrayUtilities
 			if ( page_has_empty_nodes == false) [[unlikely]]
 			{
 				//get next page or your own page if invalid
-				page_handle_type next_partial_page_address = free_node_source_page.partial_page_link_info.next_page;
-				page_handle_type last_partial_page_address = free_node_source_page.partial_page_link_info.last_page;
+				page_handle_with_root_nodes_type next_partial_page_address = free_node_source_page.partial_page_link_info.next_page;
+				page_handle_with_root_nodes_type last_partial_page_address = free_node_source_page.partial_page_link_info.last_page;
 
 				//un link the next page from this one so that if it ever removes itself it does not break anything
 				page_meta_linked_list[next_partial_page_address.get_page()].partial_page_link_info.last_page = last_partial_page_address;
 				page_meta_linked_list[last_partial_page_address.get_page()].partial_page_link_info.next_page = next_partial_page_address;
 
 				//update the parent node links
-				page_handle_type old_full_next_handle = root_group_sentinal.full_page_link_info.next_page;
+				page_handle_with_root_nodes_type old_full_next_handle = root_group_sentinal.full_page_link_info.next_page;
 				page_link_info& current_next_full_page = page_meta_linked_list[old_full_next_handle.get_page()];
 				
 				free_node_source_page.full_page_link_info.last_page = root_address_group_handle;
@@ -637,7 +641,7 @@ namespace ArrayUtilities
 		nodes[address_of_node_to_return].mark_as_free();
 
 		//get the page the node is in
-		page_handle_type return_node_page(address_of_node_to_return >> node_page_bitshift);
+		page_handle_with_root_nodes_type return_node_page(address_of_node_to_return >> node_page_bitshift);
 
 		//get the info for the page 
 		page_link_info& return_page_info = page_meta_linked_list[return_node_page.get_page()];
@@ -648,7 +652,7 @@ namespace ArrayUtilities
 		constexpr bool use_branchless = false;
 
 		//get the memory page this node is mapped to 
-		page_handle_type root_address_group_handle = convert_root_node_to_root_page_handle(root_node_index);
+		page_handle_with_root_nodes_type root_address_group_handle = convert_root_node_to_root_page_handle(root_node_index);
 
 		//get pointer to active page link list 
 		page_link_info& root_group_sentinal = page_meta_linked_list[root_address_group_handle.get_page()];
@@ -657,10 +661,10 @@ namespace ArrayUtilities
 		if constexpr(use_branchless)
 		{
 			//get the page handle to remove but if not removing from the full page list then point to the sentinel 
-			page_handle_type next_full_page_handle = is_this_page_not_in_the_free_page_list ? return_page_info.full_page_link_info.next_page :root_group_sentinal.full_page_link_info.next_page;
-			page_handle_type last_full_page_handle = is_this_page_not_in_the_free_page_list ? return_page_info.full_page_link_info.last_page :root_group_sentinal.full_page_link_info.last_page;
+			page_handle_with_root_nodes_type next_full_page_handle = is_this_page_not_in_the_free_page_list ? return_page_info.full_page_link_info.next_page :root_group_sentinal.full_page_link_info.next_page;
+			page_handle_with_root_nodes_type last_full_page_handle = is_this_page_not_in_the_free_page_list ? return_page_info.full_page_link_info.last_page :root_group_sentinal.full_page_link_info.last_page;
 
-			page_handle_type full_page_to_remove_handle = is_this_page_not_in_the_free_page_list ? return_node_page : root_address_group_handle;
+			page_handle_with_root_nodes_type full_page_to_remove_handle = is_this_page_not_in_the_free_page_list ? return_node_page : root_address_group_handle;
 
 			//remove from the full page list 
 			page_link_info& old_full_next_page = page_meta_linked_list[next_full_page_handle.get_page()];
@@ -671,8 +675,8 @@ namespace ArrayUtilities
 			old_full_last_page.full_page_link_info.next_page = page_to_remove.full_page_link_info.next_page;
 
 
-			page_handle_type next_partial_page_handle = is_this_page_not_in_the_free_page_list? root_group_sentinal.partial_page_link_info.next_page : return_page_info.partial_page_link_info.next_page;
-			page_handle_type last_partial_page_handel = is_this_page_not_in_the_free_page_list ? root_address_group_handle : return_page_info.partial_page_link_info.last_page;
+			page_handle_with_root_nodes_type next_partial_page_handle = is_this_page_not_in_the_free_page_list? root_group_sentinal.partial_page_link_info.next_page : return_page_info.partial_page_link_info.next_page;
+			page_handle_with_root_nodes_type last_partial_page_handel = is_this_page_not_in_the_free_page_list ? root_address_group_handle : return_page_info.partial_page_link_info.last_page;
 
 
 			page_link_info& partial_next_page = page_meta_linked_list[next_partial_page_handle.get_page()];
@@ -734,8 +738,8 @@ namespace ArrayUtilities
 		if constexpr (use_branchless)
 		{
 			//get next page or your own page if invalid
-			page_handle_type next_partial_page_address = is_page_now_empty ? return_page_info.partial_page_link_info.next_page : return_node_page;
-			page_handle_type last_partial_page_address = is_page_now_empty ? return_page_info.partial_page_link_info.last_page : return_node_page;
+			page_handle_with_root_nodes_type next_partial_page_address = is_page_now_empty ? return_page_info.partial_page_link_info.next_page : return_node_page;
+			page_handle_with_root_nodes_type last_partial_page_address = is_page_now_empty ? return_page_info.partial_page_link_info.last_page : return_node_page;
 
 			//un link the next page from this one so that if it ever removes itself it does not break anything
 			page_meta_linked_list[next_partial_page_address.get_page()].partial_page_link_info.last_page = return_page_info.partial_page_link_info.last_page;
@@ -751,27 +755,30 @@ namespace ArrayUtilities
 			{
 				//un link it from the free page handle list in the root node
 				//get next page or your own page if invalid
-				page_handle_type next_partial_page_address = return_page_info.partial_page_link_info.next_page;
-				page_handle_type last_partial_page_address = return_page_info.partial_page_link_info.last_page;
+				page_handle_with_root_nodes_type next_partial_page_address = return_page_info.partial_page_link_info.next_page;
+				page_handle_with_root_nodes_type last_partial_page_address = return_page_info.partial_page_link_info.last_page;
 
 				//un link the next page from this one so that if it ever removes itself it does not break anything
 				page_meta_linked_list[next_partial_page_address.get_page()].partial_page_link_info.last_page = last_partial_page_address;
 				page_meta_linked_list[last_partial_page_address.get_page()].partial_page_link_info.next_page = next_partial_page_address;
 
+				//convert back to a non root page handle 
+				page_handle_no_root_node_type no_root_handle = page_handle_no_root_node_type(return_node_page.get_page());
+
 				//return page handle 
-				page_header.free(return_node_page);
+				page_header.free(no_root_handle);
 			}
 		}
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline constexpr  paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_handle_type 
+	inline constexpr  paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_handle_with_root_nodes_type 
 		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::convert_root_node_to_root_page_handle(root_entry_address_type root_node_index)
 	{
 		//make sure the underlying data type we are using can represent this address
-		assert(std::numeric_limits<page_handle_type::data_type>::max() > ((root_node_index >> extract_root_group_bit_shift) + total_pages));
+		assert(std::numeric_limits<page_handle_with_root_nodes_type::data_type>::max() > ((root_node_index >> extract_root_group_bit_shift) + total_pages));
 		//create page handle type 
-		return page_handle_type((root_node_index >> extract_root_group_bit_shift) + total_pages);
+		return page_handle_with_root_nodes_type((root_node_index >> extract_root_group_bit_shift) + total_pages);
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
@@ -781,7 +788,7 @@ namespace ArrayUtilities
 		for (uint32_t i = 0; i < total_pages; ++i)
 		{
 			//page handle for this index
-			page_handle_type page_for_index(i);
+			page_handle_with_root_nodes_type page_for_index(i);
 
 			//link page to itself
 			page_meta_linked_list[i].partial_page_link_info.next_page = page_for_index;
@@ -803,7 +810,7 @@ namespace ArrayUtilities
 		for (uint32_t i = total_pages; i < total_pages + number_of_root_groups; ++i)
 		{
 			//page handle for this index
-			page_handle_type page_for_index(i);
+			page_handle_with_root_nodes_type page_for_index(i);
 
 			//link page to itself
 			page_meta_linked_list[i].partial_page_link_info.next_page = page_for_index;
@@ -983,7 +990,7 @@ namespace ArrayUtilities
 	{
 		//when full page the partial page values don't get used and when its a partial page
 		//this value should never be null as our page link list is circular and should never be null
-		partial_page_link_info.last_page = page_handle_type::invalid_page();
+		partial_page_link_info.last_page = page_handle_with_root_nodes_type::invalid_page();
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
@@ -991,13 +998,13 @@ namespace ArrayUtilities
 	{
 		//when full page the partial page values don't get used and when its a partial page
 		//this value should never be null as our page link list is circular and should never be null
-		partial_page_link_info.last_page == apply?  page_handle_type::invalid_page_value(): partial_page_link_info.last_page;
+		partial_page_link_info.last_page == apply?  page_handle_with_root_nodes_type::invalid_page_value(): partial_page_link_info.last_page;
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
 	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::is_full_page()
 	{
-		return partial_page_link_info.last_page.get_page_expecting_invalid() == page_handle_type::invalid_page().get_page_expecting_invalid();
+		return partial_page_link_info.last_page.get_page_expecting_invalid() == page_handle_with_root_nodes_type::invalid_page().get_page_expecting_invalid();
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
@@ -1018,7 +1025,7 @@ namespace ArrayUtilities
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_valid_partial_page(page_handle_type handle_to_page_info) const
+	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_valid_partial_page(page_handle_with_root_nodes_type handle_to_page_info) const
 	{
 		//this page should be pointing to itself if it is not valid 
 		assert(partial_page_link_info.next_page.get_page() != handle_to_page_info.get_page() || partial_page_link_info.next_page.get_page() == partial_page_link_info.last_page.get_page());
@@ -1028,7 +1035,7 @@ namespace ArrayUtilities
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_valid_full_page(page_handle_type handle_to_page_info) const
+	inline bool paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_link_info::has_valid_full_page(page_handle_with_root_nodes_type handle_to_page_info) const
 	{
 		//this page should be pointing to itself if it is not valid 
 		assert(full_page_link_info.next_page.get_page() != handle_to_page_info.get_page() || full_page_link_info.next_page.get_page() == full_page_link_info.last_page.get_page());
@@ -1037,7 +1044,7 @@ namespace ArrayUtilities
 	}
 
 	template<typename Tdatatype, size_t Iroot_entries_count, size_t Inode_width, size_t Imax_entries_per_root, size_t Imax_entries_per_root_group, size_t Imax_global_entries, size_t Ipage_size, size_t Iroot_node_group_size>
-	inline constexpr paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_handle_value_type 
+	inline constexpr paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::page_handle_with_root_value_type 
 		paged_wide_node_linked_list<Tdatatype, Iroot_entries_count, Inode_width, Imax_entries_per_root, Imax_entries_per_root_group, Imax_global_entries, Ipage_size, Iroot_node_group_size>::empty_page_count() const
 	{
 		return page_header.remaining_page_count();

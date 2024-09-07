@@ -31,6 +31,17 @@ public:
 	uint32_t get_width() const { return screen_width; };
 	uint32_t get_height() const { return screen_height; };
 
+	math_2d_util::fvec2d get_top_left() const 
+	{
+		return apply_inverse_view_offset(math_2d_util::fvec2d(0,0));
+	}
+
+	math_2d_util::fvec2d get_bottom_right() const
+	{
+		return apply_inverse_view_offset(math_2d_util::fvec2d(get_width(), get_height()));
+	}
+
+
 	void add_offset(math_2d_util::fvec2d offset);
 
 	void add_zoom(float zoom);
@@ -75,7 +86,9 @@ public:
 
 private:
 
-	math_2d_util::fvec2d apply_view_offset(math_2d_util::fvec2d point);
+	math_2d_util::fvec2d apply_view_offset(math_2d_util::fvec2d point) const;
+
+	math_2d_util::fvec2d apply_inverse_view_offset(math_2d_util::fvec2d screen_space_point) const;
 
 	void draw_screen_space_box_outline_internal(math_2d_util::ivec2d min, math_2d_util::ivec2d max, colour_type colour,std::function<void(math_2d_util::ivec2d, math_2d_util::ivec2d, colour_type colour)> line_draw_func);
 

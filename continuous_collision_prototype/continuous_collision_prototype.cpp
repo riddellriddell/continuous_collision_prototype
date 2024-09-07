@@ -34,8 +34,8 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 debug_draw_interface draw_interface;
 delata_time_util delta_time_tracker;
 
-using physics_main_type = ContinuousCollisionLibrary::phyisics_2d_main<std::numeric_limits<ContinuousCollisionLibrary::uint16>::max() - 1, 32>;
-//using physics_main_type = phyisics_2d_main<254, 16>;
+//using physics_main_type = ContinuousCollisionLibrary::phyisics_2d_main<std::numeric_limits<ContinuousCollisionLibrary::uint16>::max() - 1, 32>;
+using physics_main_type = ContinuousCollisionLibrary::phyisics_2d_main<254, 16>;
 
 std::unique_ptr<physics_main_type> physics_main = std::make_unique<physics_main_type>();
 
@@ -104,13 +104,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //ContinuousCollisionLibrary::overlap_tracking_unit_test::run_test();
 
     //test the physics system
-    ContinuousCollisionLibrary::phyisics_2d_main_unit_test::run_test();
+    //ContinuousCollisionLibrary::phyisics_2d_main_unit_test::run_test();
 
 
     //setup the physics library 
     //setup_physics_main();
 
-    physics_main->setup_physics_random(65000, 200);
+    //physics_main->setup_physics_random(std::numeric_limits<uint16_t>::max() -1, 200);
+
+    physics_main->setup_physics_random(1, 200);
 
 
     // Initialize global strings
@@ -193,8 +195,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
   //draw_interface.resize(WINDOW_WIDTH, WINDOW_HEIGHT);
   
-  draw_interface.add_offset(math_2d_util::fvec2d( 255 / 2, 255 / 2));
-  draw_interface.add_zoom(3.5);
+ // draw_interface.add_offset(math_2d_util::fvec2d( 255 / 2, 255 / 2));
+ // draw_interface.add_zoom(3.5);
   
   //draw_interface.clear_to(RGB(255, 255, 255));
 
@@ -268,8 +270,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //handle any key pressses
         math_2d_util::fvec2d view_offset{};
         
-        view_offset.y += (key_down_array[static_cast<uint32_t>(KEY_PRESS::UP)] - key_down_array[static_cast<uint32_t>(KEY_PRESS::DOWN)]) * dt * view_pan_speed;
-        view_offset.x += (key_down_array[static_cast<uint32_t>(KEY_PRESS::LEFT)] - key_down_array[static_cast<uint32_t>(KEY_PRESS::RIGHT)]) * dt * view_pan_speed;
+        view_offset.y += (key_down_array[static_cast<uint32_t>(KEY_PRESS::DOWN)] - key_down_array[static_cast<uint32_t>(KEY_PRESS::UP)]) * dt * view_pan_speed;
+        view_offset.x += (key_down_array[static_cast<uint32_t>(KEY_PRESS::RIGHT)] - key_down_array[static_cast<uint32_t>(KEY_PRESS::LEFT)]) * dt * view_pan_speed;
 
         draw_interface.add_offset(view_offset);
 

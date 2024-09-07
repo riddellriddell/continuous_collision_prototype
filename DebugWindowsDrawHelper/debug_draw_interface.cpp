@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <assert.h>
 
 void debug_draw_interface::add_offset(math_2d_util::fvec2d offset)
 {
@@ -26,7 +27,7 @@ void debug_draw_interface::resize(uint32_t new_width, uint32_t new_height)
     //get the difference amount
     math_2d_util::fvec2d dif(new_width - screen_width, new_height - screen_height);
 
-    view_offset -= (dif * 0.5f);
+    //view_offset += (dif * 0.5f);
 
 	screen_pixles.resize(new_width * new_height);
 
@@ -280,24 +281,43 @@ void debug_draw_interface::draw_sceen_space_circle_outline(math_2d_util::ivec2d 
     }
 }
 
-math_2d_util::fvec2d debug_draw_interface::apply_view_offset(math_2d_util::fvec2d point)
+math_2d_util::fvec2d debug_draw_interface::apply_view_offset(math_2d_util::fvec2d point) const
 {
     //get relatve to view window
-    point -= view_offset;
+    math_2d_util::fvec2d relative_to_camera_center = point - view_offset;
 
     //screen size offset
     math_2d_util::fvec2d screen_centering_offset(screen_width / 2, screen_height / 2);
 
-    //get relative to screen center
-    point -= screen_centering_offset;
-
     //apply scaling
-    point *= view_zoom;
+    math_2d_util::fvec2d zoomed_relative_to_cam_center = relative_to_camera_center * view_zoom;
 
     // convert back to view window
-    point += screen_centering_offset;
+    math_2d_util::fvec2d zoomed_relative_to_window_corner = zoomed_relative_to_cam_center + screen_centering_offset;
 
-    return point;
+    return zoomed_relative_to_window_corner;
+}
+
+math_2d_util::fvec2d debug_draw_interface::apply_inverse_view_offset(math_2d_util::fvec2d screen_space_point) const
+{
+    //screen size offset
+    math_2d_util::fvec2d screen_centering_offset(screen_width / 2, screen_height / 2);
+
+    //get relative to screen center
+    math_2d_util::fvec2d relative_to_screen_center = screen_space_point - screen_centering_offset;
+
+    //apply scaling
+    math_2d_util::fvec2d scaled_realtive_to_cam_center = relative_to_screen_center / view_zoom;
+
+    //apply view offset
+    math_2d_util::fvec2d world_space = scaled_realtive_to_cam_center + view_offset;
+
+    //for testing convert world space point back to screen space
+    math_2d_util::fvec2d world_to_screen = apply_view_offset(world_space);
+
+    assert((world_to_screen - screen_space_point).lenght_sqr() < 1.0f);
+
+    return world_space;
 }
 
 void debug_draw_interface::draw_screen_space_box_outline_internal(math_2d_util::ivec2d min, math_2d_util::ivec2d max, colour_type colour, std::function<void(math_2d_util::ivec2d, math_2d_util::ivec2d, colour_type colour)> line_draw_func)
